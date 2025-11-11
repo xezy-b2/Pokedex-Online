@@ -2,82 +2,73 @@
 
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path');
 const cors = require('cors'); 
-const axios = require('axios'); 
+const axios = require('axios'); // <-- NOUVEAU: Pour les requêtes Discord OAuth2
 const User = require('./models/User.js'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
-// --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
-const POKEBALL_COST = 100;
-const GREATBALL_COST = 300;
-const ULTRABALL_COST = 800;
-const MASTERBALL_COST = 15000; 
-const SAFARIBALL_COST = 500;
-const PREMIERBALL_COST = 150;
-const LUXURYBALL_COST = 1000;
-
-const SHOP_ITEMS = {
-    'pokeball': { key: 'pokeballs', name: '🔴 Poké Ball', cost: POKEBALL_COST, promo: true, emoji: '🔴', desc: `Coût unitaire: ${POKEBALL_COST} BotCoins. Promotion: +1 ball spéciale par 10 achetées!` },
-    'greatball': { key: 'greatballs', name: '🔵 Super Ball', cost: GREATBALL_COST, promo: false, emoji: '🔵', desc: `Coût: ${GREATBALL_COST} BotCoins. (1.5x Taux de capture)` },
-    'ultraball': { key: 'ultraballs', name: '⚫ Hyper Ball', cost: ULTRABALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${ULTRABALL_COST} BotCoins. (2.0x Taux de capture)` },
-    'masterball': { key: 'masterballs', name: '🟣 Master Ball', cost: MASTERBALL_COST, promo: false, emoji: '🟣', desc: `Coût: ${MASTERBALL_COST} BotCoins. (Capture Assurée!)` },
-    'safariball': { key: 'safariballs', name: '🟢 Safari Ball', cost: SAFARIBALL_COST, promo: false, emoji: '🟢', desc: `Coût: ${SAFARIBALL_COST} BotCoins.` },
-    'premierball': { key: 'premierballs', name: '⚪ Honor Ball', cost: PREMIERBALL_COST, promo: false, emoji: '⚪', desc: `Coût: ${PREMIERBALL_COST} BotCoins.` },
-    'luxuryball': { key: 'luxuryballs', name: '⚫ Luxe Ball', cost: LUXURYBALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${LUXURYBALL_COST} BotCoins.` },
-};
-
-const BONUS_BALLS = [
-    { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
-    { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
-    { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
-];
-
-function getRandomBonusBall() {
-    const randomIndex = Math.floor(Math.random() * BONUS_BALLS.length);
-    return BONUS_BALLS[randomIndex];
-}
-
-// --- SECRETS & URLS ---
+// --- SECRETS: LECTURE DES VARIABLES D'ENVIRONNEMENT ---
 const mongoUri = process.env.MONGO_URI; 
+
+// 🔥 NOUVELLES VARIABLES OAUTH2 (À DÉFINIR SUR RENDER)
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+// L'URL de callback DOIT correspondre à ce qui est défini sur Discord Developer Portal
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
+
+// --- URLS PUBLIQUES ---
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
+const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online';
 
 
-// --- 2. CONFIGURATION EXPRESS & CORS ---
+// --- CONFIGURATION DE LA BOUTIQUE (Copie de pokeshop.js pour la route GET) ---
+const SHOP_ITEMS_DATA = {
+    'pokeball': { name: '🔴 Poké Ball', cost: 100, desc: `Coût: 100 ₽. Promotion: +1 ball spéciale par 10 achetées!` },
+    'greatball': { name: '🔵 Super Ball', cost: 300, desc: `Coût: 300 ₽. (1.5x Taux de capture)` },
+    'ultraball': { name: '⚫ Hyper Ball', cost: 800, desc: `Coût: 800 ₽. (2.0x Taux de capture)` },
+    'masterball': { name: '🟣 Master Ball', cost: 15000, desc: `Coût: 15,000 ₽. (Capture Assurée!)` },
+    'safariball': { name: '🟢 Safari Ball', cost: 500, desc: `Coût: 500 ₽.` },
+    'premierball': { name: '⚪ Honor Ball', cost: 150, desc: `Coût: 150 ₽.` },
+    'luxuryball': { name: '⚫ Luxe Ball', cost: 1000, desc: `Coût: 1,000 ₽.` },
+};
+
+
+// --- 1. CONFIGURATION CORS ---
 const corsOptions = {
-    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
-    methods: 'GET, POST, OPTIONS', 
-    allowedHeaders: ['Content-Type'], 
-    credentials: true, 
+    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL], 
+    methods: 'GET, POST', // AJOUTÉ POST pour futures routes sécurisées
     optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions)); 
-app.use(express.json()); 
+app.use(express.json()); // Nécessaire pour les requêtes POST futures
 
 
-// --- 3. CONNEXION MONGODB ---
+// --- 2. CONNEXION MONGODB ---
 if (!mongoUri) {
-    console.error('❌ FATAL: La variable d\'environnement MONGO_URI n\'est pas définie.');
+    console.error('❌ FATAL: La variable d\'environnement MONGO_URI n\'est pas définie. Le serveur ne démarrera pas sur Render.');
     if (process.env.NODE_ENV === 'production') process.exit(1); 
 }
 
 mongoose.connect(mongoUri)
     .then(() => console.log('✅ Connecté à la base de données MongoDB pour le site web !'))
     .catch(err => {
-        console.error('❌ Erreur de connexion MongoDB :', err);
+        console.error('❌ Erreur de connexion MongoDB (Vérifiez MONGO_URI) :', err);
         if (process.env.NODE_ENV === 'production') process.exit(1);
     });
 
 
-// --- 4. ROUTES AUTHENTIFICATION ---
+// --- 3. FICHIERS STATIQUES ---
+app.use(express.static(path.join(__dirname, 'public')));
 
+
+// --- 4. ROUTES AUTHENTIFICATION (NOUVELLES) ---
+
+// Route de Callback Discord : Échange le code contre l'ID utilisateur
 app.get('/api/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
 
@@ -91,6 +82,7 @@ app.get('/api/auth/discord/callback', async (req, res) => {
     }
 
     try {
+        // Étape A: Échange du code contre un jeton d'accès (Access Token)
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
             client_id: DISCORD_CLIENT_ID,
             client_secret: DISCORD_CLIENT_SECRET,
@@ -104,19 +96,21 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const accessToken = tokenResponse.data.access_token;
 
+        // Étape B: Utilisation du jeton pour obtenir les informations de l'utilisateur
         const userResponse = await axios.get('https://discord.com/api/users/@me', {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         const discordUser = userResponse.data;
         
+        // C: Upsert dans la base de données
         await User.findOneAndUpdate(
             { userId: discordUser.id },
             { $set: { username: discordUser.username } },
             { upsert: true, new: true } 
         );
 
-        // Redirection vers l'URL corrigée
+        // D: Redirection vers le frontend avec l'ID et l'username (Non Sécurisé / POC)
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
@@ -127,29 +121,26 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 });
 
 
-// --- 5. ROUTES API (POKÉDEX, PROFIL, SHOP) ---
+// --- 5. ROUTES API EXISTANTES (POKÉDEX & PROFIL) ---
 
-// Route 5.1: Pokédex (CORRIGÉ pour inclure 'pokemons' et calculer 'uniquePokedexCount')
+// Route 5.1: Pokédex 
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
+        // ... (Logique inchangée pour le Pokédex) ...
         const userId = req.params.userId;
+        const user = await User.findOne({ userId: userId }).select('username pokemons');
         
-        // CORRECTION: Nous sélectionnons EXPLICITEMENT le champ 'pokemons' !
-        const user = await User.findOne({ userId: userId }).select('pokemons');
-
         if (!user) {
-            return res.status(404).json({ message: "Dresseur non trouvé." });
+            return res.status(404).json({ message: "Dresseur non trouvé." }); 
         }
-
-        // Le Pokédex est le tableau de tous les Pokémons capturés, garanti Array.
-        const fullPokedex = user.pokemons || [];
         
-        // Calcul du nombre d'espèces uniques (nécessaire pour l'affichage en haut de page)
-        const uniquePokedexCount = new Set(fullPokedex.map(p => p.pokedexId)).size;
-
+        const fullPokedex = user.pokemons;
+        const uniquePokedexIds = [...new Set(fullPokedex.map(p => p.pokedexId))];
+        
         res.json({
-            fullPokedex: fullPokedex, // Le client lit cette clé
-            uniquePokedexCount: uniquePokedexCount
+            username: user.username,
+            fullPokedex: fullPokedex,
+            uniquePokedexCount: uniquePokedexIds.length
         });
 
     } catch (error) {
@@ -162,15 +153,14 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 // Route 5.2: Profil 
 app.get('/api/profile/:userId', async (req, res) => {
     try {
+        // ... (Logique inchangée pour le Profil) ...
         const userId = req.params.userId;
-        // La route Profile EXCLUT le champ 'pokemons' pour rester légère.
         const user = await User.findOne({ userId: userId }).select('-pokemons -__v');
         
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        // Calcule le nombre de Pokémons uniques et total via agrégation
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -184,7 +174,6 @@ app.get('/api/profile/:userId', async (req, res) => {
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
-        // Combine les données de l'utilisateur avec les stats calculées
         res.json({
             ...user.toObject(),
             stats: stats
@@ -195,77 +184,9 @@ app.get('/api/profile/:userId', async (req, res) => {
     }
 });
 
-// Route 5.3: Boutique (GET) 
+// Route 5.3: Boutique (GET)
 app.get('/api/shop', async (req, res) => {
-    res.json(SHOP_ITEMS);
-});
-
-
-// Route 5.4: Achat (POST) 
-app.post('/api/shop/buy', async (req, res) => {
-    const { userId, itemKey, quantity } = req.body;
-    
-    if (!userId || !itemKey || !quantity || isNaN(quantity) || quantity < 1) {
-        return res.status(400).json({ success: false, message: "Données manquantes ou invalides (userId, itemKey, ou quantité)." });
-    }
-
-    const itemConfig = SHOP_ITEMS[itemKey];
-
-    if (!itemConfig) {
-        return res.status(400).json({ success: false, message: "Article non valide." });
-    }
-    
-    try {
-        const user = await User.findOne({ userId });
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé. Veuillez vous connecter d'abord." });
-        }
-        
-        const totalCost = itemConfig.cost * quantity;
-
-        if (user.money < totalCost) {
-            return res.status(403).json({ success: false, message: `Vous n'avez pas assez de BotCoins pour acheter ${quantity} ${itemConfig.name}. Coût total: ${totalCost.toLocaleString()} 💰. Votre solde: ${user.money.toLocaleString()} 💰.` });
-        }
-
-        // --- DÉBUT TRANSACTION ---
-        user.money -= totalCost;
-        const itemDBKey = itemConfig.key;
-        user[itemDBKey] = (user[itemDBKey] || 0) + quantity; 
-        
-        let bonusMessage = '';
-
-        // Logique de bonus Poké Ball 
-        if (itemDBKey === 'pokeballs') { 
-            const bonusCount = Math.floor(quantity / 10);
-            if (bonusCount > 0) {
-                const bonusBallsReceived = [];
-                for (let i = 0; i < bonusCount; i++) {
-                    const bonusBall = getRandomBonusBall();
-                    user[bonusBall.key] = (user[bonusBall.key] || 0) + 1; 
-                    bonusBallsReceived.push(bonusBall.name);
-                }
-                const tally = bonusBallsReceived.reduce((acc, name) => {
-                    acc[name] = (acc[name] || 0) + 1;
-                    return acc;
-                }, {});
-                const tallyList = Object.entries(tally).map(([name, count]) => `${count} ${name}`).join(', ');
-                bonusMessage = ` (+ Bonus: ${tallyList})`;
-            }
-        }
-        
-        await user.save();
-        
-        res.json({ 
-            success: true, 
-            message: `Achat réussi de ${quantity} ${itemConfig.name} pour ${totalCost.toLocaleString()} ₽. ${bonusMessage}`,
-            newMoney: user.money,
-            newBallCount: user[itemDBKey]
-        });
-
-    } catch (error) {
-        console.error('Erreur achat web:', error);
-        res.status(500).json({ success: false, message: "Erreur interne du serveur lors de l'achat." });
-    }
+    res.json(SHOP_ITEMS_DATA);
 });
 
 
