@@ -85,7 +85,7 @@ function showPage(pageName) {
         if (pageName === 'pokedex') {
             loadPokedex(currentUserId);
         } else if (pageName === 'profile') {
-            loadProfile(currentUserId);
+            loadProfile(currentUserId); 
         }
     }
     
@@ -110,7 +110,6 @@ async function loadShop() {
         }
 
         let shopHtml = '';
-        // Utilise la clé de l'article pour récupérer les détails
         for (const [key, item] of Object.entries(items)) {
             const isExpensive = item.cost >= 1000;
             const borderStyle = `border: 2px solid ${isExpensive ? 'var(--shiny-color)' : 'var(--captured-border)'}`;
@@ -124,9 +123,9 @@ async function loadShop() {
                     <div class="card-info">
                         <span class="pokemon-name">${item.name}</span>
                         <span class="pokedex-id">${item.cost.toLocaleString()} ₽</span>
-                        <p class="description">${item.desc}</p>
+                        <p class="description" style="display:none;">${item.desc}</p> 
                         <button 
-                            style="margin-top: 5px; width: 100%;" 
+                            style="width: 100%;" 
                             onclick="alert('Veuillez utiliser la commande !pokeshop ${key} [quantité] sur Discord pour acheter.')"
                         >
                             Acheter sur Discord
@@ -146,7 +145,6 @@ async function loadShop() {
 
 
 // --- FONCTION DE CHARGEMENT DE PROFIL ---
-// (Pas de modification ici, car il n'y avait pas de bug signalé)
 async function loadProfile(userId) {
     const container = document.getElementById('profileContainer');
     container.innerHTML = '<h2>Chargement du Profil...</h2>';
@@ -179,7 +177,7 @@ async function loadProfile(userId) {
                 </div>
                 <div class="profile-stat">
                     <span class="stat-label">Argent 💰</span>
-                    <span class="stat-value">${data.money.toLocaleString()} ₽</span>
+                    <span class="stat-value">${(data.money || 0).toLocaleString()} ₽</span>
                 </div>
                 <div class="profile-stat">
                     <span class="stat-label">Compagnon Actuel</span>
@@ -211,7 +209,7 @@ async function loadProfile(userId) {
 }
 
 
-// --- FONCTION POKÉDEX (CORRIGÉE) ---
+// --- FONCTION POKÉDEX (CORRIGÉE : plus robuste aux données vides) ---
 
 function createPokedexCard(uniquePokemonData, count, isCaptured) {
     const isShiny = uniquePokemonData.isShinyFirstCapture || false;
@@ -259,15 +257,12 @@ async function loadPokedex(userId) {
         }
 
         const data = await response.json();
-        let fullPokedex = data.fullPokedex; // On utilise 'let' pour pouvoir réassigner
-
-        // --- CORRECTION DU BUG : Si le Pokédex est vide ou manquant dans la BDD, on initialise à un tableau vide. ---
-        if (!fullPokedex) {
-             fullPokedex = [];
-        }
-        // Le uniquePokedexCount doit aussi être protégé
+        
+        // --- CORRECTION DU BUG : Protection contre l'absence des propriétés ---
+        // fullPokedex est maintenant garantie d'être un tableau (vide si non présent)
+        const fullPokedex = data.fullPokedex || []; 
         const uniqueCount = data.uniquePokedexCount || 0; 
-        // ------------------------------------------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------
         
         let html = `<h2>Mon Pokédex</h2>`;
         html += `<p>Espèces Uniques Capturées: **${uniqueCount}** / 151</p>`;
