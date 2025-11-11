@@ -109,10 +109,18 @@
             font-weight: bold;
         }
 
-        /* --- GRILLES (POKÉDEX ET BOUTIQUE) --- */
+        /* --- GRILLES (POKÉDEX) --- */
         .pokedex-grid {
-            /* Affichage en grille de cartes (utilisé pour le Pokédex et la Boutique) */
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Nouvelle taille pour que 4 items rentrent sur un grand écran */
+            /* Taille large pour les cartes Pokédex standard */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            display: grid; 
+            gap: 15px;
+        }
+        
+        /* --- NOUVELLE GRILLE POUR LA BOUTIQUE (Plus compacte et côte à côte) --- */
+        .shop-grid {
+            /* Réduction du min-width pour forcer plus de colonnes horizontales */
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
             display: grid; 
             gap: 15px;
         }
@@ -180,17 +188,15 @@
             font-weight: bold;
         }
         
-        /* --- STYLES DÉFINITIFS DE LA BOUTIQUE (Alignement Horizontal et Taille Réduite) --- */
+        /* --- STYLES DE LA BOUTIQUE (Contenu de la carte aligné horizontalement) --- */
         .shop-item {
-            /* Remplace flex-direction: column pour un alignement sur la ligne */
             display: flex;
             flex-direction: row; 
-            align-items: flex-start; /* Alignement en haut */
+            align-items: flex-start; 
             text-align: left;
             padding: 15px;
-            /* Permet de forcer l'alignement sur le côté si la grid devient trop grande */
             width: 100%; 
-            height: 100%; /* Important pour que tous les blocs aient la même hauteur */
+            height: 100%; 
         }
         
         .shop-item img {
@@ -198,7 +204,7 @@
             height: 64px;
             margin-right: 15px; 
             margin-bottom: 0;
-            flex-shrink: 0; /* Empêche la réduction de la taille de l'image */
+            flex-shrink: 0; 
         }
         
         .shop-item .card-info {
@@ -206,7 +212,7 @@
             flex-direction: column;
             width: 100%;
             flex-grow: 1;
-            justify-content: space-between; /* Assure que le bouton va en bas */
+            justify-content: space-between; 
         }
         
         .shop-item .pokemon-name {
@@ -226,8 +232,7 @@
             margin-bottom: 5px;
         }
 
-        /* --- STYLES PROFILE (Repris du dernier état fonctionnel) --- */
-        
+        /* --- STYLES PROFILE --- */
         .profile-grid {
             display: grid;
             grid-template-columns: 1fr 1fr; 
@@ -335,7 +340,7 @@
         <div id="shop-page" class="page-section">
             <h2>Boutique Poké Balls</h2>
             <p>Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
-            <div id="shopContainer" class="pokedex-grid">
+            <div id="shopContainer" class="shop-grid"> 
                 Chargement des articles...
             </div>
         </div>
