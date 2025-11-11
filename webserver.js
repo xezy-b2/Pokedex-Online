@@ -1,66 +1,85 @@
-// webserver.js
+// webserver.js (Version Finale et Indépendante)
 
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
 const cors = require('cors'); 
 const axios = require('axios'); 
 const User = require('./models/User.js'); 
-
-// 🔥 IMPORTATION DE LA LOGIQUE DU SHOP
-const { SHOP_ITEMS, getRandomBonusBall } = require('./commands/pokeshop.js'); 
+// 🔥 Suppression de la ligne: const { SHOP_ITEMS, getRandomBonusBall } = require('./commands/pokeshop.js'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
-// --- SECRETS: LECTURE DES VARIABLES D'ENVIRONNEMENT ---
-const mongoUri = process.env.MONGO_URI; 
+// --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
+const POKEBALL_COST = 100;
+const GREATBALL_COST = 300;
+const ULTRABALL_COST = 800;
+const MASTERBALL_COST = 15000; 
+const SAFARIBALL_COST = 500;
+const PREMIERBALL_COST = 150;
+const LUXURYBALL_COST = 1000;
 
+const SHOP_ITEMS = {
+    'pokeball': { key: 'pokeballs', name: '🔴 Poké Ball', cost: POKEBALL_COST, promo: true, emoji: '🔴', desc: `Coût unitaire: ${POKEBALL_COST} BotCoins. Promotion: +1 ball spéciale par 10 achetées!` },
+    'greatball': { key: 'greatballs', name: '🔵 Super Ball', cost: GREATBALL_COST, promo: false, emoji: '🔵', desc: `Coût: ${GREATBALL_COST} BotCoins. (1.5x Taux de capture)` },
+    'ultraball': { key: 'ultraballs', name: '⚫ Hyper Ball', cost: ULTRABALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${ULTRABALL_COST} BotCoins. (2.0x Taux de capture)` },
+    'masterball': { key: 'masterballs', name: '🟣 Master Ball', cost: MASTERBALL_COST, promo: false, emoji: '🟣', desc: `Coût: ${MASTERBALL_COST} BotCoins. (Capture Assurée!)` },
+    'safariball': { key: 'safariballs', name: '🟢 Safari Ball', cost: SAFARIBALL_COST, promo: false, emoji: '🟢', desc: `Coût: ${SAFARIBALL_COST} BotCoins.` },
+    'premierball': { key: 'premierballs', name: '⚪ Honor Ball', cost: PREMIERBALL_COST, promo: false, emoji: '⚪', desc: `Coût: ${PREMIERBALL_COST} BotCoins.` },
+    'luxuryball': { key: 'luxuryballs', name: '⚫ Luxe Ball', cost: LUXURYBALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${LUXURYBALL_COST} BotCoins.` },
+};
+
+const BONUS_BALLS = [
+    { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
+    { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
+    { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
+];
+
+function getRandomBonusBall() {
+    const randomIndex = Math.floor(Math.random() * BONUS_BALLS.length);
+    return BONUS_BALLS[randomIndex];
+}
+
+// --- SECRETS & URLS ---
+const mongoUri = process.env.MONGO_URI; 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
-
-// --- URLS PUBLIQUES (CORRIGÉES AVEC /Pokedex-Online) ---
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-// 🔥 L'URL DE REDIRECTION DOIT MAINTENANT INCLURE LE NOM DU DÉPÔT
+// 🔥 CORRECTION DE L'URL DE REDIRECTION FINALE
 const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
 
 
-// --- 1. CONFIGURATION CORS ---
+// --- 2. CONFIGURATION EXPRESS & CORS ---
 const corsOptions = {
-    // 🔥 AUTORISE LE POST POUR LES ACHATS
     origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL], 
     methods: 'GET, POST', 
     optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions)); 
-app.use(express.json()); // Nécessaire pour lire le corps des requêtes POST
+app.use(express.json()); 
 
 
-// --- 2. CONNEXION MONGODB ---
+// --- 3. CONNEXION MONGODB ---
 if (!mongoUri) {
-    console.error('❌ FATAL: La variable d\'environnement MONGO_URI n\'est pas définie. Le serveur ne démarrera pas sur Render.');
+    console.error('❌ FATAL: La variable d\'environnement MONGO_URI n\'est pas définie.');
     if (process.env.NODE_ENV === 'production') process.exit(1); 
 }
 
 mongoose.connect(mongoUri)
     .then(() => console.log('✅ Connecté à la base de données MongoDB pour le site web !'))
     .catch(err => {
-        console.error('❌ Erreur de connexion MongoDB (Vérifiez MONGO_URI) :', err);
+        console.error('❌ Erreur de connexion MongoDB :', err);
         if (process.env.NODE_ENV === 'production') process.exit(1);
     });
-
-
-// --- 3. FICHIERS STATIQUES ---
-// Si vous servez le frontend depuis Render: app.use(express.static(path.join(__dirname, 'public')));
 
 
 // --- 4. ROUTES AUTHENTIFICATION ---
 
 app.get('/api/auth/discord/callback', async (req, res) => {
+    // ... (Logique OAuth2 inchangée) ...
     const code = req.query.code;
 
     if (!code) {
@@ -98,7 +117,6 @@ app.get('/api/auth/discord/callback', async (req, res) => {
             { upsert: true, new: true } 
         );
 
-        // D: Redirection vers le frontend avec l'ID et l'username (URL CORRIGÉE)
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
@@ -113,22 +131,63 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
 // Route 5.1: Pokédex 
 app.get('/api/pokedex/:userId', async (req, res) => {
-    // ... (Logique inchangée) ...
+    try {
+        const userId = req.params.userId;
+        const user = await User.findOne({ userId: userId }).select('pokemons');
+        
+        if (!user) {
+            return res.status(404).json({ message: "Dresseur non trouvé." });
+        }
+        
+        res.json(user.pokemons);
+
+    } catch (error) {
+        console.error('Erreur API Pokédex:', error);
+        res.status(500).json({ message: 'Erreur interne du serveur.' });
+    }
 });
 
 
 // Route 5.2: Profil 
 app.get('/api/profile/:userId', async (req, res) => {
-    // ... (Logique inchangée) ...
+    try {
+        const userId = req.params.userId;
+        const user = await User.findOne({ userId: userId }).select('-pokemons -__v');
+        
+        if (!user) {
+            return res.status(404).json({ message: "Dresseur non trouvé." });
+        }
+        
+        const totalPokemons = await User.aggregate([
+            { $match: { userId: userId } },
+            { $project: { 
+                totalCount: { $size: "$pokemons" },
+                uniqueCount: { $size: { $setUnion: ["$pokemons.pokedexId", []] } }
+            }}
+        ]);
+        
+        const stats = {
+            totalCaptures: totalPokemons[0]?.totalCount || 0,
+            uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
+        };
+
+        res.json({
+            ...user.toObject(),
+            stats: stats
+        });
+    } catch (error) {
+        console.error('Erreur API Profil:', error);
+        res.status(500).json({ message: 'Erreur interne du serveur.' });
+    }
 });
 
-// Route 5.3: Boutique (GET) - UTILISE SHOP_ITEMS IMPORTÉ
+// Route 5.3: Boutique (GET) 
 app.get('/api/shop', async (req, res) => {
     res.json(SHOP_ITEMS);
 });
 
 
-// 🔥 Route 5.4: Achat (POST) - NOUVELLE ROUTE
+// Route 5.4: Achat (POST) 
 app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     
@@ -161,7 +220,7 @@ app.post('/api/shop/buy', async (req, res) => {
         
         let bonusMessage = '';
 
-        // Logique de bonus Poké Ball (copiée de pokeshop.js)
+        // Logique de bonus Poké Ball (intégrée ici)
         if (itemDBKey === 'pokeballs') { 
             const bonusCount = Math.floor(quantity / 10);
             if (bonusCount > 0) {
