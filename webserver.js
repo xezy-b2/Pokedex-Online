@@ -22,7 +22,7 @@ const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/
 
 // --- URLS PUBLIQUES ---
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-const GITHUB_PAGES_URL = 'https://xezy-b2.github.io'; 
+const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online';
 
 
 // --- CONFIGURATION DE LA BOUTIQUE (Copie de pokeshop.js pour la route GET) ---
@@ -195,3 +195,4 @@ app.get('/api/shop', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌍 Serveur web démarré sur le port ${PORT}`);
 });
+
