@@ -1,16 +1,17 @@
-// webserver.js (Version Finale et Indépendante)
+// webserver.js
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
 const axios = require('axios'); 
 const User = require('./models/User.js'); 
-// 🔥 Suppression de la ligne: const { SHOP_ITEMS, getRandomBonusBall } = require('./commands/pokeshop.js'); 
+// 🔥 Suppression de l'importation de pokeshop.js, la logique est ci-dessous.
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
 // --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
+// Ces constantes DOIVENT être mises à jour ici si elles changent dans votre bot local.
 const POKEBALL_COST = 100;
 const GREATBALL_COST = 300;
 const ULTRABALL_COST = 800;
@@ -47,14 +48,17 @@ const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-// 🔥 CORRECTION DE L'URL DE REDIRECTION FINALE
+// 🔥 L'URL CORRIGÉE
 const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
 
 
-// --- 2. CONFIGURATION EXPRESS & CORS ---
+// --- 2. CONFIGURATION EXPRESS & CORS (CORRIGÉE POUR POST) ---
 const corsOptions = {
-    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL], 
-    methods: 'GET, POST', 
+    // Autorise les origines spécifiques (GitHub Pages, Render)
+    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
+    methods: 'GET, POST, OPTIONS', // Autorise GET, POST et la vérification OPTIONS (pour POST)
+    allowedHeaders: ['Content-Type'], 
+    credentials: true, // Peut être nécessaire pour certains environnements
     optionsSuccessStatus: 200
 };
 
@@ -79,7 +83,6 @@ mongoose.connect(mongoUri)
 // --- 4. ROUTES AUTHENTIFICATION ---
 
 app.get('/api/auth/discord/callback', async (req, res) => {
-    // ... (Logique OAuth2 inchangée) ...
     const code = req.query.code;
 
     if (!code) {
@@ -117,6 +120,7 @@ app.get('/api/auth/discord/callback', async (req, res) => {
             { upsert: true, new: true } 
         );
 
+        // Redirection vers l'URL corrigée
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
@@ -192,7 +196,7 @@ app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     
     if (!userId || !itemKey || !quantity || isNaN(quantity) || quantity < 1) {
-        return res.status(400).json({ success: false, message: "Données manquantes ou invalides." });
+        return res.status(400).json({ success: false, message: "Données manquantes ou invalides (userId, itemKey, ou quantité)." });
     }
 
     const itemConfig = SHOP_ITEMS[itemKey];
@@ -220,7 +224,7 @@ app.post('/api/shop/buy', async (req, res) => {
         
         let bonusMessage = '';
 
-        // Logique de bonus Poké Ball (intégrée ici)
+        // Logique de bonus Poké Ball 
         if (itemDBKey === 'pokeballs') { 
             const bonusCount = Math.floor(quantity / 10);
             if (bonusCount > 0) {
