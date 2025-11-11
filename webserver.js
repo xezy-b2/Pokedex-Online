@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const cors = require('cors'); 
 const axios = require('axios'); 
 const User = require('./models/User.js'); 
-// 🔥 Suppression de l'importation de pokeshop.js, la logique est ci-dessous.
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
@@ -48,17 +47,16 @@ const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-// 🔥 L'URL CORRIGÉE
 const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
 
 
-// --- 2. CONFIGURATION EXPRESS & CORS (CORRIGÉE POUR POST) ---
+// --- 2. CONFIGURATION EXPRESS & CORS ---
 const corsOptions = {
     // Autorise les origines spécifiques (GitHub Pages, Render)
     origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
-    methods: 'GET, POST, OPTIONS', // Autorise GET, POST et la vérification OPTIONS (pour POST)
+    methods: 'GET, POST, OPTIONS', 
     allowedHeaders: ['Content-Type'], 
-    credentials: true, // Peut être nécessaire pour certains environnements
+    credentials: true, 
     optionsSuccessStatus: 200
 };
 
@@ -133,17 +131,29 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
 // --- 5. ROUTES API (POKÉDEX, PROFIL, SHOP) ---
 
-// Route 5.1: Pokédex 
+// Route 5.1: Pokédex (CORRIGÉ pour renvoyer le format { fullPokedex, uniquePokedexCount })
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        const user = await User.findOne({ userId: userId }).select('pokemons');
         
+        // CORRECTION: Nous sélectionnons EXPLICITEMENT le champ 'pokemons' !
+        const user = await User.findOne({ userId: userId }).select('pokemons');
+
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
+
+        // 1. Récupération des Pokémons (garanti Array)
+        const fullPokedex = user.pokemons || [];
         
-        res.json(user.pokemons);
+        // 2. Calcul du nombre d'espèces uniques
+        const uniquePokedexCount = new Set(fullPokedex.map(p => p.pokedexId)).size;
+
+        // 3. Envoi de l'objet STRUCTURÉ comme le client l'attend
+        res.json({
+            fullPokedex: fullPokedex, 
+            uniquePokedexCount: uniquePokedexCount
+        });
 
     } catch (error) {
         console.error('Erreur API Pokédex:', error);
@@ -156,12 +166,14 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 app.get('/api/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
+        // La route Profile EXCLUT le champ 'pokemons' pour rester légère.
         const user = await User.findOne({ userId: userId }).select('-pokemons -__v');
         
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
+        // Calcule le nombre de Pokémons uniques et total via agrégation
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -175,6 +187,7 @@ app.get('/api/profile/:userId', async (req, res) => {
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
+        // Combine les données de l'utilisateur avec les stats calculées
         res.json({
             ...user.toObject(),
             stats: stats
