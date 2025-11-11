@@ -82,7 +82,7 @@ function showPage(pageName) {
         if (pageName === 'pokedex') {
             loadPokedex(currentUserId);
         } else if (pageName === 'profile') {
-            loadProfile(currentUserId);
+            loadProfile(currentUserId); // APPEL DE LA NOUVELLE FONCTION
         }
     }
     
@@ -160,6 +160,7 @@ async function loadPokedex(userId) {
     }
 }
 
+// --- NOUVELLE FONCTION loadProfile (DESIGN REFONDU) ---
 async function loadProfile(userId) {
     const container = document.getElementById('profileContainer');
     container.innerHTML = 'Chargement du Profil...';
@@ -176,31 +177,60 @@ async function loadProfile(userId) {
             return;
         }
 
-        let ballList = ``;
-        // Boucle sur toutes les clés de balles dans les données du profil
-        for (const [key, value] of Object.entries(profileData)) {
-            if (key.endsWith('balls')) {
-                const ballName = key.charAt(0).toUpperCase() + key.slice(1).replace('balls', ' Balls');
-                ballList += `<li>${ballName} : <strong>${value}</strong></li>`;
-            }
+        // --- 1. Préparation de l'inventaire des Balls ---
+        let ballListHtml = ``;
+        // Mapping manuel des clés de BDD aux noms d'affichage et emojis
+        const ballDisplayMap = {
+            'pokeballs': { name: 'Poké Balls', emoji: '🔴' },
+            'greatballs': { name: 'Super Balls', emoji: '🔵' },
+            'ultraballs': { name: 'Hyper Balls', emoji: '⚫' },
+            'masterballs': { name: 'Master Balls', emoji: '🟣' },
+            'safariballs': { name: 'Safari Balls', emoji: '🟢' },
+            'premierballs': { name: 'Honor Balls', emoji: '⚪' },
+            'luxuryballs': { name: 'Luxe Balls', emoji: '⚫' },
+        };
+        
+        for (const [key, display] of Object.entries(ballDisplayMap)) {
+            const quantity = profileData[key] || 0; 
+            
+            ballListHtml += `
+                <li>
+                    ${display.emoji} ${display.name}: <strong>${quantity.toLocaleString()}</strong>
+                </li>
+            `;
         }
         
+        // --- 2. Construction du HTML du Profil ---
         const profileHtml = `
-            <div class="pokedex-card" style="display: flex; flex-direction: column; align-items: center; border: 2px solid var(--highlight-color);">
-                <h2 style="margin-top: 0;">${profileData.username}</h2>
-                <p>ID Discord : ${profileData.userId}</p>
-                <div style="text-align: left; width: 100%; padding: 10px;">
-                    <h3>Économie</h3>
-                    <p>BotCoins : <strong>${profileData.money.toLocaleString()} ₽</strong></p>
-                    
-                    <h3>Inventaire de Balls</h3>
-                    <ul style="list-style-type: none; padding: 0;">
-                        ${ballList}
+            <div style="background-color: var(--header-background); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--shiny-color);">⭐ Dresseur : ${profileData.username}</h2>
+                <p style="font-size: 0.8em; margin: 5px 0 0 0; color: var(--text-secondary);">ID Discord : ${profileData.userId}</p>
+            </div>
+
+            <div class="profile-grid">
+                
+                <div class="profile-section">
+                    <h3>💰 Finances</h3>
+                    <div class="stat-item">
+                        <span>Solde BotCoins:</span> <strong>${profileData.money.toLocaleString()} ₽</strong>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>📊 Statistiques Pokédex</h3>
+                    <div class="stat-item">
+                        <span>Total Captures:</span> <strong>${profileData.stats.totalCaptures.toLocaleString()}</strong>
+                    </div>
+                    <div class="stat-item">
+                        <span>Captures Uniques:</span> <strong>${profileData.stats.uniqueCaptures} / 151</strong>
+                    </div>
+                </div>
+                
+                <div class="profile-section" style="grid-column: 1 / 3;">
+                    <h3>🎒 Inventaire de Poké Balls</h3>
+                    <ul class="ball-list">
+                        ${ballListHtml}
                     </ul>
-                    
-                    <h3>Statistiques</h3>
-                    <p>Total Captures : <strong>${profileData.stats.totalCaptures}</strong></p>
-                    <p>Captures Uniques : <strong>${profileData.stats.uniqueCaptures} / 151</strong></p>
                 </div>
             </div>
         `;
@@ -230,7 +260,7 @@ async function loadShop() {
             return;
         }
 
-        let shopHtml = '';
+        let shopHtml = '<div class="shop-grid">';
         for (const [key, item] of Object.entries(items)) {
             const isExpensive = item.cost >= 1000;
             const borderStyle = `border: 2px solid ${isExpensive ? 'var(--shiny-color)' : 'var(--captured-border)'}`;
@@ -255,6 +285,7 @@ async function loadShop() {
             `;
         }
         
+        shopHtml += '</div>';
         container.innerHTML = shopHtml;
 
     } catch (error) {
@@ -303,7 +334,8 @@ async function buyItemWeb(itemKey, itemName, defaultQuantity = 1) {
         const data = await response.json();
         
         if (data.success) {
-            alert(`✅ ${data.message} | Argent restant : ${data.newMoney.toLocaleString()} ₽`);
+            // Utiliser data.message qui inclut les détails du bonus
+            alert(`✅ Succès: ${data.message} | Argent restant : ${data.newMoney.toLocaleString()} ₽`); 
             errorContainer.innerHTML = `<p style="color: var(--highlight-color);">${data.message}</p>`;
             // Mise à jour du profil et du stock après l'achat réussi
             loadProfile(currentUserId); 
@@ -349,5 +381,5 @@ function createPokedexCard(pokemon, count, isCaptured) {
     `;
 }
 
-// Assurez-vous d'appeler l'initialisation au chargement de la page si vous ne le faites pas via l'attribut body:
-// window.onload = initializeApp; // Si vous n'utilisez pas <body onload="initializeApp()">
+// L'appel de initializeApp est maintenant dans le body de index.html
+// <body onload="initializeApp()">
