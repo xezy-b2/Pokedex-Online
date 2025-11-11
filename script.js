@@ -1,4 +1,4 @@
-// public/script.js (Mise à jour pour l'appel depuis GitHub Pages)
+// public/script.js
 
 // NOUVELLE URL DE BASE (pour accéder aux sprites, y compris shiny)
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
@@ -48,18 +48,26 @@ async function loadPokedex() {
         container.innerHTML = '<p style="color: red;">Veuillez entrer un ID Discord valide.</p>';
         return;
     }
-
+    
+    // Ligne 54 dans votre log, c'est bien ici que l'appel se fait
     try {
-        // CORRECTION MAJEURE : Appel direct à localhost:3000
+        // L'URL ABSOLUE DOIT POINTER VERS VOTRE SERVEUR LOCAL !
         const response = await fetch(`http://localhost:3000/api/pokedex/${userId}`); 
-        const data = await response.json();
-
+        
         if (!response.ok) {
-            // Utilisation de la variable CSS pour l'erreur
-            container.innerHTML = `<p style="color: var(--red-discord);">Erreur: ${data.message || 'Impossible de charger les données.'}</p>`;
+            // Tente de lire le JSON de l'erreur (ex: 404 du serveur)
+            try {
+                const data = await response.json();
+                container.innerHTML = `<p style="color: var(--red-discord);">Erreur API: ${data.message || 'Impossible de lire les données JSON.'}</p>`;
+            } catch (jsonError) {
+                // Si la réponse n'est pas du JSON (ex: erreur réseau ou HTML)
+                container.innerHTML = '<p style="color: var(--red-discord);">Erreur de connexion : Le serveur API a répondu avec un statut non-OK ou est inaccessible. Vérifiez que `node webserver.js` est lancé !</p>';
+                console.error('Erreur API non-JSON ou statut non-OK:', response);
+            }
             return;
         }
 
+        const data = await response.json();
         const fullPokedex = data.fullPokedex;
         
         let html = `<h2>Pokédex de ${data.username}</h2>`;
@@ -103,7 +111,8 @@ async function loadPokedex() {
         container.innerHTML = html + pokedexGridHtml;
 
     } catch (error) {
+        // Erreur de connexion réseau pure (ex: 'Failed to fetch')
         console.error('Erreur lors de la récupération du Pokédex:', error);
-        container.innerHTML = '<p style="color: var(--red-discord);">Une erreur s\'est produite lors de la communication avec le serveur (API). Vérifiez que `node webserver.js` est lancé !</p>';
+        container.innerHTML = '<p style="color: var(--red-discord);">Erreur Réseau : Impossible d\'établir la connexion. Le serveur Express est-il bien lancé sur votre machine ?</p>';
     }
 }
