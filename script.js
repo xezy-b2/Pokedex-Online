@@ -82,7 +82,7 @@ function showPage(pageName) {
         if (pageName === 'pokedex') {
             loadPokedex(currentUserId);
         } else if (pageName === 'profile') {
-            loadProfile(currentUserId); // APPEL DE LA NOUVELLE FONCTION
+            loadProfile(currentUserId); 
         }
     }
     
@@ -101,17 +101,17 @@ async function loadPokedex(userId) {
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/pokedex/${userId}`);
-        const fullPokedex = await response.json();
+        const data = await response.json();
+        const fullPokedex = data.fullPokedex;
 
         if (!response.ok) {
-            errorContainer.innerHTML = `<p style="color: var(--red-discord);">Erreur: ${fullPokedex.message || 'Impossible de charger les données.'}</p>`;
+            errorContainer.innerHTML = `<p style="color: var(--red-discord);">Erreur: ${data.message || 'Impossible de charger les données.'}</p>`;
             container.innerHTML = '';
             return;
         }
 
-        // --- Logique d'affichage Pokédex (Aggrégation) ---
         const totalCaptured = fullPokedex.length;
-        const uniqueCaptured = new Set(fullPokedex.map(p => p.pokedexId)).size;
+        const uniqueCaptured = data.uniquePokedexCount;
         
         let html = `
             <h3 style="margin-top: 0;">Statistiques de capture</h3>
@@ -160,7 +160,7 @@ async function loadPokedex(userId) {
     }
 }
 
-// --- NOUVELLE FONCTION loadProfile (DESIGN REFONDU) ---
+// --- FONCTION loadProfile (Utilise le format de liste/flex) ---
 async function loadProfile(userId) {
     const container = document.getElementById('profileContainer');
     container.innerHTML = 'Chargement du Profil...';
@@ -195,7 +195,7 @@ async function loadProfile(userId) {
             
             ballListHtml += `
                 <li>
-                    ${display.emoji} ${display.name}: <strong>${quantity.toLocaleString()}</strong>
+                    ${display.emoji} ${display.name}: <strong>${(quantity || 0).toLocaleString()}</strong>
                 </li>
             `;
         }
@@ -212,7 +212,7 @@ async function loadProfile(userId) {
                 <div class="profile-section">
                     <h3>💰 Finances</h3>
                     <div class="stat-item">
-                        <span>Solde BotCoins:</span> <strong>${profileData.money.toLocaleString()} ₽</strong>
+                        <span>Solde BotCoins:</span> <strong>${(profileData.money || 0).toLocaleString()} ₽</strong>
                     </div>
                 </div>
 
@@ -226,7 +226,7 @@ async function loadProfile(userId) {
                     </div>
                 </div>
                 
-                <div class="profile-section" style="grid-column: 1 / 3;">
+                <div class="profile-section full-width-section">
                     <h3>🎒 Inventaire de Poké Balls</h3>
                     <ul class="ball-list">
                         ${ballListHtml}
@@ -236,6 +236,7 @@ async function loadProfile(userId) {
         `;
         
         container.innerHTML = profileHtml;
+        loadShop(); 
 
     } catch (error) {
         console.error('Erreur lors de la récupération du profil:', error);
@@ -260,22 +261,23 @@ async function loadShop() {
             return;
         }
 
-        let shopHtml = '<div class="shop-grid">';
+        let shopHtml = '<div class="pokedex-grid">';
         for (const [key, item] of Object.entries(items)) {
             const isExpensive = item.cost >= 1000;
             const borderStyle = `border: 2px solid ${isExpensive ? 'var(--shiny-color)' : 'var(--captured-border)'}`;
             
             const itemImageKey = key; 
             
+            // Le HTML généré ici s'appuie sur le nouveau CSS horizontal dans index.html
             shopHtml += `
                 <div class="pokedex-card shop-item" style="${borderStyle}">
                     <img src="${POKEAPI_SPRITE_URL}item/${itemImageKey}.png" alt="${item.name}" style="height: 64px; max-height: 64px;">
-                    <div class="card-info" style="flex-direction: column; align-items: flex-start;">
+                    <div class="card-info">
                         <span class="pokemon-name">${item.name}</span>
                         <span class="pokedex-id">${item.cost.toLocaleString()} ₽</span>
-                        <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">${item.desc.replace(/BotCoins/g, '₽')}</p>
+                        <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px; margin-bottom: 10px;">${item.desc.replace(/BotCoins/g, '₽')}</p>
                         <button 
-                            style="margin-top: 10px; width: 100%;" 
+                            style="width: 100%;" 
                             onclick="buyItemWeb('${key}', '${item.name}', 1)"
                         >
                             Acheter via le site
@@ -296,7 +298,7 @@ async function loadShop() {
 }
 
 /**
- * Fonction pour acheter un article via l'API web.
+ * Fonction pour acheter un article via l'API web (Webserver POST route).
  */
 async function buyItemWeb(itemKey, itemName, defaultQuantity = 1) {
     if (!currentUserId) {
@@ -334,14 +336,13 @@ async function buyItemWeb(itemKey, itemName, defaultQuantity = 1) {
         const data = await response.json();
         
         if (data.success) {
-            // Utiliser data.message qui inclut les détails du bonus
             alert(`✅ Succès: ${data.message} | Argent restant : ${data.newMoney.toLocaleString()} ₽`); 
             errorContainer.innerHTML = `<p style="color: var(--highlight-color);">${data.message}</p>`;
             // Mise à jour du profil et du stock après l'achat réussi
             loadProfile(currentUserId); 
         } else {
             alert(`❌ Échec de l'achat : ${data.message}`);
-            errorContainer.innerHTML = `<p style="color: var(--red-discord);">${data.message}</p>`;
+            errorContainer.innerHTML = `<p style="color: var(--red-discord);">❌ Échec de l'achat : ${data.message}</p>`;
         }
         
     } catch (error) {
@@ -380,6 +381,3 @@ function createPokedexCard(pokemon, count, isCaptured) {
         </div>
     `;
 }
-
-// L'appel de initializeApp est maintenant dans le body de index.html
-// <body onload="initializeApp()">
