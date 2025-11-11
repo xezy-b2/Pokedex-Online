@@ -4,7 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const cors = require('cors'); 
-const axios = require('axios'); // <-- Ajouté pour les requêtes Discord OAuth2
+const axios = require('axios'); // <-- NOUVEAU: Pour les requêtes Discord OAuth2
 const User = require('./models/User.js'); 
 
 const app = express();
@@ -13,9 +13,10 @@ const PORT = process.env.PORT || 3000;
 // --- SECRETS: LECTURE DES VARIABLES D'ENVIRONNEMENT ---
 const mongoUri = process.env.MONGO_URI; 
 
-// --- NOUVELLES VARIABLES OAUTH2 ---
+// 🔥 NOUVELLES VARIABLES OAUTH2 (À DÉFINIR SUR RENDER)
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+// L'URL de callback DOIT correspondre à ce qui est défini sur Discord Developer Portal
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
 
@@ -24,7 +25,7 @@ const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
 const GITHUB_PAGES_URL = 'https://xezy-b2.github.io'; 
 
 
-// --- CONFIGURATION DE LA BOUTIQUE (Copie des données de pokeshop.js) ---
+// --- CONFIGURATION DE LA BOUTIQUE (Copie de pokeshop.js pour la route GET) ---
 const SHOP_ITEMS_DATA = {
     'pokeball': { name: '🔴 Poké Ball', cost: 100, desc: `Coût: 100 ₽. Promotion: +1 ball spéciale par 10 achetées!` },
     'greatball': { name: '🔵 Super Ball', cost: 300, desc: `Coût: 300 ₽. (1.5x Taux de capture)` },
@@ -36,10 +37,10 @@ const SHOP_ITEMS_DATA = {
 };
 
 
-// --- 1. CONFIGURATION CORS (DOIT ÊTRE EN PREMIER) ---
+// --- 1. CONFIGURATION CORS ---
 const corsOptions = {
     origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL], 
-    methods: 'GET, POST', 
+    methods: 'GET, POST', // AJOUTÉ POST pour futures routes sécurisées
     optionsSuccessStatus: 200
 };
 
@@ -61,24 +62,22 @@ mongoose.connect(mongoUri)
     });
 
 
-// --- 3. FICHIERS STATIQUES (Pour le test local) ---
+// --- 3. FICHIERS STATIQUES ---
 app.use(express.static(path.join(__dirname, 'public')));
 
 
 // --- 4. ROUTES AUTHENTIFICATION (NOUVELLES) ---
 
-// Route 3: Le point de retour (Callback) après l'approbation Discord
+// Route de Callback Discord : Échange le code contre l'ID utilisateur
 app.get('/api/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
 
     if (!code) {
-        // En cas d'annulation ou d'erreur, on redirige vers l'accueil
         return res.redirect(GITHUB_PAGES_URL); 
     }
 
-    // Vérification rapide des secrets
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-        console.error("Secrets Discord non définis. Impossible de procéder à l'OAuth.");
+        console.error("Secrets Discord non définis.");
         return res.status(500).send("Erreur de configuration OAuth.");
     }
 
@@ -104,31 +103,30 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
         
-        // Mise à jour de l'utilisateur dans la base de données (si nouveau, ou juste pour l'username)
-        // Upsert: si l'ID existe, on met à jour le username; sinon, on crée.
+        // C: Upsert dans la base de données
         await User.findOneAndUpdate(
             { userId: discordUser.id },
             { $set: { username: discordUser.username } },
             { upsert: true, new: true } 
         );
 
-        // Étape C: Redirection vers le frontend avec l'ID et l'username (TRES TEMPORAIRE / POC)
-        // La vraie sécurité exigerait l'envoi d'un JWT ou d'un cookie.
+        // D: Redirection vers le frontend avec l'ID et l'username (Non Sécurisé / POC)
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
     } catch (error) {
         console.error('Erreur lors de l\'échange OAuth2:', error.response?.data || error.message);
-        res.status(500).send('Échec de la connexion Discord. Vérifiez les logs Render.');
+        res.status(500).send('Échec de la connexion Discord.');
     }
 });
 
 
-// --- 5. ROUTES API EXISTANTES ---
+// --- 5. ROUTES API EXISTANTES (POKÉDEX & PROFIL) ---
 
 // Route 5.1: Pokédex 
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
+        // ... (Logique inchangée pour le Pokédex) ...
         const userId = req.params.userId;
         const user = await User.findOne({ userId: userId }).select('username pokemons');
         
@@ -144,6 +142,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
             fullPokedex: fullPokedex,
             uniquePokedexCount: uniquePokedexIds.length
         });
+
     } catch (error) {
         console.error('Erreur API Pokédex:', error);
         res.status(500).json({ message: 'Erreur interne du serveur.' });
@@ -154,6 +153,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 // Route 5.2: Profil 
 app.get('/api/profile/:userId', async (req, res) => {
     try {
+        // ... (Logique inchangée pour le Profil) ...
         const userId = req.params.userId;
         const user = await User.findOne({ userId: userId }).select('-pokemons -__v');
         
@@ -161,7 +161,6 @@ app.get('/api/profile/:userId', async (req, res) => {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        // L'agrégation est lourde, mais assure la justesse du compte si l'utilisateur est trouvé.
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -184,7 +183,6 @@ app.get('/api/profile/:userId', async (req, res) => {
         res.status(500).json({ message: 'Erreur interne du serveur.' });
     }
 });
-
 
 // Route 5.3: Boutique (GET)
 app.get('/api/shop', async (req, res) => {
