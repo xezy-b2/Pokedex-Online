@@ -13,6 +13,7 @@
             --text-secondary: #aaaaaa;
             --highlight-color: #4CAF50; /* Vert Pokémon */
             --red-discord: #f04747;
+            --discord-blue: #5865F2; /* Bleu Discord */
             --captured-border: #007bff;
             --missing-border: #5a5a5a;
             --shiny-color: #FFD700;
@@ -40,35 +41,54 @@
             margin-bottom: 20px;
         }
 
-        /* --- Zone de saisie d'ID --- */
+        /* --- ZONE DE CONNEXION (MISE À JOUR) --- */
         .input-area {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             justify-content: center;
-        }
-
-        #discordIdInput {
-            padding: 10px;
-            border: 1px solid var(--card-background);
-            border-radius: 5px;
-            background-color: var(--header-background);
-            color: var(--text-color);
-            width: 300px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         
-        .input-area button {
-            background-color: var(--highlight-color);
+        .discord-login-button {
+            background-color: var(--discord-blue);
             color: white;
             border: none;
             padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
             transition: background-color 0.2s;
         }
         
-        .input-area button:hover {
-            background-color: #3e8e41;
+        .discord-login-button:hover {
+            background-color: #4e59d4;
+        }
+
+        #logged-in-user {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--highlight-color);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        #logged-in-user button {
+            background-color: var(--red-discord);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+        }
+
+        #logged-in-user button:hover {
+            background-color: #c94040;
         }
 
         /* --- NOUVEAUX STYLES DE NAVIGATION ET DE PAGE --- */
@@ -77,11 +97,13 @@
             padding: 10px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            display: flex;
+            display: none; /* Caché par défaut */
             justify-content: center;
             gap: 20px;
         }
 
+        /* ... (styles de navigation et de carte pokédex inchangés) ... */
+        
         nav button {
             background: none;
             border: none;
@@ -98,18 +120,14 @@
             color: white;
         }
 
-        /* Masque toutes les sections par défaut */
         .page-section {
             display: none;
             padding-top: 20px;
         }
-        /* Affiche seulement la section active */
         .page-section.active {
             display: block;
         }
 
-        /* --- STYLE POKÉDEX GRILLE --- */
-        
         .pokedex-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
@@ -178,7 +196,6 @@
             margin-left: 5px;
         }
 
-
         /* --- Styles spécifiques au profil --- */
         #profile-content {
             background-color: var(--card-background);
@@ -213,39 +230,58 @@
             border-radius: 4px;
             font-size: 0.8em;
         }
-
+        
+        /* Styles spécifiques au shop */
+        .shop-item {
+             text-align: center;
+        }
 
     </style>
 </head>
-<body>
+<body onload="initializeApp()">
     <div class="container">
         <h1>Pokédex en Ligne 🌐</h1>
         
         <div class="input-area">
-            <input type="text" id="discordIdInput" placeholder="Entrez votre ID Discord...">
-            <button onclick="checkUserIdAndNavigate('pokedex')">Afficher le Pokédex</button>
-            <button onclick="checkUserIdAndNavigate('profile')">Afficher Mon Profil</button>
+            <a id="discord-login-link" 
+               href="https://discord.com/oauth2/authorize?client_id=VOTRE_CLIENT_ID&response_type=code&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify" 
+               class="discord-login-button" style="display: block;">
+                Se connecter avec Discord
+            </a>
+            
+            <div id="logged-in-user" style="display: none;">
+                Bienvenue, <span id="display-username">Dresseur</span> !
+                <button onclick="logout()">Déconnexion</button>
+            </div>
         </div>
 
         <div id="username-display" style="margin-bottom: 15px; font-weight: bold; color: var(--highlight-color);"></div>
 
-        <nav id="main-nav" style="display:none;">
+        <nav id="main-nav">
             <button id="nav-pokedex" onclick="showPage('pokedex')">Mon Pokédex</button>
             <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
+            <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
         </nav>
 
         <div id="pokedex-error-container"></div>
         
         <div id="pokedex-page" class="page-section active">
             <div id="pokedexContainer">
-                <p>Entrez votre ID Discord pour charger votre Pokédex.</p>
+                <p>Connectez-vous avec Discord pour charger votre Pokédex.</p>
             </div>
         </div>
 
         <div id="profile-page" class="page-section">
             <div id="profileContainer">
-                <h2>Entrez votre ID Discord pour charger votre profil.</h2>
+                <h2>Chargement du Profil...</h2>
             </div>
+        </div>
+
+        <div id="shop-page" class="page-section">
+            <h2>Boutique Poké Balls</h2>
+            <p>Pour acheter, utilisez la commande **!pokeshop [ball] [quantité]** dans le salon de votre serveur Discord.</p>
+            <div id="shopContainer" class="pokedex-grid">
+                </div>
         </div>
         
     </div>
