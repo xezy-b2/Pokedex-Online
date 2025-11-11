@@ -1,11 +1,12 @@
-// webserver.js
+// webserver.js (Version Finale et Indépendante)
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
 const axios = require('axios'); 
-// Assurez-vous que le chemin vers votre modèle est correct pour votre déploiement
 const User = require('./models/User.js'); 
+// 🔥 Suppression de la ligne: const { SHOP_ITEMS, getRandomBonusBall } = require('./commands/pokeshop.js'); 
+
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
@@ -39,26 +40,26 @@ function getRandomBonusBall() {
     return BONUS_BALLS[randomIndex];
 }
 
-// --- SECRETS & URLS (À DÉFINIR DANS LES VARIABLES D'ENVIRONNEMENT DE RENDER) ---
+// --- SECRETS & URLS ---
 const mongoUri = process.env.MONGO_URI; 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID; // Client ID utilisé dans index.html
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
 const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
 
 const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; // NOTE: Doit inclure le nom du dépôt si c'est une page de dépôt
+// 🔥 CORRECTION DE L'URL DE REDIRECTION FINALE
+const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
 
-// --- 2. CONFIGURATION EXPRESS & CORS (CORRIGÉE POUR POST) ---
+
+// --- 2. CONFIGURATION EXPRESS & CORS ---
 const corsOptions = {
-    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
-    methods: 'GET, POST, OPTIONS', 
-    allowedHeaders: ['Content-Type'], 
-    credentials: true,
+    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL], 
+    methods: 'GET, POST', 
     optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions)); 
-app.use(express.json()); // Nécessaire pour analyser le corps des requêtes POST
+app.use(express.json()); 
 
 
 // --- 3. CONNEXION MONGODB ---
@@ -75,19 +76,19 @@ mongoose.connect(mongoUri)
     });
 
 
-// --- 4. ROUTES AUTHENTIFICATION (OAUTH) ---
+// --- 4. ROUTES AUTHENTIFICATION ---
 
 app.get('/api/auth/discord/callback', async (req, res) => {
+    // ... (Logique OAuth2 inchangée) ...
     const code = req.query.code;
 
     if (!code) {
-        // Redirection vers la page GitHub en cas d'erreur ou d'annulation
         return res.redirect(GITHUB_PAGES_URL); 
     }
 
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
         console.error("Secrets Discord non définis.");
-        return res.status(500).send("Erreur de configuration OAuth sur le serveur.");
+        return res.status(500).send("Erreur de configuration OAuth.");
     }
 
     try {
@@ -110,20 +111,18 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
         
-        // Crée ou met à jour l'utilisateur dans la BDD
         await User.findOneAndUpdate(
             { userId: discordUser.id },
             { $set: { username: discordUser.username } },
             { upsert: true, new: true } 
         );
 
-        // Redirection vers le frontend avec les paramètres
-        const redirectUrl = `${GITHUB_PAGES_URL}/?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
+        const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
     } catch (error) {
         console.error('Erreur lors de l\'échange OAuth2:', error.response?.data || error.message);
-        res.status(500).send('Échec de la connexion Discord. Vérifiez les secrets.');
+        res.status(500).send('Échec de la connexion Discord.');
     }
 });
 
@@ -134,20 +133,13 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        const user = await User.findOne({ userId: userId }).select('username pokemons');
+        const user = await User.findOne({ userId: userId }).select('pokemons');
         
         if (!user) {
-            return res.status(404).json({ message: "Dresseur non trouvé." }); 
+            return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        const fullPokedex = user.pokemons;
-        const uniquePokedexIds = [...new Set(fullPokedex.map(p => p.pokedexId))];
-        
-        res.json({
-            username: user.username,
-            fullPokedex: fullPokedex,
-            uniquePokedexCount: uniquePokedexIds.length
-        });
+        res.json(user.pokemons);
 
     } catch (error) {
         console.error('Erreur API Pokédex:', error);
@@ -166,7 +158,6 @@ app.get('/api/profile/:userId', async (req, res) => {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        // Calcule le nombre de Pokémons uniques et total via agrégation
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -180,7 +171,6 @@ app.get('/api/profile/:userId', async (req, res) => {
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
-        // Combine les données de l'utilisateur avec les stats calculées
         res.json({
             ...user.toObject(),
             stats: stats
@@ -193,7 +183,6 @@ app.get('/api/profile/:userId', async (req, res) => {
 
 // Route 5.3: Boutique (GET) 
 app.get('/api/shop', async (req, res) => {
-    // Retourne la configuration des items
     res.json(SHOP_ITEMS);
 });
 
@@ -203,7 +192,7 @@ app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     
     if (!userId || !itemKey || !quantity || isNaN(quantity) || quantity < 1) {
-        return res.status(400).json({ success: false, message: "Données manquantes ou invalides (userId, itemKey, ou quantité)." });
+        return res.status(400).json({ success: false, message: "Données manquantes ou invalides." });
     }
 
     const itemConfig = SHOP_ITEMS[itemKey];
@@ -221,7 +210,7 @@ app.post('/api/shop/buy', async (req, res) => {
         const totalCost = itemConfig.cost * quantity;
 
         if (user.money < totalCost) {
-            return res.status(403).json({ success: false, message: `Vous n'avez pas assez de BotCoins pour acheter ${quantity} ${itemConfig.name}. Coût total: ${totalCost.toLocaleString()} ₽. Votre solde: ${user.money.toLocaleString()} ₽.` });
+            return res.status(403).json({ success: false, message: `Vous n'avez pas assez de BotCoins pour acheter ${quantity} ${itemConfig.name}. Coût total: ${totalCost.toLocaleString()} 💰. Votre solde: ${user.money.toLocaleString()} 💰.` });
         }
 
         // --- DÉBUT TRANSACTION ---
@@ -231,7 +220,7 @@ app.post('/api/shop/buy', async (req, res) => {
         
         let bonusMessage = '';
 
-        // Logique de bonus Poké Ball 
+        // Logique de bonus Poké Ball (intégrée ici)
         if (itemDBKey === 'pokeballs') { 
             const bonusCount = Math.floor(quantity / 10);
             if (bonusCount > 0) {
