@@ -1,4 +1,4 @@
-// public/script.js (VERSION COMPLÈTE)
+// public/script.js
 
 const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
@@ -261,14 +261,14 @@ async function loadShop() {
             return;
         }
 
-        let shopHtml = '<div class="pokedex-grid">';
+        // NOTE: On utilise la nouvelle classe "shop-grid" dans l'HTML, ce qui corrige l'alignement
+        let shopHtml = ''; 
         for (const [key, item] of Object.entries(items)) {
             const isExpensive = item.cost >= 1000;
             const borderStyle = `border: 2px solid ${isExpensive ? 'var(--shiny-color)' : 'var(--captured-border)'}`;
             
             const itemImageKey = key; 
             
-            // Le HTML généré ici s'appuie sur le nouveau CSS horizontal dans index.html
             shopHtml += `
                 <div class="pokedex-card shop-item" style="${borderStyle}">
                     <img src="${POKEAPI_SPRITE_URL}item/${itemImageKey}.png" alt="${item.name}" style="height: 64px; max-height: 64px;">
@@ -287,8 +287,7 @@ async function loadShop() {
             `;
         }
         
-        shopHtml += '</div>';
-        container.innerHTML = shopHtml;
+        container.innerHTML = shopHtml; 
 
     } catch (error) {
         console.error('Erreur lors de la récupération de la boutique:', error);
