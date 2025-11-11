@@ -17,7 +17,6 @@
             --captured-border: #007bff;
             --missing-border: #5a5a5a;
             --shiny-color: #FFD700;
-            --shop-card-width: 200px; /* Nouvelle variable pour les petites cartes */
         }
         
         body {
@@ -40,9 +39,10 @@
         h1 {
             color: var(--highlight-color);
             margin-bottom: 20px;
+            text-shadow: 1px 1px 3px #000;
         }
 
-        /* --- ZONE DE CONNEXION --- (Styles non modifiés ici) */
+        /* --- AUTH & NAV --- */
         .input-area {
             display: flex;
             gap: 10px;
@@ -88,11 +88,6 @@
             transition: background-color 0.2s;
         }
 
-        #logged-in-user button:hover {
-            background-color: #c94040;
-        }
-
-        /* --- STYLES DE NAVIGATION ET DE PAGE --- (Styles non modifiés ici) */
         nav {
             background-color: var(--header-background);
             padding: 10px 20px;
@@ -127,6 +122,7 @@
             display: block;
         }
 
+
         /* --- GRILLE DU POKÉDEX (Cartes larges) --- */
         .pokedex-grid {
             display: grid;
@@ -138,9 +134,9 @@
         /* --- GRILLE DE LA BOUTIQUE (Cartes compactes) --- */
         .shop-grid {
             display: grid;
-            /* Force des colonnes plus nombreuses (min 200px par carte) */
-            grid-template-columns: repeat(auto-fill, minmax(var(--shop-card-width), 1fr)); 
-            gap: 15px;
+            /* Force des colonnes plus nombreuses (min 150px par carte) */
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+            gap: 10px; /* Réduire le gap pour plus de compacité */
             padding-top: 10px;
         }
 
@@ -207,11 +203,10 @@
             margin-left: 5px;
         }
 
-        /* --- STYLE SPÉCIFIQUE À LA CARTE DE LA BOUTIQUE --- */
+        /* --- STYLE SPÉCIFIQUE À LA CARTE DE LA BOUTIQUE (Nouveau style compact) --- */
         .shop-card {
-             /* La carte Shop n'a pas besoin d'être aussi haute que la carte Pokedex */
              height: 100%; 
-             padding: 15px; 
+             padding: 10px; 
              text-align: center;
              display: flex;
              flex-direction: column; 
@@ -220,38 +215,44 @@
         }
         
         .shop-card img {
-            width: 64px;
-            max-height: 64px; 
+            width: 48px; /* Rendre l'image plus petite */
+            max-height: 48px; 
             margin-bottom: 5px;
             margin-top: 5px;
         }
         
         .shop-card .card-info {
-            flex-direction: column; /* On repasse en colonne pour la boutique */
-            align-items: flex-start;
+            flex-direction: column; 
+            align-items: center; 
             width: 100%;
             padding-top: 0;
-            text-align: left;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
         }
         
         .shop-card .pokemon-name {
-            font-size: 1.1em;
+            font-size: 1em; /* Réduire la taille du nom */
             color: var(--shiny-color);
+            margin-bottom: 5px;
         }
         
         .shop-card .pokedex-id {
             /* Utilisation de .pokedex-id pour le prix */
             color: var(--text-color); 
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1em; /* Réduire la taille du prix */
             margin-bottom: 5px;
         }
         
         .shop-card .description {
-            font-size: 0.8em;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-            margin-top: 0;
+            display: none; /* Masquer la description longue pour compacter */
+        }
+        
+        .shop-card button {
+             margin-top: auto !important; /* Pousser le bouton vers le bas */
+             width: 100%;
         }
 
     </style>
