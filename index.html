@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex Bot Discord - Grille V2</title>
+    
+    <style>
+        :root {
+            --bg-primary: #2f3136;
+            --bg-secondary: #36393f;
+            --card-background: #40444b; /* Couleur de la carte (gris foncé) */
+            --captured-border: #43b581; /* Vert Discord pour les capturés */
+            --missing-border: #99aab5; /* Gris clair pour les manquants */
+            --text-color: #dcddde;
+            --text-secondary: #b9bbbe;
+            --red-discord: #f04747;
+            --highlight-color: #5865f2;
+        }
+        
+        /* Styles de base inchangés */
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            background-color: var(--bg-primary); 
+            color: var(--text-color);
+        }
+        
+        h1, h2, h3 { 
+            color: var(--text-color); 
+            border-bottom: 1px solid var(--bg-secondary);
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+
+        input[type="text"], button { /* ... (styles des inputs/boutons inchangés) */ }
+        
+        #pokedexContainer { 
+            margin-top: 30px; 
+            padding: 20px; 
+            background-color: var(--bg-secondary); 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+        }
+
+        /* --- NOUVEAU STYLE GRILLE DE POKÉDEX --- */
+        
+        .pokedex-grid {
+            display: grid;
+            /* 5 colonnes pour reproduire la grille de l'image (ajustez si besoin) */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 15px;
+            padding-top: 10px;
+        }
+
+        .pokedex-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            text-align: center;
+            padding: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Styles conditionnels (Capturé vs Manquant) */
+        .pokedex-card[captured] {
+            border: 2px solid var(--captured-border);
+        }
+        
+        .pokedex-card[missing] {
+            border: 2px solid var(--missing-border);
+        }
+        
+        .pokedex-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        .pokedex-card img {
+            width: 100%;
+            height: auto;
+            max-height: 120px; 
+            object-fit: contain;
+            /* Laisse le filtre pour le mode "missing" géré par JS */
+        }
+        
+        .card-info {
+            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .pokedex-id {
+            color: var(--text-secondary);
+        }
+        
+        .pokemon-name {
+            font-weight: bold;
+            color: var(--text-color);
+            flex-grow: 1; /* Prend l'espace pour centrer ou laisser de l'espace */
+        }
+        
+        .capture-count {
+            background-color: var(--highlight-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Consulter votre Pokédex Bot Discord</h1>
+    
+    <p>Entrez votre ID Discord pour voir votre collection de Pokémons.</p>
+    
+    <input type="text" id="discordIdInput" placeholder="Votre ID Discord (ex: 123456789)">
+    <button onclick="loadPokedex()">Afficher le Pokédex</button>
+
+    <div id="pokedexContainer">
+        <p>Entrez un ID Discord pour commencer.</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
