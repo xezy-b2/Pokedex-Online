@@ -7,6 +7,11 @@ let currentUserId = localStorage.getItem('currentUserId'); // Persistance via lo
 let currentUsername = localStorage.getItem('currentUsername');
 
 // --- GESTION DE LA REDIRECTION OAUTH ET DE L'ÉTAT ---
+
+/**
+ * Initialise l'application : vérifie l'URL pour un ID après redirection OAuth2
+ * ou charge l'état de la session locale.
+ */
 function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get('discordId');
@@ -17,9 +22,11 @@ function initializeApp() {
         currentUserId = idFromUrl;
         currentUsername = decodeURIComponent(usernameFromUrl);
         
+        // Sauvegarde l'état localement
         localStorage.setItem('currentUserId', currentUserId);
         localStorage.setItem('currentUsername', currentUsername);
 
+        // Nettoie l'URL et affiche la page par défaut
         history.pushState(null, '', window.location.pathname); 
         updateUIState(true);
         showPage('pokedex'); 
@@ -38,6 +45,9 @@ function initializeApp() {
     }
 }
 
+/**
+ * Met à jour les éléments visibles (bouton de connexion vs barre de nav).
+ */
 function updateUIState(isLoggedIn) {
     const loginLink = document.getElementById('discord-login-link');
     const loggedInUserDiv = document.getElementById('logged-in-user');
@@ -58,6 +68,9 @@ function updateUIState(isLoggedIn) {
     }
 }
 
+/**
+ * Gère la déconnexion.
+ */
 function logout() {
     localStorage.removeItem('currentUserId');
     localStorage.removeItem('currentUsername');
@@ -69,23 +82,32 @@ function logout() {
     document.getElementById('pokedexContainer').innerHTML = '<p>Connectez-vous avec Discord pour charger votre Pokédex.</p>';
 }
 
+
+// --- FONCTIONS DE NAVIGATION ---
+
+/**
+ * Change la page active (simule la navigation).
+ */
 function showPage(pageName) {
+    // 1. Gère les classes de sections
     document.querySelectorAll('.page-section').forEach(section => {
         section.classList.remove('active');
     });
     document.getElementById(`${pageName}-page`).classList.add('active');
     
+    // 2. Gère la classe 'active' sur les boutons de navigation
     document.querySelectorAll('nav button').forEach(button => {
         button.classList.remove('active');
     });
     const navButton = document.getElementById(`nav-${pageName}`);
     if (navButton) navButton.classList.add('active');
 
+    // 3. Charge les données de la page (UNIQUEMENT si connecté pour Pokédex/Profil)
     if (currentUserId) {
         if (pageName === 'pokedex') {
             loadPokedex(currentUserId);
         } else if (pageName === 'profile') {
-            loadProfile(currentUserId); 
+            loadProfile(currentUserId);
         }
     }
     
@@ -94,7 +116,7 @@ function showPage(pageName) {
     }
 }
 
-// --- FONCTION DE CHARGEMENT DE BOUTIQUE (MISE À JOUR) ---
+// --- FONCTION DE CHARGEMENT DE BOUTIQUE (NOUVELLE) ---
 
 async function loadShop() {
     const container = document.getElementById('shopContainer');
@@ -110,6 +132,7 @@ async function loadShop() {
         }
 
         let shopHtml = '';
+        // Utilise la clé de l'article pour récupérer les détails
         for (const [key, item] of Object.entries(items)) {
             const isExpensive = item.cost >= 1000;
             const borderStyle = `border: 2px solid ${isExpensive ? 'var(--shiny-color)' : 'var(--captured-border)'}`;
@@ -118,14 +141,14 @@ async function loadShop() {
             const itemImageKey = key; 
             
             shopHtml += `
-                <div class="pokedex-card shop-card" style="${borderStyle}">
-                    <img src="${POKEAPI_SPRITE_URL}item/${itemImageKey}.png" alt="${item.name}">
-                    <div class="card-info">
+                <div class="pokedex-card shop-item" style="${borderStyle}">
+                    <img src="${POKEAPI_SPRITE_URL}item/${itemImageKey}.png" alt="${item.name}" style="height: 64px; max-height: 64px;">
+                    <div class="card-info" style="flex-direction: column; align-items: flex-start;">
                         <span class="pokemon-name">${item.name}</span>
                         <span class="pokedex-id">${item.cost.toLocaleString()} ₽</span>
-                        <p class="description" style="display:none;">${item.desc}</p> 
+                        <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">${item.desc}</p>
                         <button 
-                            style="width: 100%;" 
+                            style="margin-top: 10px; width: 100%;" 
                             onclick="alert('Veuillez utiliser la commande !pokeshop ${key} [quantité] sur Discord pour acheter.')"
                         >
                             Acheter sur Discord
@@ -143,7 +166,9 @@ async function loadShop() {
     }
 }
 
+
 // --- FONCTION DE CHARGEMENT DE PROFIL ---
+
 async function loadProfile(userId) {
     const container = document.getElementById('profileContainer');
     container.innerHTML = '<h2>Chargement du Profil...</h2>';
@@ -157,6 +182,7 @@ async function loadProfile(userId) {
             return;
         }
         
+        // Liste des balls (utilisée le code emoji pour le style)
         const balls = [
             { name: 'Poké', count: data.pokeballs, emoji: '🔴' },
             { name: 'Super', count: data.greatballs, emoji: '🔵' },
@@ -167,6 +193,7 @@ async function loadProfile(userId) {
             { name: 'Luxe', count: data.luxuryballs, emoji: '⚫' }
         ];
 
+        // Génération du HTML du profil
         const profileHtml = `
             <h2>Statistiques de Dresseur</h2>
             <div id="profile-content">
@@ -176,7 +203,7 @@ async function loadProfile(userId) {
                 </div>
                 <div class="profile-stat">
                     <span class="stat-label">Argent 💰</span>
-                    <span class="stat-value">${(data.money || 0).toLocaleString()} ₽</span>
+                    <span class="stat-value">${data.money.toLocaleString()} ₽</span>
                 </div>
                 <div class="profile-stat">
                     <span class="stat-label">Compagnon Actuel</span>
@@ -193,7 +220,7 @@ async function loadProfile(userId) {
                 <div class="profile-stat">
                     <span class="stat-label">Poké Balls en Stock</span>
                     <div class="balls-row">
-                        ${balls.filter(b => (b.count || 0) > 0).map(b => `<span class="ball-count">${b.emoji} ${b.name}: x${b.count}</span>`).join('')}
+                        ${balls.filter(b => b.count > 0).map(b => `<span class="ball-count">${b.emoji} ${b.name}: x${b.count}</span>`).join('')}
                     </div>
                 </div>
             </div>
@@ -208,10 +235,9 @@ async function loadProfile(userId) {
 }
 
 
-// --- FONCTION POKÉDEX (CORRIGÉE : plus robuste aux données vides) ---
+// --- FONCTION POKÉDEX (LOGIQUE DE GRILLE) ---
 
 function createPokedexCard(uniquePokemonData, count, isCaptured) {
-    // S'assurer que les valeurs essentielles existent ou sont false/0
     const isShiny = uniquePokemonData.isShinyFirstCapture || false;
     const pokedexId = uniquePokemonData.pokedexId;
     const name = uniquePokemonData.name;
@@ -248,30 +274,22 @@ async function loadPokedex(userId) {
         
         if (!response.ok) {
             try {
-                // Tente de lire le message d'erreur de l'API
-                const dataError = await response.json();
-                container.innerHTML = `<p style="color: var(--red-discord);">Erreur API: ${dataError.message || 'Impossible de lire les données JSON.'}</p>`;
+                const data = await response.json();
+                container.innerHTML = `<p style="color: var(--red-discord);">Erreur API: ${data.message || 'Impossible de lire les données JSON.'}</p>`;
             } catch (jsonError) {
-                // Si l'API ne renvoie pas de JSON (ex: erreur 500 HTML)
-                container.innerHTML = '<p style="color: var(--red-discord);">Erreur de connexion : Le serveur API est inaccessible ou a renvoyé une erreur non JSON.</p>';
+                container.innerHTML = '<p style="color: var(--red-discord);">Erreur de connexion : Le serveur API est inaccessible. Vérifiez la console.</p>';
             }
             return;
         }
 
         const data = await response.json();
-        
-        // --- CORRECTION CRITIQUE (Rend le code 100% sûr) ---
-        // S'assure que fullPokedex est un tableau (même vide) et uniqueCount est un nombre (même 0)
-        const fullPokedex = Array.isArray(data.fullPokedex) ? data.fullPokedex : []; 
-        const uniqueCount = data.uniquePokedexCount || 0; 
-        // -----------------------------------------------------
+        const fullPokedex = data.fullPokedex;
         
         let html = `<h2>Mon Pokédex</h2>`;
-        html += `<p>Espèces Uniques Capturées: **${uniqueCount}** / 151</p>`;
+        html += `<p>Espèces Uniques Capturées: **${data.uniquePokedexCount}** / 151</p>`;
         
         const pokedexMap = new Map();
-        // L'itération .forEach est maintenant sécurisée car fullPokedex est garanti d'être un Array
-        fullPokedex.forEach(p => { 
+        fullPokedex.forEach(p => {
             const id = p.pokedexId;
             
             if (!pokedexMap.has(id)) {
@@ -298,7 +316,6 @@ async function loadPokedex(userId) {
             if (pokemonData) {
                 pokedexGridHtml += createPokedexCard(pokemonData, pokemonData.count, true);
             } else {
-                // Pokémon manquant (affichage du placeholder)
                 pokedexGridHtml += createPokedexCard({ pokedexId: i, name: `N°${i}` }, 0, false);
             }
         }
