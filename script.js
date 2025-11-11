@@ -1,6 +1,9 @@
 // public/script.js
 
-// NOUVELLE URL DE BASE (pour accéder aux sprites, y compris shiny)
+// L'URL PUBLIQUE DE L'API RENDER (CORRIGÉ !)
+const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
+
+// URL pour les sprites Pokémon
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
 
 
@@ -19,7 +22,7 @@ function createPokedexCard(uniquePokemonData, count, isCaptured) {
     imageUrl += `${pokedexId}.png`;
     
     const finalImageUrl = isCaptured ? imageUrl : `${POKEAPI_SPRITE_URL}${pokedexId}.png`;
-    const grayscaleStyle = isCaptured ? '' : 'style="filter: grayscale(100%); opacity: 0.5;"';
+    const grayscaleStyle = isCaptured ? '' : 'style="filter: grayscale(100%); opacity: 0.5;"'; 
     
     const shinyMark = isShiny ? '✨' : '';
 
@@ -49,19 +52,16 @@ async function loadPokedex() {
         return;
     }
     
-    // Ligne 54 dans votre log, c'est bien ici que l'appel se fait
     try {
-        // L'URL ABSOLUE DOIT POINTER VERS VOTRE SERVEUR LOCAL !
-        const response = await fetch(`http://localhost:3000/api/pokedex/${userId}`); 
+        // APPEL FINAL UTILISANT L'URL PUBLIQUE DE RENDER
+        const response = await fetch(`${API_BASE_URL}/api/pokedex/${userId}`); 
         
         if (!response.ok) {
-            // Tente de lire le JSON de l'erreur (ex: 404 du serveur)
             try {
                 const data = await response.json();
                 container.innerHTML = `<p style="color: var(--red-discord);">Erreur API: ${data.message || 'Impossible de lire les données JSON.'}</p>`;
             } catch (jsonError) {
-                // Si la réponse n'est pas du JSON (ex: erreur réseau ou HTML)
-                container.innerHTML = '<p style="color: var(--red-discord);">Erreur de connexion : Le serveur API a répondu avec un statut non-OK ou est inaccessible. Vérifiez que `node webserver.js` est lancé !</p>';
+                container.innerHTML = '<p style="color: var(--red-discord);">Erreur de connexion : Le serveur API a répondu avec un statut non-OK ou est inaccessible. Vérifiez la console.</p>';
                 console.error('Erreur API non-JSON ou statut non-OK:', response);
             }
             return;
@@ -73,6 +73,7 @@ async function loadPokedex() {
         let html = `<h2>Pokédex de ${data.username}</h2>`;
         html += `<p>Espèces Uniques Capturées: **${data.uniquePokedexCount}** / 151</p>`;
         
+        // --- LOGIQUE DE GRILLE ---
         const pokedexMap = new Map();
         fullPokedex.forEach(p => {
             const id = p.pokedexId;
@@ -111,8 +112,7 @@ async function loadPokedex() {
         container.innerHTML = html + pokedexGridHtml;
 
     } catch (error) {
-        // Erreur de connexion réseau pure (ex: 'Failed to fetch')
         console.error('Erreur lors de la récupération du Pokédex:', error);
-        container.innerHTML = '<p style="color: var(--red-discord);">Erreur Réseau : Impossible d\'établir la connexion. Le serveur Express est-il bien lancé sur votre machine ?</p>';
+        container.innerHTML = '<p style="color: var(--red-discord);">Erreur Réseau : Impossible d\'établir la connexion avec l\'API Render.</p>';
     }
 }
