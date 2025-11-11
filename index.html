@@ -91,7 +91,7 @@
             background-color: #c94040;
         }
 
-        /* --- NOUVEAUX STYLES DE NAVIGATION ET DE PAGE --- */
+        /* --- STYLES DE NAVIGATION ET DE PAGE --- */
         nav {
             background-color: var(--header-background);
             padding: 10px 20px;
@@ -102,8 +102,6 @@
             gap: 20px;
         }
 
-        /* ... (styles de navigation et de carte pokédex inchangés) ... */
-        
         nav button {
             background: none;
             border: none;
@@ -196,7 +194,7 @@
             margin-left: 5px;
         }
 
-        /* --- Styles spécifiques au profil --- */
+        /* Styles spécifiques au profil */
         #profile-content {
             background-color: var(--card-background);
             padding: 20px;
@@ -260,8 +258,7 @@
         <nav id="main-nav">
             <button id="nav-pokedex" onclick="showPage('pokedex')">Mon Pokédex</button>
             <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
-            <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
-        </nav>
+            <button id="nav-shop" onclick="showPage('shop')">Boutique</button> </nav>
 
         <div id="pokedex-error-container"></div>
         
@@ -276,7 +273,7 @@
                 <h2>Chargement du Profil...</h2>
             </div>
         </div>
-
+        
         <div id="shop-page" class="page-section">
             <h2>Boutique Poké Balls</h2>
             <p>Pour acheter, utilisez la commande **!pokeshop [ball] [quantité]** dans le salon de votre serveur Discord.</p>
@@ -288,4 +285,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
