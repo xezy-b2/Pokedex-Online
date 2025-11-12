@@ -281,19 +281,18 @@ async function loadProfile() {
  * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, emoji).
  */
 function createShopCard(itemKey, item) {
-    const isPokeball = itemKey === 'pokeball';
-    const hasPromo = item.promo;
+    const hasPromo = item.promo; 
     
-    // Saisie pour les Poké Balls (choix de quantité)
-    const quantityInput = isPokeball ? `
+    // Ajout d'un pas de 10 pour les balls plus chères, ou 1 pour les pokéballs
+    const inputStep = itemKey === 'pokeball' ? '1' : '10'; 
+
+    // Le bloc de saisie pour la quantité est appliqué à TOUTES les balls
+    const quantityInput = `
         <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
-            <input type="number" id="qty-${itemKey}" min="1" value="1" style="width: 80px; text-align: center; background-color: var(--header-background); color: var(--text-color);">
+            <input type="number" id="qty-${itemKey}" min="1" value="1" step="${inputStep}"
+                   style="width: 80px; text-align: center; background-color: var(--header-background); color: var(--text-color);">
             <button onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)">Acheter</button>
         </div>
-    ` : 
-    // Bouton simple pour les autres Balls (achat unitaire)
-    `
-        <button onclick="handleBuy('${itemKey}', 1)">Acheter (x1)</button>
     `;
 
     return `
