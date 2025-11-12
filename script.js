@@ -6,7 +6,7 @@ const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/ma
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
 
-// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE ---
+// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE (AUCUN CHANGEMENT ICI) ---
 
 /**
  * Initialise l'application : vérifie l'URL pour un ID après redirection OAuth2
@@ -116,7 +116,7 @@ function showPage(pageName) {
 }
 
 
-// --- GESTION POKEDEX & PROFIL ---
+// --- GESTION POKEDEX & PROFIL (PEU DE CHANGEMENTS) ---
 
 /**
  * Crée une carte de Pokémon HTML.
@@ -281,18 +281,19 @@ async function loadProfile() {
  * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, emoji).
  */
 function createShopCard(itemKey, item) {
-    const hasPromo = item.promo; 
+    const isPokeball = itemKey === 'pokeball';
+    const hasPromo = item.promo;
     
-    // Ajout d'un pas de 10 pour les balls plus chères, ou 1 pour les pokéballs
-    const inputStep = itemKey === 'pokeball' ? '1' : '10'; 
-
-    // Le bloc de saisie pour la quantité est appliqué à TOUTES les balls
-    const quantityInput = `
+    // Saisie pour les Poké Balls (choix de quantité)
+    const quantityInput = isPokeball ? `
         <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
-            <input type="number" id="qty-${itemKey}" min="1" value="1" step="${inputStep}"
-                   style="width: 80px; text-align: center; background-color: var(--header-background); color: var(--text-color);">
+            <input type="number" id="qty-${itemKey}" min="1" value="1" style="width: 80px; text-align: center; background-color: var(--header-background); color: var(--text-color);">
             <button onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)">Acheter</button>
         </div>
+    ` : 
+    // Bouton simple pour les autres Balls (achat unitaire)
+    `
+        <button onclick="handleBuy('${itemKey}', 1)">Acheter (x1)</button>
     `;
 
     return `
@@ -398,7 +399,7 @@ async function handleBuy(itemKey, quantity) {
         }
 
     } catch (error) {
-        console.error('Erreur lors de l'achat:', error);
+        console.error('Erreur lors de l\'achat:', error);
         messageContainer.style.color = 'var(--red-discord)';
         messageContainer.textContent = 'Erreur de connexion au serveur API.';
     }
