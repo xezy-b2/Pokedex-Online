@@ -166,14 +166,25 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 app.get('/api/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        // La route Profile EXCLUT le champ 'pokemons' pour rester légère.
-        const user = await User.findOne({ userId: userId }).select('-pokemons -__v');
+        
+        // 1. Fetch user data, including companion ID and the pokemons array to find the companion
+        // Nous récupérons tout sauf __v
+        const user = await User.findOne({ userId: userId }).select('-__v'); 
         
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        // Calcule le nombre de Pokémons uniques et total via agrégation
+        // 2. Find the companion Pokémon object
+        let companionPokemon = null;
+        if (user.companionPokemonId && user.pokemons) {
+            // Convert to string for comparison
+            const companionIdString = user.companionPokemonId.toString();
+            // Le ._id de l'objet Pokémon dans le tableau correspond au companionPokemonId
+            companionPokemon = user.pokemons.find(p => p._id.toString() === companionIdString);
+        }
+
+        // 3. Calculate capture statistics (using aggregation as before)
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -187,10 +198,15 @@ app.get('/api/profile/:userId', async (req, res) => {
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
-        // Combine les données de l'utilisateur avec les stats calculées
+        // 4. Create the final response object (excluding the full 'pokemons' array for lightness)
+        const userObject = user.toObject();
+        delete userObject.pokemons; 
+        delete userObject.companionPokemonId; 
+
         res.json({
-            ...user.toObject(),
-            stats: stats
+            ...userObject,
+            stats: stats,
+            companionPokemon: companionPokemon // AJOUTÉ
         });
     } catch (error) {
         console.error('Erreur API Profil:', error);
