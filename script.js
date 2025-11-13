@@ -238,32 +238,61 @@ async function loadProfile() {
 
         const user = data;
         
-        // Affichage des statistiques de capture
+        // --- NOUVELLE STRUCTURE POUR LES STATS CLÉS (UTILISE UNE GRILLE) ---
+        
         const statsHtml = `
             <div class="profile-stat-card">
-                <h3>Statistiques de Capture</h3>
-                <p><strong>Total de captures :</strong> ${user.stats.totalCaptures.toLocaleString()}</p>
-                <p><strong>Espèces uniques :</strong> ${user.stats.uniqueCaptures}/151</p>
-                <p><strong>BotCoins :</strong> <span style="color: gold;">${user.money.toLocaleString()} 💰</span></p>
-            </div>
-        `;
+                <h3>Statistiques Clés</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    
+                    <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
+                        <span style="font-size: 2.5em;">💰</span>
+                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
+                        <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
+                    </div>
 
-        // Affichage des Poké Balls
-        const ballsHtml = `
-            <div class="profile-stat-card">
-                <h3>Inventaire de Poké Balls</h3>
-                <div class="profile-balls-grid">
-                    ${Object.entries(user).filter(([key]) => key.endsWith('balls')).map(([key, count]) => `
-                        <div>
-                            <span class="ball-count">${(count || 0).toLocaleString()}</span>
-                            <span class="ball-name">${key.replace('balls', '').replace('poké', 'poké ')} Balls</span>
-                        </div>
-                    `).join('')}
+                    <div style="background-color: #4CAF501A; border: 2px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
+                        <span style="font-size: 2.5em;">⭐</span>
+                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--highlight-color);">${user.stats.totalCaptures.toLocaleString()}</p>
+                        <p style="margin: 0; color: var(--text-secondary);">Captures Totales</p>
+                    </div>
+
+                    <div style="background-color: #007bff1A; border: 2px solid #007bff; border-radius: 8px; padding: 15px; text-align: center;">
+                        <span style="font-size: 2.5em;">📚</span>
+                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--captured-border);">${user.stats.uniqueCaptures}/151</p>
+                        <p style="margin: 0; color: var(--text-secondary);">Espèces Uniques</p>
+                    </div>
                 </div>
             </div>
         `;
 
-        container.innerHTML = `<h2>Profil de ${user.username} (ID: ${user.userId})</h2>` + statsHtml + ballsHtml;
+        // Affichage des Poké Balls (Légèrement ajusté pour mieux présenter les noms)
+        const ballsHtml = `
+            <div class="profile-stat-card">
+                <h3>Inventaire de Poké Balls</h3>
+                <div class="profile-balls-grid">
+                    ${Object.entries(user).filter(([key]) => key.endsWith('balls')).map(([key, count]) => {
+                        let displayName = key.replace('balls', ' Ball');
+                        if (key === 'pokeballs') displayName = 'Poké Ball'; // Correction manuelle si besoin
+                        
+                        // Si le nom se termine par 'yball' on affiche juste 'Ball' pour éviter le double 'Ball'
+                        if (key.includes('luxury') || key.includes('premier') || key.includes('safari')) {
+                           displayName = displayName.replace('yball', 'y Ball').replace('erball', 'er Ball').replace('riball', 'ri Ball');
+                        }
+
+
+                        return `
+                            <div>
+                                <span class="ball-count">${(count || 0).toLocaleString()}</span>
+                                <span class="ball-name">${displayName}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = `<h2>Profil de ${user.username}</h2>` + statsHtml + ballsHtml;
 
     } catch (error) {
         console.error('Erreur de chargement du Profil:', error);
