@@ -218,6 +218,38 @@ async function loadPokedex() {
 }
 
 /**
+ * Crée la carte HTML du Pokémon Compagnon.
+ * @param {object|null} pokemon Objet Pokémon ou null.
+ */
+function createCompanionCard(pokemon) {
+    if (!pokemon) {
+        return `
+            <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
+                <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
+                <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
+            </div>
+        `;
+    }
+    
+    const isShiny = pokemon.isShiny;
+    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
+    const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name; 
+    const borderColor = isShiny ? 'var(--shiny-color)' : 'var(--captured-border)';
+    
+    return `
+        <div class="profile-stat-card" style="border: 2px solid ${borderColor}; text-align: center;">
+            <h3 style="color: ${borderColor};">Pokémon Compagnon</h3>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <img src="${imageSource}" alt="${pokemon.name}" style="width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; border: 3px solid ${borderColor}; border-radius: 50%; background-color: var(--card-background);">
+                <span style="font-size: 1.8em; font-weight: bold; color: ${isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin-top: 5px;">${nameDisplay}</span>
+                <span style="font-size: 1.2em; color: var(--text-secondary);">Niv. ${pokemon.level || 5} | #$${pokemon.pokedexId.toString().padStart(3, '0')}</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Charge les données du Profil depuis l'API.
  */
 async function loadProfile() {
@@ -238,8 +270,10 @@ async function loadProfile() {
 
         const user = data;
         
-        // --- NOUVELLE STRUCTURE POUR LES STATS CLÉS (UTILISE UNE GRILLE) ---
+        // --- NOUVEAUTÉ : Carte Compagnon ---
+        const companionHtml = createCompanionCard(user.companionPokemon);
         
+        // --- Statistiques Clés (Pas de changement dans cette partie) ---
         const statsHtml = `
             <div class="profile-stat-card">
                 <h3>Statistiques Clés</h3>
@@ -247,7 +281,7 @@ async function loadProfile() {
                     
                     <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
                         <span style="font-size: 2.5em;">💰</span>
-                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
+                        <p id="profile-money" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
                         <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
                     </div>
 
@@ -273,12 +307,11 @@ async function loadProfile() {
                 <div class="profile-balls-grid">
                     ${Object.entries(user).filter(([key]) => key.endsWith('balls')).map(([key, count]) => {
                         let displayName = key.replace('balls', ' Ball');
-                        if (key === 'pokeballs') displayName = 'Poké Ball'; // Correction manuelle si besoin
+                        if (key === 'pokeballs') displayName = 'Poké Ball'; 
                         
-                        // Si le nom se termine par 'yball' on affiche juste 'Ball' pour éviter le double 'Ball'
-                        if (key.includes('luxury') || key.includes('premier') || key.includes('safari')) {
-                           displayName = displayName.replace('yball', 'y Ball').replace('erball', 'er Ball').replace('riball', 'ri Ball');
-                        }
+                        if (key.includes('luxury')) displayName = 'Luxury Ball';
+                        else if (key.includes('premier')) displayName = 'Premier Ball';
+                        else if (key.includes('safari')) displayName = 'Safari Ball';
 
 
                         return `
@@ -292,7 +325,7 @@ async function loadProfile() {
             </div>
         `;
 
-        container.innerHTML = `<h2>Profil de ${user.username}</h2>` + statsHtml + ballsHtml;
+        container.innerHTML = `<h2>Profil de ${user.username}</h2>` + companionHtml + statsHtml + ballsHtml;
 
     } catch (error) {
         console.error('Erreur de chargement du Profil:', error);
