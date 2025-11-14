@@ -227,7 +227,7 @@ function createCompanionCard(pokemon) {
             <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
                 <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
                 <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!companion** sur Discord.</p>
             </div>
         `;
     }
@@ -276,13 +276,13 @@ async function loadProfile() {
         // --- Statistiques Clés (Pas de changement dans cette partie) ---
         const statsHtml = `
             <div class="profile-stat-card">
-                <h3>Statistiques Clés</h3>
+                <h3>Statistiques du dresseur</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     
                     <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
                         <span style="font-size: 2.5em;">💰</span>
                         <p id="profile-money" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
-                        <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
+                        <p style="margin: 0; color: var(--text-secondary);">PokéCoins</p>
                     </div>
 
                     <div style="background-color: #4CAF501A; border: 2px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
@@ -468,3 +468,4 @@ async function handleBuy(itemKey, quantity) {
 
 // --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
 window.onload = initializeApp;
+
