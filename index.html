@@ -232,6 +232,20 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         }
         
+        /* NOUVEAU: Style pour l'image de la Poké Ball */
+        .shop-image {
+            width: 48px; /* Taille standard du sprite */
+            height: 48px; 
+            image-rendering: pixelated; 
+            vertical-align: middle;
+            margin-right: 10px; /* Espace entre l'image et le nom */
+        }
+
+        /* Ancien style d'émoji pour le fallback */
+        .shop-emoji {
+            font-size: 2em;
+        }
+
         .shop-card {
             background-color: var(--card-background);
             border: 2px solid var(--pokeball-red);
@@ -255,15 +269,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 0px; /* Supprimé le gap pour gérer l'espacement via .shop-image */
             padding-bottom: 10px;
             border-bottom: 1px dashed var(--header-background);
         }
         
-        .shop-emoji {
-            font-size: 2em;
-        }
-
         .shop-cost {
             font-size: 1.4em;
             font-weight: bold;
@@ -279,8 +289,8 @@
         .shop-desc {
             font-size: 0.9em;
             color: var(--text-secondary);
-            margin-bottom: 20px;
             height: 40px; /* Hauteur fixe pour éviter le CLS lors du chargement */
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -342,7 +352,6 @@
             <h2>Boutique Poké Balls</h2>
             <p style="color: var(--text-secondary);">Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
             <div id="shopContainer" class="shop-grid">
-                <!-- Les cartes du shop seront injectées ici par loadShop() -->
                 <p>Chargement des articles...</p>
             </div>
         </div>
@@ -352,4 +361,3 @@
     <script src="./script.js"></script>
 </body>
 </html>
-
