@@ -20,13 +20,13 @@ const PREMIERBALL_COST = 150;
 const LUXURYBALL_COST = 1000;
 
 const SHOP_ITEMS = {
-    'pokeball': { key: 'pokeballs', name: '🔴 Poké Ball', cost: POKEBALL_COST, promo: true, emoji: '🔴', desc: `Coût unitaire: ${POKEBALL_COST} BotCoins. Promotion: +1 ball spéciale par 10 achetées!` },
-    'greatball': { key: 'greatballs', name: '🔵 Super Ball', cost: GREATBALL_COST, promo: false, emoji: '🔵', desc: `Coût: ${GREATBALL_COST} BotCoins. (1.5x Taux de capture)` },
-    'ultraball': { key: 'ultraballs', name: '⚫ Hyper Ball', cost: ULTRABALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${ULTRABALL_COST} BotCoins. (2.0x Taux de capture)` },
-    'masterball': { key: 'masterballs', name: '🟣 Master Ball', cost: MASTERBALL_COST, promo: false, emoji: '🟣', desc: `Coût: ${MASTERBALL_COST} BotCoins. (Capture Assurée!)` },
-    'safariball': { key: 'safariballs', name: '🟢 Safari Ball', cost: SAFARIBALL_COST, promo: false, emoji: '🟢', desc: `Coût: ${SAFARIBALL_COST} BotCoins.` },
-    'premierball': { key: 'premierballs', name: '⚪ Honor Ball', cost: PREMIERBALL_COST, promo: false, emoji: '⚪', desc: `Coût: ${PREMIERBALL_COST} BotCoins.` },
-    'luxuryball': { key: 'luxuryballs', name: '⚫ Luxe Ball', cost: LUXURYBALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${LUXURYBALL_COST} BotCoins.` },
+    'pokeball': { key: 'pokeballs', name: '🔴 Poké Ball', cost: POKEBALL_COST, promo: true, emoji: '🔴', desc: `Coût unitaire: ${POKEBALL_COST} PokéCoins. Promotion: +1 ball spéciale par 10 achetées!` },
+    'greatball': { key: 'greatballs', name: '🔵 Super Ball', cost: GREATBALL_COST, promo: false, emoji: '🔵', desc: `Coût: ${GREATBALL_COST} PokéCoins. (1.5x Taux de capture)` },
+    'ultraball': { key: 'ultraballs', name: '⚫ Hyper Ball', cost: ULTRABALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${ULTRABALL_COST} PokéCoins. (2.0x Taux de capture)` },
+    'masterball': { key: 'masterballs', name: '🟣 Master Ball', cost: MASTERBALL_COST, promo: false, emoji: '🟣', desc: `Coût: ${MASTERBALL_COST} PokéCoins. (Capture Assurée!)` },
+    'safariball': { key: 'safariballs', name: '🟢 Safari Ball', cost: SAFARIBALL_COST, promo: false, emoji: '🟢', desc: `Coût: ${SAFARIBALL_COST} PokéCoins.` },
+    'premierball': { key: 'premierballs', name: '⚪ Honor Ball', cost: PREMIERBALL_COST, promo: false, emoji: '⚪', desc: `Coût: ${PREMIERBALL_COST} PokéCoins.` },
+    'luxuryball': { key: 'luxuryballs', name: '⚫ Luxe Ball', cost: LUXURYBALL_COST, promo: false, emoji: '⚫', desc: `Coût: ${LUXURYBALL_COST} PokéCoins.` },
 };
 
 const BONUS_BALLS = [
@@ -293,3 +293,4 @@ app.post('/api/shop/buy', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌍 Serveur web démarré sur le port ${PORT}`);
 });
+
