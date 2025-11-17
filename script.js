@@ -490,4 +490,3 @@ async function handleBuy(itemKey, quantity) {
 
 // --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
 window.onload = initializeApp;
-```eof
