@@ -235,9 +235,9 @@ async function loadPokedex() {
         document.getElementById('pokedex-error-container').innerHTML = `<div class="error-message">❌ Erreur de connexion à l'API (${API_BASE_URL}). Détails: ${error.message}</div>`;
         container.innerHTML = '<p>Impossible de charger les données. Vérifiez l\'état de votre API.</p>';
     }
-}
+} // Fin de loadPokedex
 
-// --- FONCTIONS PROFIL (Rien à changer) ---
+// --- FONCTIONS PROFIL ---
 
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
@@ -310,9 +310,9 @@ async function loadProfile() {
         document.getElementById('profile-error-container').innerHTML = `<div class="error-message">❌ Erreur de connexion à l'API. Détails: ${error.message}</div>`;
         container.innerHTML = '<p>Impossible de charger les données du profil.</p>';
     }
-}
+} // Fin de loadProfile
 
-// --- FONCTIONS BOUTIQUE (Rien à changer) ---
+// --- FONCTIONS BOUTIQUE ---
 
 function loadShop() {
     const shopItems = {
@@ -354,7 +354,7 @@ function loadShop() {
     html += '</div>';
     html += '<div id="shop-message" class="shop-message"></div>'; 
     container.innerHTML = html;
-}
+} // Fin de loadShop
 
 async function buyItem(itemKey) {
     if (!currentUserId) {
@@ -408,10 +408,8 @@ async function buyItem(itemKey) {
         messageContainer.style.color = 'var(--red-discord)';
         messageContainer.textContent = 'Erreur de connexion au serveur API.';
     }
-}
+} // Fin de buyItem
 
 // --- INITIALISATION ---
 window.onload = initializeApp;
 ```eof
-
-Ce code est prêt à être utilisé. Mettez-le en ligne sur votre dépôt **GitHub Pages** pour que les changements prennent effet.
