@@ -1,13 +1,14 @@
-// public/script.js (VERSION FINALE - CORRECTION SYNTAXIQUE APPLIQUÉE)
+// public/script.js (VERSION COMPLÈTE)
 
 const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+// NOUVEAU: URL de base pour les sprites d'objets (incluant les Poké Balls) de PokeAPI
 const POKEBALL_IMAGE_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/'; 
 
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
 
-// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE ---
+// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE (AUCUN CHANGEMENT ICI) ---
 
 /**
  * Initialise l'application : vérifie l'URL pour un ID après redirection OAuth2
@@ -116,8 +117,6 @@ function showPage(pageName) {
     }
 }
 
-
-// --- GESTION POKEDEX & PROFIL ---
 
 /**
  * Crée une carte de Pokémon HTML.
@@ -297,8 +296,10 @@ async function loadProfile() {
 
         const user = data;
         
+        // --- NOUVEAUTÉ : Carte Compagnon ---
         const companionHtml = createCompanionCard(user.companionPokemon);
         
+        // --- Statistiques Clés (Pas de changement dans cette partie) ---
         const statsHtml = `
             <div class="profile-stat-card">
                 <h3>Statistiques Clés</h3>
@@ -325,6 +326,7 @@ async function loadProfile() {
             </div>
         `;
 
+        // Affichage des Poké Balls (Légèrement ajusté pour mieux présenter les noms)
         const ballsHtml = `
             <div class="profile-stat-card">
                 <h3>Inventaire de Poké Balls</h3>
@@ -356,13 +358,13 @@ async function loadProfile() {
         errorContainer.textContent = 'Erreur de connexion au serveur API.';
         container.innerHTML = '';
     }
-} 
+}
 
 
 // --- GESTION DE LA BOUTIQUE (SHOP) ---
 
 /**
- * Crée la carte HTML du Pokémon Compagnon.
+ * Génère le HTML pour une carte d'article de la boutique.
  * @param {string} itemKey Clé de l'article (ex: 'pokeball').
  * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, imageFragment).
  */
@@ -372,6 +374,7 @@ function createShopCard(itemKey, item) {
     // Ajout d'un pas de 10 pour les balls plus chères, ou 1 pour les pokéballs
     const inputStep = itemKey === 'pokeball' ? '1' : '10'; 
 
+    // Le bloc de saisie pour la quantité est appliqué à TOUTES les balls
     const quantityInput = `
         <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
             <input type="number" id="qty-${itemKey}" min="1" value="1" step="${inputStep}"
@@ -394,7 +397,7 @@ function createShopCard(itemKey, item) {
             <div id="msg-${itemKey}" style="color: var(--shiny-color); margin-top: 10px; font-size: 0.9em;"></div>
         </div>
     `;
-} 
+}
 
 /**
  * Charge les articles de la boutique depuis l'API et les affiche.
@@ -420,14 +423,14 @@ async function loadShop() {
             shopGridHtml += createShopCard(key, item);
         }
         
-        container.innerHTML = `<div class="shop-grid">${shopGridHtml}</div>`;
+        container.innerHTML = shopGridHtml;
         
     } catch (error) {
         console.error('Erreur de chargement de la boutique:', error);
         errorContainer.textContent = 'Erreur de connexion au serveur API pour la boutique.';
         container.innerHTML = '';
     }
-} 
+}
 
 /**
  * Gère l'achat d'un article via l'API.
@@ -436,6 +439,7 @@ async function loadShop() {
  */
 async function handleBuy(itemKey, quantity) {
     if (!currentUserId) {
+        // Devrait être impossible si l'UI est bien gérée, mais par sécurité
         document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant d'acheter.";
         return;
     }
@@ -447,7 +451,7 @@ async function handleBuy(itemKey, quantity) {
     }
 
     const messageContainer = document.getElementById(`msg-${itemKey}`);
-    messageContainer.style.color = 'var(--shiny-color)'; 
+    messageContainer.style.color = 'var(--shiny-color)'; // Jaune pour chargement
     messageContainer.textContent = `Achat de ${qty} ${itemKey.replace('ball', ' Ball')} en cours...`;
 
     try {
@@ -467,17 +471,18 @@ async function handleBuy(itemKey, quantity) {
 
         if (response.ok) {
             // Achat réussi
-            messageContainer.style.color = 'var(--highlight-color)'; 
+            messageContainer.style.color = 'var(--highlight-color)'; // Vert pour succès
             messageContainer.textContent = data.message;
             
             // Mise à jour du profil si on est dessus
             if (document.getElementById('profile-page').classList.contains('active')) {
+                 // Recharge le profil pour voir les nouveaux BotCoins et Balls
                 loadProfile(); 
             }
 
         } else {
             // Erreur d'achat (solde insuffisant, etc.)
-            messageContainer.style.color = 'var(--red-discord)'; 
+            messageContainer.style.color = 'var(--red-discord)'; // Rouge pour erreur
             messageContainer.textContent = data.message || `Erreur: Statut ${response.status}.`;
         }
 
@@ -486,7 +491,7 @@ async function handleBuy(itemKey, quantity) {
         messageContainer.style.color = 'var(--red-discord)';
         messageContainer.textContent = 'Erreur de connexion au serveur API.';
     }
-} // Fin de handleBuy
+}
 
 // --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
 window.onload = initializeApp;
