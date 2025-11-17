@@ -2,8 +2,6 @@
 
 const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
-// NOUVEAU: URL de base pour les sprites d'objets (incluant les Poké Balls) de PokeAPI
-const POKEBALL_IMAGE_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/'; 
 
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
@@ -118,15 +116,13 @@ function showPage(pageName) {
 }
 
 
+// --- GESTION POKEDEX & PROFIL (PEU DE CHANGEMENTS) ---
+
 /**
  * Crée une carte de Pokémon HTML.
- * @param {object} pokemon L'objet Pokémon.
- * @param {number} count Nombre de copies de ce type (Normal ou Shiny).
- * @param {boolean} isCaptured Vrai si au moins un a été capturé.
- * @param {boolean} isShiny Vrai si on affiche la version Shiny.
  */
-function createPokedexCard(pokemon, count, isCaptured, isShiny) {
-    
+function createPokedexCard(pokemon, count, isCaptured) {
+    const isShiny = pokemon.isShiny || pokemon.isShinyFirstCapture;
     const borderStyle = isCaptured 
         ? (isShiny ? `border: 2px solid var(--shiny-color)` : `border: 2px solid var(--captured-border)`)
         : `border: 2px dashed var(--missing-border)`;
@@ -140,18 +136,17 @@ function createPokedexCard(pokemon, count, isCaptured, isShiny) {
         : `???`;
         
     const countDisplay = isCaptured && count > 1 ? `<span class="pokemon-count">x${count}</span>` : '';
+    const levelDisplay = isCaptured && pokemon.level ? `<span class="pokemon-level">Lv.${pokemon.level}</span>` : '';
     
     const pokeId = pokemon.pokedexId.toString().padStart(3, '0');
 
-    // Ajout du suffixe (S) pour la carte Shiny
-    const idDisplay = isShiny ? `#${pokeId} (S)` : `#${pokeId}`;
-
     return `
         <div class="pokedex-card" style="${borderStyle}">
-            <span class="pokedex-id">${idDisplay}</span>
+            <span class="pokedex-id">#${pokeId}</span>
             <img src="${imageSource}" alt="${pokemon.name || 'Inconnu'}" onerror="this.onerror=null; this.src='https://placehold.co/96x96/363636/ffffff?text=Err'">
             <span class="pokemon-name">${nameDisplay}</span>
             ${countDisplay}
+            ${levelDisplay}
         </div>
     `;
 }
@@ -162,7 +157,7 @@ function createPokedexCard(pokemon, count, isCaptured, isShiny) {
 async function loadPokedex() {
     const container = document.getElementById('pokedexContainer');
     const errorContainer = document.getElementById('pokedex-error-container');
-    container.innerHTML = '<h2>Chargement du Pokédex...</h2><div class="spinner"></div>';
+    container.innerHTML = '<p>Chargement du Pokédex...</p>';
     errorContainer.textContent = '';
     
     try {
@@ -170,34 +165,31 @@ async function loadPokedex() {
         const data = await response.json();
 
         if (!response.ok) {
-            errorContainer.textContent = `❌ Erreur: ${data.message || 'Impossible de charger les données du Pokédex.'}`;
+            errorContainer.textContent = `Erreur: ${data.message || 'Impossible de charger les données du Pokédex.'}`;
             container.innerHTML = `<p>Veuillez vérifier votre connexion et votre ID Discord.</p>`;
             return;
         }
 
-        const { fullPokedex } = data; 
+        const { fullPokedex, uniquePokedexCount } = data; // DESTRUCTURATION CORRIGÉE
 
-        // Map pour stocker les données séparées pour le Pokédex (Normal et Shiny)
+        const html = `<p style="font-size: 1.1em; font-weight: bold;">Espèces capturées : ${uniquePokedexCount}/151</p>`;
+        
         const pokedexMap = new Map();
-        let uniqueCaptures = new Set(); 
-
         fullPokedex.forEach(p => {
             const id = p.pokedexId;
-            const isShiny = p.isShiny || false;
-            const key = `${id}_${isShiny ? 'shiny' : 'normal'}`; 
             
-            uniqueCaptures.add(id);
-
-            if (!pokedexMap.has(key)) {
-                pokedexMap.set(key, {
+            if (!pokedexMap.has(id)) {
+                pokedexMap.set(id, {
                     ...p,
                     count: 1,
-                    isCaptured: true,
-                    isShiny: isShiny, 
-                    name: p.name || `N°${id}`
+                    isShinyFirstCapture: p.isShiny, 
+                    isCaptured: true
                 });
             } else {
-                pokedexMap.get(key).count++;
+                pokedexMap.get(id).count++;
+                if (p.isShiny && !pokedexMap.get(id).isShinyFirstCapture) {
+                    pokedexMap.get(id).isShinyFirstCapture = true;
+                }
             }
         });
 
@@ -205,34 +197,17 @@ async function loadPokedex() {
         let pokedexGridHtml = '<div class="pokedex-grid">';
         
         for (let i = 1; i <= maxId; i++) { 
-            const normalKey = `${i}_normal`;
-            const shinyKey = `${i}_shiny`;
+            const pokemonData = pokedexMap.get(i);
             
-            const pokemonNormal = pokedexMap.get(normalKey);
-            const pokemonShiny = pokedexMap.get(shinyKey);
-            
-            // 1. Affiche la carte NORMALE
-            if (pokemonNormal) {
-                pokedexGridHtml += createPokedexCard(pokemonNormal, pokemonNormal.count, true, false);
+            if (pokemonData) {
+                pokedexGridHtml += createPokedexCard(pokemonData, pokemonData.count, true);
             } else {
-                // Manquant (Normal)
-                pokedexGridHtml += createPokedexCard({ pokedexId: i, name: `N°${i}` }, 0, false, false);
+                // Fait appel à une fausse structure pour les cartes non capturées
+                pokedexGridHtml += createPokedexCard({ pokedexId: i, name: `N°${i}` }, 0, false);
             }
-            
-            // 2. Affiche la carte SHINY (seulement si capturée)
-            if (pokemonShiny) {
-                pokedexGridHtml += createPokedexCard(pokemonShiny, pokemonShiny.count, true, true);
-            } 
         }
         
         pokedexGridHtml += '</div>';
-        
-        let html = `
-            <h2>Mon Pokédex</h2>
-            <p>Total espèces uniques capturées : <strong>${uniqueCaptures.size}</strong> / ${maxId}</p>
-            <p class="pokedex-note">Les cartes encadrées en <span class="badge" style="background-color: var(--shiny-color); color: var(--background); padding: 2px 5px; border-radius: 4px;">OR</span> sont des versions Shiny (affichées séparément).</p>
-        `;
-
         container.innerHTML = html + pokedexGridHtml;
 
     } catch (error) {
@@ -240,8 +215,7 @@ async function loadPokedex() {
         errorContainer.textContent = 'Erreur de connexion au serveur API.';
         container.innerHTML = '';
     }
-} 
-
+}
 
 /**
  * Crée la carte HTML du Pokémon Compagnon.
@@ -253,7 +227,7 @@ function createCompanionCard(pokemon) {
             <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
                 <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
                 <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!companion** sur Discord.</p>
             </div>
         `;
     }
@@ -302,13 +276,13 @@ async function loadProfile() {
         // --- Statistiques Clés (Pas de changement dans cette partie) ---
         const statsHtml = `
             <div class="profile-stat-card">
-                <h3>Statistiques Clés</h3>
+                <h3>Statistiques du dresseur</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     
                     <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
                         <span style="font-size: 2.5em;">💰</span>
                         <p id="profile-money" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
-                        <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
+                        <p style="margin: 0; color: var(--text-secondary);">PokéCoins</p>
                     </div>
 
                     <div style="background-color: #4CAF501A; border: 2px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
@@ -366,7 +340,7 @@ async function loadProfile() {
 /**
  * Génère le HTML pour une carte d'article de la boutique.
  * @param {string} itemKey Clé de l'article (ex: 'pokeball').
- * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, imageFragment).
+ * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, emoji).
  */
 function createShopCard(itemKey, item) {
     const hasPromo = item.promo; 
@@ -386,8 +360,7 @@ function createShopCard(itemKey, item) {
     return `
         <div class="shop-card">
             <div class="shop-card-header">
-                <img src="${POKEBALL_IMAGE_BASE_URL}${item.imageFragment}" alt="${item.name}" class="shop-image" 
-                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML = '<span class=\\'shop-emoji\\'>?</span>' + this.parentElement.innerHTML;">
+                <span class="shop-emoji">${item.emoji}</span>
                 <span>${item.name}</span>
             </div>
             ${hasPromo ? `<span class="shop-promo">PROMOTION !</span>` : ''}
