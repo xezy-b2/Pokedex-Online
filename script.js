@@ -2,6 +2,8 @@
 
 const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+// NOUVEAU: URL de base pour les sprites d'objets (incluant les Poké Balls) de PokeAPI
+const POKEBALL_IMAGE_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/'; 
 
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
@@ -227,7 +229,7 @@ function createCompanionCard(pokemon) {
             <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
                 <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
                 <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!companion** sur Discord.</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
             </div>
         `;
     }
@@ -276,13 +278,13 @@ async function loadProfile() {
         // --- Statistiques Clés (Pas de changement dans cette partie) ---
         const statsHtml = `
             <div class="profile-stat-card">
-                <h3>Statistiques du dresseur</h3>
+                <h3>Statistiques Clés</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     
                     <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
                         <span style="font-size: 2.5em;">💰</span>
                         <p id="profile-money" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
-                        <p style="margin: 0; color: var(--text-secondary);">PokéCoins</p>
+                        <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
                     </div>
 
                     <div style="background-color: #4CAF501A; border: 2px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
@@ -340,7 +342,7 @@ async function loadProfile() {
 /**
  * Génère le HTML pour une carte d'article de la boutique.
  * @param {string} itemKey Clé de l'article (ex: 'pokeball').
- * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, emoji).
+ * @param {object} item Objet d'article avec les détails (name, cost, desc, promo, imageFragment).
  */
 function createShopCard(itemKey, item) {
     const hasPromo = item.promo; 
@@ -360,7 +362,8 @@ function createShopCard(itemKey, item) {
     return `
         <div class="shop-card">
             <div class="shop-card-header">
-                <span class="shop-emoji">${item.emoji}</span>
+                <img src="${POKEBALL_IMAGE_BASE_URL}${item.imageFragment}" alt="${item.name}" class="shop-image" 
+                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML = '<span class=\\'shop-emoji\\'>?</span>' + this.parentElement.innerHTML;">
                 <span>${item.name}</span>
             </div>
             ${hasPromo ? `<span class="shop-promo">PROMOTION !</span>` : ''}
