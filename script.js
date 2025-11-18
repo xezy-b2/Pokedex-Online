@@ -103,8 +103,7 @@ function showPage(pageName) {
 // --- GESTION POKEDEX & PROFIL ---
 
 /**
- * Crée une carte de Pokémon HTML avec un bouton de vente et les stats.
- * (MISE À JOUR pour inclure l'affichage des baseStats)
+ * Crée une carte de Pokémon HTML avec un bouton de vente, les Base Stats et les IVs.
  */
 function createSellablePokedexCard(pokemon) {
     if (!pokemon._id) {
@@ -127,36 +126,88 @@ function createSellablePokedexCard(pokemon) {
     const shinyBonus = isShiny ? 200 : 0; 
     const salePrice = basePrice + levelBonus + shinyBonus;
 
-    // --- NOUVEAU: Affichage des stats de base ---
-    let statsHtml = '';
-    if (pokemon.baseStats && pokemon.baseStats.length > 0) {
-        const statsList = pokemon.baseStats.map(stat => {
-            // Traduction des noms de stat pour le français
-            const translatedName = {
-                hp: 'PV',
-                attack: 'Attaque',
-                defense: 'Défense',
-                'special-attack': 'Att. Spé.',
-                'special-defense': 'Déf. Spé.',
-                speed: 'Vitesse'
-            }[stat.name] || stat.name;
+    // --- NOUVEAU : Affichage des IVs (Valeurs Individuelles) ---
+    const ivStatsKeys = [
+        { key: 'iv_hp', display: 'PV' },
+        { key: 'iv_attack', display: 'Attaque' },
+        { key: 'iv_defense', display: 'Défense' },
+        { key: 'iv_special_attack', display: 'Att. Spé.' },
+        { key: 'iv_special_defense', display: 'Déf. Spé.' },
+        { key: 'iv_speed', display: 'Vitesse' }
+    ];
+    
+    let ivsBlockHtml = '';
+    // Vérifier si le champ IVs est présent dans l'objet (pour la rétrocompatibilité)
+    if (pokemon.iv_hp !== undefined || pokemon.iv_attack !== undefined) {
+        let totalIVs = 0;
+        let ivListHtml = '';
+        
+        ivStatsKeys.forEach(stat => {
+            // Utiliser 0 si l'IV n'est pas défini
+            const ivValue = pokemon[stat.key] || 0; 
+            totalIVs += ivValue;
+            // Mettre en surbrillance les IVs parfaits (31) en or
+            const valueStyle = ivValue === 31 ? 'color: var(--shiny-color); font-weight: bold;' : '';
+            ivListHtml += `<li>${stat.display}: <strong style="${valueStyle}">${ivValue}/31</strong></li>`;
+        });
+        
+        const ivPercentage = ((totalIVs / 186) * 100).toFixed(2);
+        
+        ivsBlockHtml = `
+            <h4 style="margin: 10px 0 5px; color: var(--highlight-color); border-top: 1px dashed var(--header-background); padding-top: 5px;">
+                IVs Totaux: ${totalIVs}/186 (<span style="color: var(--shiny-color);">${ivPercentage}%</span>)
+            </h4>
+            <ul>
+                ${ivListHtml}
+            </ul>
+        `;
+    }
+    // --- FIN NOUVEAU IVs ---
 
-            return `<li>${translatedName}: <strong>${stat.base_stat}</strong></li>`;
-        }).join('');
+    // --- Affichage des Base Stats et des IVs combinés dans le Details/Summary ---
+    let statsDetailsHtml = '';
+    
+    // Condition pour afficher le bloc "Détails des Stats" si on a soit les Base Stats, soit les IVs
+    if ((pokemon.baseStats && pokemon.baseStats.length > 0) || ivsBlockHtml) {
+        
+        let baseStatsHtml = '';
+        if (pokemon.baseStats && pokemon.baseStats.length > 0) {
+            const baseStatsList = pokemon.baseStats.map(stat => {
+                // Traduction des noms de stat
+                const translatedName = {
+                    hp: 'PV',
+                    attack: 'Attaque',
+                    defense: 'Défense',
+                    'special-attack': 'Att. Spé.',
+                    'special-defense': 'Déf. Spé.',
+                    speed: 'Vitesse'
+                }[stat.name] || stat.name;
 
-        statsHtml = `
+                return `<li>${translatedName}: <strong>${stat.base_stat}</strong></li>`;
+            }).join('');
+            
+            baseStatsHtml = `
+                <h4 style="margin: 10px 0 5px; color: var(--text-color); padding-top: 5px;">Stats de Base (Espèce)</h4>
+                <ul>
+                    ${baseStatsList}
+                </ul>
+            `;
+        }
+
+        statsDetailsHtml = `
             <details style="text-align: left; margin-top: 10px; border-top: 1px solid var(--header-background); padding-top: 5px;">
                 <summary style="font-weight: bold; cursor: pointer; color: var(--text-secondary); list-style: none; display: flex; align-items: center;">
-                    <span style="flex-grow: 1;">Stats de base</span>
+                    <span style="flex-grow: 1;">Détails des Stats</span>
                     <span style="font-size: 0.8em; color: var(--highlight-color);">[+]</span>
                 </summary>
-                <ul>
-                    ${statsList}
-                </ul>
+                
+                ${baseStatsHtml}
+                ${ivsBlockHtml}
+                
             </details>
         `;
     }
-    // --- FIN NOUVEAU ---
+    // --- FIN Base Stats et IVs ---
 
     return `
         <div class="pokedex-card" style="${borderStyle}">
@@ -164,7 +215,7 @@ function createSellablePokedexCard(pokemon) {
             <img src="${imageSource}" alt="${pokemon.name}" onerror="this.onerror=null; this.src='https://placehold.co/96x96/363636/ffffff?text=Err'">
             <span class="pokemon-name">${nameDisplay}</span>
             ${levelDisplay}
-            ${statsHtml} <div style="margin-top: 10px; font-size: 0.9em; color: var(--text-secondary);">
+            ${statsDetailsHtml} <div style="margin-top: 10px; font-size: 0.9em; color: var(--text-secondary);">
                 Prix: ${salePrice} 💰
             </div>
             <button class="sell-button" onclick="handleSell('${pokemon._id}', '${pokemon.name}', ${salePrice})" 
@@ -186,7 +237,7 @@ async function loadPokedex() {
     errorContainer.textContent = '';
     
     try {
-        // L'API renvoie maintenant les stats de base
+        // L'API renvoie les Base Stats et les IVs (qui sont dans l'objet Pokémon de la DB)
         const response = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await response.json();
 
