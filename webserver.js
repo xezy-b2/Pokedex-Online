@@ -289,6 +289,67 @@ app.post('/api/shop/buy', async (req, res) => {
 });
 
 
+// --- Route 5.5: Vendre un Pokémon (POST) ---
+app.post('/api/sell/pokemon', async (req, res) => {
+    // Le client doit envoyer l'ID du Pokémon à vendre (son ID interne dans le tableau)
+    const { userId, pokemonIdToSell } = req.body; 
+
+    if (!userId || !pokemonIdToSell) {
+        return res.status(400).json({ success: false, message: "Données manquantes (userId ou pokemonIdToSell)." });
+    }
+    
+    try {
+        // 1. Trouver l'utilisateur
+        const user = await User.findOne({ userId });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+        }
+        
+        // 2. Trouver l'index du Pokémon dans le tableau 'pokemons'
+        const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToSell);
+
+        if (pokemonIndex === -1) {
+            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
+        }
+
+        const pokemonToSell = user.pokemons[pokemonIndex];
+        
+        // ** LOGIQUE DU PRIX DE VENTE **
+        const basePrice = 50; // Prix de base
+        const levelBonus = (pokemonToSell.level || 1) * 5; // +5 BotCoins par niveau
+        const shinyBonus = pokemonToSell.isShiny ? 200 : 0; // +200 BotCoins si Shiny
+        
+        const salePrice = basePrice + levelBonus + shinyBonus;
+
+        // 3. Vérifier si c'est un Compagnon
+        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToSell) {
+             // Utilisation du nom du Pokémon pour un meilleur message
+             return res.status(403).json({ success: false, message: `Vous ne pouvez pas vendre votre Compagnon (${pokemonToSell.name}). Retirez-le avec !removecompanion d'abord.` });
+        }
+
+        // 4. Mettre à jour les données de l'utilisateur
+        user.money += salePrice;
+        // Supprimer le Pokémon du tableau
+        user.pokemons.splice(pokemonIndex, 1); 
+
+        // 5. Sauvegarder les changements
+        await user.save();
+        
+        // 6. Succès
+        res.json({ 
+            success: true, 
+            message: `Vente réussie : ${pokemonToSell.name} (Niv.${pokemonToSell.level || 1}) vendu pour ${salePrice.toLocaleString()} 💰!`,
+            newMoney: user.money
+        });
+
+    } catch (error) {
+        console.error('Erreur API Vente Pokémon:', error);
+        res.status(500).json({ success: false, message: "Erreur interne du serveur lors de la vente." });
+    }
+});
+
+
 // --- 6. DÉMARRAGE DU SERVEUR ---
 
 app.listen(PORT, () => {
