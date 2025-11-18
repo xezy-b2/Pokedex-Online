@@ -9,8 +9,36 @@ const User = require('./models/User.js');
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
+// --- 0. CONSTANTES ET CACHE POUR POKEAPI ---
+const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
+const statsCache = {}; // Cache simple pour éviter les appels API redondants
+
+async function fetchPokemonBaseStats(pokedexId) {
+    if (statsCache[pokedexId]) {
+        return statsCache[pokedexId];
+    }
+    
+    try {
+        const response = await axios.get(`${POKEAPI_BASE_URL}${pokedexId}`);
+        const data = response.data;
+        
+        // Ne garder que le nom et la base_stat (PV, Attaque, Défense, etc.)
+        const baseStats = data.stats.map(statEntry => ({
+            name: statEntry.stat.name,
+            base_stat: statEntry.base_stat
+        }));
+        
+        // Mettre en cache le résultat
+        statsCache[pokedexId] = baseStats;
+        return baseStats;
+    } catch (error) {
+        console.error(`Erreur de récupération des stats pour Pokedex ID ${pokedexId}:`, error.message);
+        return [];
+    }
+}
+// --- FIN POKEAPI ---
+
 // --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
-// Ces constantes DOIVENT être mises à jour ici si elles changent dans votre bot local.
 const POKEBALL_COST = 100;
 const GREATBALL_COST = 300;
 const ULTRABALL_COST = 800;
@@ -20,7 +48,6 @@ const PREMIERBALL_COST = 150;
 const LUXURYBALL_COST = 1000;
 
 const SHOP_ITEMS = {
-    // MODIFIÉ: Remplacement des emojis par 'imageFragment'
     'pokeball': { key: 'pokeballs', name: 'Poké Ball', cost: POKEBALL_COST, promo: true, imageFragment: 'poke-ball.png', desc: `Coût unitaire: ${POKEBALL_COST} BotCoins. Promotion: +1 ball spéciale par 10 achetées!` },
     'greatball': { key: 'greatballs', name: 'Super Ball', cost: GREATBALL_COST, promo: false, imageFragment: 'great-ball.png', desc: `Coût: ${GREATBALL_COST} BotCoins. (1.5x Taux de capture)` },
     'ultraball': { key: 'ultraballs', name: 'Hyper Ball', cost: ULTRABALL_COST, promo: false, imageFragment: 'ultra-ball.png', desc: `Coût: ${ULTRABALL_COST} BotCoins. (2.0x Taux de capture)` },
@@ -53,7 +80,6 @@ const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online';
 
 // --- 2. CONFIGURATION EXPRESS & CORS ---
 const corsOptions = {
-    // Autorise les origines spécifiques (GitHub Pages, Render)
     origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
     methods: 'GET, POST, OPTIONS', 
     allowedHeaders: ['Content-Type'], 
@@ -119,7 +145,6 @@ app.get('/api/auth/discord/callback', async (req, res) => {
             { upsert: true, new: true } 
         );
 
-        // Redirection vers l'URL corrigée
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
         res.redirect(redirectUrl); 
 
@@ -132,27 +157,47 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
 // --- 5. ROUTES API (POKÉDEX, PROFIL, SHOP) ---
 
-// Route 5.1: Pokédex (CORRIGÉ pour renvoyer le format { fullPokedex, uniquePokedexCount })
+// Route 5.1: Pokédex (MODIFIÉ pour inclure les stats de base)
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        
-        // CORRECTION: Nous sélectionnons EXPLICITEMENT le champ 'pokemons' !
         const user = await User.findOne({ userId: userId }).select('pokemons');
 
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
 
-        // 1. Récupération des Pokémons (garanti Array)
         const fullPokedex = user.pokemons || [];
-        
-        // 2. Calcul du nombre d'espèces uniques
         const uniquePokedexCount = new Set(fullPokedex.map(p => p.pokedexId)).size;
+        
+        // 1. Collecter les IDs uniques pour les stats
+        const uniquePokedexIds = [...new Set(fullPokedex.map(p => p.pokedexId))];
+        
+        // 2. Fetcher les stats en parallèle
+        const statsPromises = uniquePokedexIds.map(id => fetchPokemonBaseStats(id));
+        const allStats = await Promise.all(statsPromises);
+        
+        // 3. Créer une map PokedexId -> Stats
+        const statsMap = uniquePokedexIds.reduce((map, id, index) => {
+            map[id] = allStats[index];
+            return map;
+        }, {});
+        
+        // 4. Enrichir chaque Pokémon avec ses stats
+        const enrichedPokedex = fullPokedex.map(pokemon => {
+            const stats = statsMap[pokemon.pokedexId] || [];
+            // Assurez-vous d'utiliser toObject() si ce n'est pas déjà un objet simple
+            const enrichedPokemon = pokemon.toObject ? pokemon.toObject() : pokemon;
+            
+            return {
+                ...enrichedPokemon,
+                baseStats: stats // AJOUT DES STATS ICI
+            };
+        });
 
-        // 3. Envoi de l'objet STRUCTURÉ comme le client l'attend
+        // 5. Envoi de l'objet STRUCTURÉ
         res.json({
-            fullPokedex: fullPokedex, 
+            fullPokedex: enrichedPokedex, 
             uniquePokedexCount: uniquePokedexCount
         });
 
@@ -168,24 +213,18 @@ app.get('/api/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
         
-        // 1. Fetch user data, including companion ID and the pokemons array to find the companion
-        // Nous récupérons tout sauf __v
         const user = await User.findOne({ userId: userId }).select('-__v'); 
         
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
         
-        // 2. Find the companion Pokémon object
         let companionPokemon = null;
         if (user.companionPokemonId && user.pokemons) {
-            // Convert to string for comparison
             const companionIdString = user.companionPokemonId.toString();
-            // Le ._id de l'objet Pokémon dans le tableau correspond au companionPokemonId
             companionPokemon = user.pokemons.find(p => p._id.toString() === companionIdString);
         }
 
-        // 3. Calculate capture statistics (using aggregation as before)
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
             { $project: { 
@@ -199,7 +238,6 @@ app.get('/api/profile/:userId', async (req, res) => {
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
-        // 4. Create the final response object (excluding the full 'pokemons' array for lightness)
         const userObject = user.toObject();
         delete userObject.pokemons; 
         delete userObject.companionPokemonId; 
@@ -207,7 +245,7 @@ app.get('/api/profile/:userId', async (req, res) => {
         res.json({
             ...userObject,
             stats: stats,
-            companionPokemon: companionPokemon // AJOUTÉ
+            companionPokemon: companionPokemon 
         });
     } catch (error) {
         console.error('Erreur API Profil:', error);
@@ -247,14 +285,12 @@ app.post('/api/shop/buy', async (req, res) => {
             return res.status(403).json({ success: false, message: `Vous n'avez pas assez de BotCoins pour acheter ${quantity} ${itemConfig.name}. Coût total: ${totalCost.toLocaleString()} 💰. Votre solde: ${user.money.toLocaleString()} 💰.` });
         }
 
-        // --- DÉBUT TRANSACTION ---
         user.money -= totalCost;
         const itemDBKey = itemConfig.key;
         user[itemDBKey] = (user[itemDBKey] || 0) + quantity; 
         
         let bonusMessage = '';
 
-        // Logique de bonus Poké Ball 
         if (itemDBKey === 'pokeballs') { 
             const bonusCount = Math.floor(quantity / 10);
             if (bonusCount > 0) {
@@ -289,9 +325,8 @@ app.post('/api/shop/buy', async (req, res) => {
 });
 
 
-// --- Route 5.5: Vendre un Pokémon (POST) ---
+// Route 5.5: Vendre un Pokémon (POST) ---
 app.post('/api/sell/pokemon', async (req, res) => {
-    // Le client doit envoyer l'ID du Pokémon à vendre (son ID interne dans le tableau)
     const { userId, pokemonIdToSell } = req.body; 
 
     if (!userId || !pokemonIdToSell) {
@@ -299,14 +334,12 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
     
     try {
-        // 1. Trouver l'utilisateur
         const user = await User.findOne({ userId });
 
         if (!user) {
             return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
         }
         
-        // 2. Trouver l'index du Pokémon dans le tableau 'pokemons'
         const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToSell);
 
         if (pokemonIndex === -1) {
@@ -315,28 +348,21 @@ app.post('/api/sell/pokemon', async (req, res) => {
 
         const pokemonToSell = user.pokemons[pokemonIndex];
         
-        // ** LOGIQUE DU PRIX DE VENTE **
-        const basePrice = 50; // Prix de base
-        const levelBonus = (pokemonToSell.level || 1) * 5; // +5 BotCoins par niveau
-        const shinyBonus = pokemonToSell.isShiny ? 200 : 0; // +200 BotCoins si Shiny
+        const basePrice = 50; 
+        const levelBonus = (pokemonToSell.level || 1) * 5; 
+        const shinyBonus = pokemonToSell.isShiny ? 200 : 0; 
         
         const salePrice = basePrice + levelBonus + shinyBonus;
 
-        // 3. Vérifier si c'est un Compagnon
         if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToSell) {
-             // Utilisation du nom du Pokémon pour un meilleur message
              return res.status(403).json({ success: false, message: `Vous ne pouvez pas vendre votre Compagnon (${pokemonToSell.name}). Retirez-le avec !removecompanion d'abord.` });
         }
 
-        // 4. Mettre à jour les données de l'utilisateur
         user.money += salePrice;
-        // Supprimer le Pokémon du tableau
         user.pokemons.splice(pokemonIndex, 1); 
 
-        // 5. Sauvegarder les changements
         await user.save();
         
-        // 6. Succès
         res.json({ 
             success: true, 
             message: `Vente réussie : ${pokemonToSell.name} (Niv.${pokemonToSell.level || 1}) vendu pour ${salePrice.toLocaleString()} 💰!`,
