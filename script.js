@@ -2,13 +2,18 @@
 
 const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com'; 
 const POKEAPI_SPRITE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+// NOUVEAU: URL de base pour les sprites d'objets (incluant les Poké Balls) de PokeAPI
 const POKEBALL_IMAGE_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/'; 
 
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
 
-// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE ---
+// --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE (AUCUN CHANGEMENT ICI) ---
 
+/**
+ * Initialise l'application : vérifie l'URL pour un ID après redirection OAuth2
+ * ou charge l'état de la session locale.
+ */
 function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const idFromUrl = urlParams.get('discordId');
@@ -37,6 +42,9 @@ function initializeApp() {
     }
 }
 
+/**
+ * Met à jour l'interface utilisateur en fonction de l'état de connexion.
+ */
 function updateUIState(isLoggedIn) {
     const loggedInDiv = document.getElementById('logged-in-user');
     const loggedOutDiv = document.getElementById('logged-out-user');
@@ -54,6 +62,9 @@ function updateUIState(isLoggedIn) {
     }
 }
 
+/**
+ * Déconnecte l'utilisateur.
+ */
 function logout() {
     currentUserId = null;
     currentUsername = null;
@@ -65,7 +76,11 @@ function logout() {
     document.getElementById('pokedex-error-container').textContent = '';
 }
 
+/**
+ * Change la page active (simule la navigation).
+ */
 function showPage(pageName) {
+    // 1. Gère les classes de sections
     document.querySelectorAll('.page-section').forEach(section => {
         section.classList.remove('active');
     });
@@ -74,6 +89,7 @@ function showPage(pageName) {
         activeSection.classList.add('active');
     }
 
+    // 2. Met en évidence le bouton de navigation actif
     document.querySelectorAll('nav button').forEach(button => {
         button.style.backgroundColor = 'var(--card-background)';
     });
@@ -81,225 +97,164 @@ function showPage(pageName) {
     if (activeButton) {
         activeButton.style.backgroundColor = 'var(--highlight-color)';
     }
-    
+
+    // 3. Exécute la fonction de chargement spécifique à la page
     if (currentUserId) {
-        switch (pageName) {
-            case 'pokedex':
-                loadPokedex();
-                break;
-            case 'profile':
-                loadProfile();
-                break;
-            case 'shop':
-                loadShop();
-                break;
+        if (pageName === 'pokedex') {
+            loadPokedex();
+        } else if (pageName === 'profile') {
+            loadProfile();
+        } else if (pageName === 'shop') {
+            loadShop();
         }
-    } else if (pageName !== 'pokedex') {
-        showPage('pokedex'); 
     }
 }
 
 
-// --- GESTION POKEDEX & PROFIL ---
+// --- FONCTIONS UTILITAIRES DE LA COLLECTION (MODIFIÉES) ---
+
 
 /**
- * Crée une carte de Pokémon HTML avec un bouton de vente, les Base Stats et les IVs.
+ * Fonction utilitaire pour calculer le IV total
  */
-function createSellablePokedexCard(pokemon) {
-    if (!pokemon._id) {
-        console.warn('Pokémon sans _id trouvé, impossible de le vendre:', pokemon);
-        return ''; 
-    }
-    
-    const isShiny = pokemon.isShiny;
-    const borderStyle = isShiny ? `border: 2px solid var(--shiny-color)` : `border: 2px solid var(--captured-border)`;
-    
-    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
-    const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name;
-    const levelDisplay = pokemon.level ? `<span class="pokemon-level">Lv.${pokemon.level}</span>` : '';
-    
-    const pokeId = pokemon.pokedexId.toString().padStart(3, '0');
-    
-    // Calcul estimé du prix
-    const basePrice = 50; 
-    const levelBonus = (pokemon.level || 1) * 5; 
-    const shinyBonus = isShiny ? 200 : 0; 
-    const salePrice = basePrice + levelBonus + shinyBonus;
-
-    // --- NOUVEAU : Affichage des IVs (Valeurs Individuelles) ---
-    const ivStatsKeys = [
-        { key: 'iv_hp', display: 'PV' },
-        { key: 'iv_attack', display: 'Attaque' },
-        { key: 'iv_defense', display: 'Défense' },
-        { key: 'iv_special_attack', display: 'Att. Spé.' },
-        { key: 'iv_special_defense', display: 'Déf. Spé.' },
-        { key: 'iv_speed', display: 'Vitesse' }
-    ];
-    
-    let ivsBlockHtml = '';
-    // Vérifier si le champ IVs est présent dans l'objet (pour la rétrocompatibilité)
-    if (pokemon.iv_hp !== undefined || pokemon.iv_attack !== undefined) {
-        let totalIVs = 0;
-        let ivListHtml = '';
-        
-        ivStatsKeys.forEach(stat => {
-            // Utiliser 0 si l'IV n'est pas défini
-            const ivValue = pokemon[stat.key] || 0; 
-            totalIVs += ivValue;
-            // Mettre en surbrillance les IVs parfaits (31) en or
-            const valueStyle = ivValue === 31 ? 'color: var(--shiny-color); font-weight: bold;' : '';
-            ivListHtml += `<li>${stat.display}: <strong style="${valueStyle}">${ivValue}/31</strong></li>`;
-        });
-        
-        const ivPercentage = ((totalIVs / 186) * 100).toFixed(2);
-        
-        ivsBlockHtml = `
-            <h4 style="margin: 10px 0 5px; color: var(--highlight-color); border-top: 1px dashed var(--header-background); padding-top: 5px;">
-                IVs Totaux: ${totalIVs}/186 (<span style="color: var(--shiny-color);">${ivPercentage}%</span>)
-            </h4>
-            <ul>
-                ${ivListHtml}
-            </ul>
-        `;
-    }
-    // --- FIN NOUVEAU IVs ---
-
-    // --- Affichage des Base Stats et des IVs combinés dans le Details/Summary ---
-    let statsDetailsHtml = '';
-    
-    // Condition pour afficher le bloc "Détails des Stats" si on a soit les Base Stats, soit les IVs
-    if ((pokemon.baseStats && pokemon.baseStats.length > 0) || ivsBlockHtml) {
-        
-        let baseStatsHtml = '';
-        if (pokemon.baseStats && pokemon.baseStats.length > 0) {
-            const baseStatsList = pokemon.baseStats.map(stat => {
-                // Traduction des noms de stat
-                const translatedName = {
-                    hp: 'PV',
-                    attack: 'Attaque',
-                    defense: 'Défense',
-                    'special-attack': 'Att. Spé.',
-                    'special-defense': 'Déf. Spé.',
-                    speed: 'Vitesse'
-                }[stat.name] || stat.name;
-
-                return `<li>${translatedName}: <strong>${stat.base_stat}</strong></li>`;
-            }).join('');
-            
-            baseStatsHtml = `
-                <h4 style="margin: 10px 0 5px; color: var(--text-color); padding-top: 5px;">Stats de Base (Espèce)</h4>
-                <ul>
-                    ${baseStatsList}
-                </ul>
-            `;
-        }
-
-        statsDetailsHtml = `
-            <details style="text-align: left; margin-top: 10px; border-top: 1px solid var(--header-background); padding-top: 5px;">
-                <summary style="font-weight: bold; cursor: pointer; color: var(--text-secondary); list-style: none; display: flex; align-items: center;">
-                    <span style="flex-grow: 1;">Détails des Stats</span>
-                    <span style="font-size: 0.8em; color: var(--highlight-color);">[+]</span>
-                </summary>
-                
-                ${baseStatsHtml}
-                ${ivsBlockHtml}
-                
-            </details>
-        `;
-    }
-    // --- FIN Base Stats et IVs ---
-
-    return `
-        <div class="pokedex-card" style="${borderStyle}">
-            <span class="pokedex-id">#${pokeId}</span>
-            <img src="${imageSource}" alt="${pokemon.name}" onerror="this.onerror=null; this.src='https://placehold.co/96x96/363636/ffffff?text=Err'">
-            <span class="pokemon-name">${nameDisplay}</span>
-            ${levelDisplay}
-            ${statsDetailsHtml} <div style="margin-top: 10px; font-size: 0.9em; color: var(--text-secondary);">
-                Prix: ${salePrice} 💰
-            </div>
-            <button class="sell-button" onclick="handleSell('${pokemon._id}', '${pokemon.name}', ${salePrice})" 
-                    style="margin-top: 10px; background-color: var(--pokeball-red);">
-                Vendre
-            </button>
-            <div id="sell-msg-${pokemon._id}" style="font-size: 0.8em; margin-top: 5px;"></div>
-        </div>
-    `;
+function calculateTotalIV(ivs) {
+    if (!ivs) return 0;
+    const total = ivs.hp + ivs.attack + ivs.defense + ivs.spAttack + ivs.spDefense + ivs.speed;
+    // 31 * 6 = 186. Calcule le pourcentage des IVs totaux.
+    return Math.round((total / 186) * 100);
 }
 
 /**
- * Charge les données du Pokédex depuis l'API.
+ * Récupère l'URL du sprite (normal ou shiny) depuis la PokeAPI,
+ * en tenant compte des formes spéciales (Mega, Alola, etc.).
+ * * 🔥 NOUVELLE VERSION POUR SUPPORTER LES FORMES SPÉCIALES
+ */
+function getPokemonSpriteUrl(pokedexId, isShiny, form) {
+    // L'URL de base est POKEAPI_SPRITE_URL
+    let suffix = '';
+
+    // LOGIQUE POUR LES FORMES SPÉCIALES
+    if (form) {
+        // Normalise le nom de la forme (ex: "Mega Charizard X" -> "megacharizardx")
+        const standardizedForm = form.toLowerCase().replace(/\s/g, '');
+        
+        // Mappage des formes à leurs suffixes API (doit correspondre à la convention utilisée dans givepokemon.js)
+        if (standardizedForm === 'megacharizardx') {
+            suffix = '-mega-x';
+        } else if (standardizedForm === 'megacharizardy') {
+            suffix = '-mega-y';
+        } else if (standardizedForm.includes('alolan')) {
+            suffix = '-alola';
+        }
+        // Pour les sprites Shiny des formes spéciales, la structure est: /shiny/ID-suffixe.png
+    }
+
+    // Construction du chemin final: ID (ou ID-suffixe)
+    let path = pokedexId + suffix;
+
+    if (isShiny) {
+        return `${POKEAPI_SPRITE_URL}shiny/${path}.png`;
+    }
+    return `${POKEAPI_SPRITE_URL}${path}.png`;
+}
+
+// --- FONCTIONS DE CHARGEMENT DE PAGES ---
+
+/**
+ * Charge le Pokédex complet (liste de tous les Pokémon capturés/manquants)
  */
 async function loadPokedex() {
     const container = document.getElementById('pokedexContainer');
     const errorContainer = document.getElementById('pokedex-error-container');
-    container.innerHTML = '<p>Chargement du Pokédex...</p>';
+    container.innerHTML = 'Chargement du Pokédex...';
     errorContainer.textContent = '';
-    
+
+    if (!currentUserId) {
+        container.innerHTML = '<p>Connectez-vous pour voir votre Pokédex.</p>';
+        return;
+    }
+
     try {
-        // L'API renvoie les Base Stats et les IVs (qui sont dans l'objet Pokémon de la DB)
         const response = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await response.json();
 
         if (!response.ok) {
-            errorContainer.textContent = `Erreur: ${data.message || 'Impossible de charger les données du Pokédex.'}`;
-            container.innerHTML = `<p>Veuillez vérifier votre connexion et votre ID Discord.</p>`;
+            errorContainer.textContent = data.message || `Erreur API: ${response.status}`;
+            container.innerHTML = '';
             return;
         }
 
-        const { fullPokedex, uniquePokedexCount } = data; 
-        
-        fullPokedex.sort((a, b) => a.pokedexId - b.pokedexId);
-
-        const html = `
-            <p style="font-size: 1.1em; font-weight: bold;">Espèces uniques capturées : ${uniquePokedexCount}/151</p>
-            <p style="font-size: 0.9em; color: var(--text-secondary);">Liste complète de vos captures (doubles inclus). Cliquez sur "Vendre" pour obtenir des BotCoins.</p>
-        `;
-        
-        const pokedexGridHtml = fullPokedex.map(p => createSellablePokedexCard(p)).join('');
-
-        container.innerHTML = html + `<div class="pokedex-grid">${pokedexGridHtml}</div>`;
-
+        displayPokedex(data);
     } catch (error) {
-        console.error('Erreur de chargement du Pokédex:', error);
-        errorContainer.textContent = 'Erreur de connexion au serveur API.';
+        console.error("Erreur de chargement du Pokédex:", error);
+        errorContainer.textContent = "Erreur de connexion au serveur API.";
         container.innerHTML = '';
     }
 }
 
 /**
- * Crée la carte HTML du Pokémon Compagnon.
+ * Affiche la liste complète du Pokédex
  */
-function createCompanionCard(pokemon) {
-    if (!pokemon) {
-        return `
-            <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
-                <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
-                <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
-            </div>
-        `;
-    }
-    
-    const isShiny = pokemon.isShiny;
-    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
-    const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name; 
-    const borderColor = isShiny ? 'var(--shiny-color)' : 'var(--captured-border)';
-    
-    return `
-        <div class="profile-stat-card" style="border: 2px solid ${borderColor}; text-align: center;">
-            <h3 style="color: ${borderColor};">Pokémon Compagnon</h3>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <img src="${imageSource}" alt="${pokemon.name}" style="width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; border: 3px solid ${borderColor}; border-radius: 50%; background-color: var(--card-background);">
-                <span style="font-size: 1.8em; font-weight: bold; color: ${isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin-top: 5px;">${nameDisplay}</span>
-                <span style="font-size: 1.2em; color: var(--text-secondary);">Niv. ${pokemon.level || 5} | #${pokemon.pokedexId.toString().padStart(3, '0')}</span>
-            </div>
-        </div>
+function displayPokedex(data) {
+    const container = document.getElementById('pokedexContainer');
+    container.innerHTML = ''; // Nettoyer l'affichage précédent
+
+    const totalCaught = data.pokedex.filter(p => p.isCaptured).length;
+    const totalMons = data.pokedex.length;
+    const completionRate = ((totalCaught / totalMons) * 100).toFixed(1);
+
+    const summary = document.createElement('div');
+    summary.className = 'pokedex-summary';
+    summary.innerHTML = `
+        <p><strong>${data.username}</strong> - Total Capturés: ${totalCaught}/${totalMons} (${completionRate}%)</p>
     `;
+    container.appendChild(summary);
+
+    const grid = document.createElement('div');
+    grid.className = 'pokedex-grid';
+
+    data.pokedex.forEach(pokemon => {
+        // Le Pokémon de la liste Pokédex est soit le premier capturé, soit un objet générique si non capturé.
+        const isCaptured = pokemon.isCaptured;
+        // La propriété 'isShiny' est soit celle du premier capturé, soit 'isShinyFirstCapture' pour la carte pokédex.
+        const isShiny = pokemon.isShiny || pokemon.isShinyFirstCapture; 
+        
+        // 🔥 PASSAGE DE LA FORME
+        const form = pokemon.form; 
+        const spriteUrl = getPokemonSpriteUrl(pokemon.pokedexId, isShiny, form);
+
+        const borderStyle = isCaptured ? (isShiny ? `border: 2px solid var(--shiny-color)` : `border: 2px solid var(--captured-border)`) : `border: 2px dashed var(--missing-border)`;
+
+        const imageSource = isCaptured ? spriteUrl : `${POKEAPI_SPRITE_URL}0.png`; // Placeholder pour non-capturé
+
+        const nameDisplay = isCaptured ? (isShiny ? `✨ ${pokemon.name}` : pokemon.name) : `???`;
+        const formDisplay = isCaptured && form ? `(${form})` : '';
+
+        const count = pokemon.count || 0;
+        const countDisplay = isCaptured && count > 1 ? `<span class="pokemon-count">x${count}</span>` : '';
+        const levelDisplay = isCaptured && pokemon.level ? `<span class="pokemon-level">Lv.${pokemon.level}</span>` : '';
+
+        const pokeCard = document.createElement('div');
+        pokeCard.className = 'pokedex-card';
+        pokeCard.style.cssText = borderStyle;
+
+        pokeCard.innerHTML = `
+            <img src="${imageSource}" alt="${pokemon.name || '?'}" class="pokedex-sprite">
+            <span class="pokedex-id">#${pokemon.pokedexId}</span>
+            <div class="pokedex-details">
+                <span class="pokedex-name">${nameDisplay} ${formDisplay}</span>
+                ${countDisplay}
+            </div>
+            ${levelDisplay}
+        `;
+        grid.appendChild(pokeCard);
+    });
+
+    container.appendChild(grid);
 }
 
 /**
- * Charge les données du Profil depuis l'API.
+ * Charge le profil (argent, balls, compagnon)
  */
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
@@ -307,155 +262,235 @@ async function loadProfile() {
     container.innerHTML = '<h2>Chargement du Profil...</h2>';
     errorContainer.textContent = '';
 
+    if (!currentUserId) {
+        container.innerHTML = '<p>Connectez-vous pour voir votre profil.</p>';
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const data = await response.json();
 
         if (!response.ok) {
-            errorContainer.textContent = `Erreur: ${data.message || 'Impossible de charger les données du Profil.'}`;
+            errorContainer.textContent = data.message || `Erreur API: ${response.status}`;
             container.innerHTML = '';
             return;
         }
 
-        const user = data;
-        
-        const companionHtml = createCompanionCard(user.companionPokemon);
-        
-        const statsHtml = `
-            <div class="profile-stat-card">
-                <h3>Statistiques Clés</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    
-                    <div style="background-color: #FFD7001A; border: 2px solid #FFD700; border-radius: 8px; padding: 15px; text-align: center;">
-                        <span style="font-size: 2.5em;">💰</span>
-                        <p id="profile-money" style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: #FFD700;">${user.money.toLocaleString()}</p>
-                        <p style="margin: 0; color: var(--text-secondary);">BotCoins</p>
-                    </div>
-
-                    <div style="background-color: #4CAF501A; border: 2px solid #4CAF50; border-radius: 8px; padding: 15px; text-align: center;">
-                        <span style="font-size: 2.5em;">⭐</span>
-                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--highlight-color);">${user.stats.totalCaptures.toLocaleString()}</p>
-                        <p style="margin: 0; color: var(--text-secondary);">Captures Totales</p>
-                    </div>
-
-                    <div style="background-color: #007bff1A; border: 2px solid #007bff; border-radius: 8px; padding: 15px; text-align: center;">
-                        <span style="font-size: 2.5em;">📚</span>
-                        <p style="margin: 5px 0 0; font-size: 1.5em; font-weight: bold; color: var(--captured-border);">${user.stats.uniqueCaptures}/151</p>
-                        <p style="margin: 0; color: var(--text-secondary);">Espèces Uniques</p>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const ballsHtml = `
-            <div class="profile-stat-card">
-                <h3>Inventaire de Poké Balls</h3>
-                <div class="profile-balls-grid">
-                    ${Object.entries(user).filter(([key]) => key.endsWith('balls')).map(([key, count]) => {
-                        let displayName = key.replace('balls', ' Ball');
-                        if (key === 'pokeballs') displayName = 'Poké Ball'; 
-                        
-                        if (key.includes('luxury')) displayName = 'Luxury Ball';
-                        else if (key.includes('premier')) displayName = 'Premier Ball';
-                        else if (key.includes('safari')) displayName = 'Safari Ball';
-
-
-                        return `
-                            <div>
-                                <span class="ball-count">${(count || 0).toLocaleString()}</span>
-                                <span class="ball-name">${displayName}</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        `;
-
-        container.innerHTML = `<h2>Profil de ${user.username}</h2>` + companionHtml + statsHtml + ballsHtml;
-
+        displayProfile(data);
     } catch (error) {
-        console.error('Erreur de chargement du Profil:', error);
-        errorContainer.textContent = 'Erreur de connexion au serveur API.';
+        console.error("Erreur de chargement du profil:", error);
+        errorContainer.textContent = "Erreur de connexion au serveur API.";
         container.innerHTML = '';
     }
 }
 
 
-// --- GESTION DE LA BOUTIQUE (SHOP) et VENTE (SELL) ---
-
-function createShopCard(itemKey, item) {
-    const hasPromo = item.promo; 
-    const inputStep = itemKey === 'pokeball' ? '1' : '10'; 
-
-    const quantityInput = `
-        <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
-            <input type="number" id="qty-${itemKey}" min="1" value="1" step="${inputStep}"
-                   style="width: 80px; text-align: center; background-color: var(--header-background); color: var(--text-color);">
-            <button onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)">Acheter</button>
+/**
+ * Affiche le profil de l'utilisateur.
+ */
+function displayProfile(user) {
+    const container = document.getElementById('profileContainer');
+    
+    // 1. STATS et MONNAIE
+    let moneyCard = `
+        <div class="profile-stat-card money-card">
+            <h3>💰 Solde</h3>
+            <p class="money-amount">${user.money.toLocaleString()} BotCoins</p>
         </div>
     `;
 
-    return `
-        <div class="shop-card">
-            <div class="shop-card-header">
-                <img src="${POKEBALL_IMAGE_BASE_URL}${item.imageFragment}" alt="${item.name}" class="shop-image" 
-                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML = '<span class=\\'shop-emoji\\'>?</span>' + this.parentElement.innerHTML;">
-                <span>${item.name}</span>
+    // 2. COMPAGNON (Buddy)
+    let companionCard;
+    if (user.companionPokemon) {
+        const pokemon = user.companionPokemon;
+        const totalIV = calculateTotalIV(pokemon.ivs);
+        const isShiny = pokemon.isShiny;
+        
+        // 🔥 PASSAGE DE LA FORME
+        const spriteUrl = getPokemonSpriteUrl(pokemon.pokedexId, isShiny, pokemon.form);
+        
+        const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name;
+        const formDisplay = pokemon.form ? ` (${pokemon.form})` : '';
+        const borderColor = isShiny ? 'var(--shiny-color)' : 'var(--captured-border)';
+
+        companionCard = `
+            <div class="profile-stat-card buddy-card" style="border: 2px solid ${borderColor};">
+                <h3>Pokémon Compagnon</h3>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <img src="${spriteUrl}" alt="${pokemon.name}" class="pokemon-sprite buddy-sprite">
+                    <div>
+                        <h4>${nameDisplay.toUpperCase()} ${formDisplay}</h4>
+                        <p><strong>Niveau:</strong> ${pokemon.level}</p>
+                        <p><strong>IV Total:</strong> ${totalIV}%</p>
+                    </div>
+                </div>
             </div>
-            ${hasPromo ? `<span class="shop-promo">PROMOTION !</span>` : ''}
-            <div class="shop-cost">${item.cost.toLocaleString()} 💰 <span>(unité)</span></div>
-            <p class="shop-desc">${item.desc}</p>
-            ${quantityInput}
-            <div id="msg-${itemKey}" style="color: var(--shiny-color); margin-top: 10px; font-size: 0.9em;"></div>
+        `;
+    } else {
+        companionCard = `
+            <div class="profile-stat-card buddy-card" style="border: 2px dashed var(--missing-border);">
+                <h3>Pokémon Compagnon</h3>
+                <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
+            </div>
+        `;
+    }
+
+    // 3. BALLS (Poké Balls)
+    let ballsCard = `
+        <div class="profile-stat-card balls-card">
+            <h3>Inventaire Poké Balls</h3>
+            <div class="profile-balls-grid">
+                ${Object.entries(user).filter(([key]) => key.endsWith('balls')).map(([key, count]) => {
+                    let displayName = key.replace('balls', ' Ball');
+                    let imageName = '';
+                    if (key === 'pokeballs') { displayName = 'Poké Ball'; imageName = 'poke-ball.png'; }
+                    else if (key === 'greatballs') { displayName = 'Super Ball'; imageName = 'great-ball.png'; }
+                    else if (key === 'ultraballs') { displayName = 'Hyper Ball'; imageName = 'ultra-ball.png'; }
+                    else if (key === 'masterballs') { displayName = 'Master Ball'; imageName = 'master-ball.png'; }
+                    else if (key === 'safariballs') { displayName = 'Safari Ball'; imageName = 'safari-ball.png'; }
+                    else if (key === 'premierballs') { displayName = 'Faiblo Ball'; imageName = 'premier-ball.png'; }
+                    else if (key === 'luxuryballs') { displayName = 'Luxe Ball'; imageName = 'luxury-ball.png'; }
+
+                    return `
+                        <div>
+                            <img src="${POKEBALL_IMAGE_BASE_URL}${imageName}" alt="${displayName}" class="ball-sprite">
+                            <span class="ball-count">${(count || 0).toLocaleString()}</span>
+                            <span class="ball-name">${displayName}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+
+    // 4. AFFICHAGE FINAL
+    container.innerHTML = `
+        <h2>Profil de ${user.username}</h2>
+        <div class="profile-grid">
+            ${moneyCard}
+            ${companionCard}
+            ${ballsCard}
         </div>
     `;
 }
 
+/**
+ * Charge les articles de la boutique.
+ */
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     const errorContainer = document.getElementById('pokedex-error-container');
-    container.innerHTML = '<p>Chargement de la boutique...</p>';
+    container.innerHTML = 'Chargement de la Boutique...';
     errorContainer.textContent = '';
-    
+
+    if (!currentUserId) {
+        container.innerHTML = '<p>Connectez-vous pour accéder à la boutique.</p>';
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/shop`);
-        const items = await response.json();
+        const response = await fetch(`${API_BASE_URL}/api/shop/${currentUserId}`);
+        const data = await response.json();
 
         if (!response.ok) {
-            errorContainer.textContent = `Erreur: Impossible de charger la boutique.`;
+            errorContainer.textContent = data.message || `Erreur API: ${response.status}`;
             container.innerHTML = '';
             return;
         }
 
-        let shopGridHtml = '';
-        for (const [key, item] of Object.entries(items)) {
-            shopGridHtml += createShopCard(key, item);
-        }
-        
-        container.innerHTML = shopGridHtml;
-        
+        displayShop(data.items, data.money);
+
     } catch (error) {
-        console.error('Erreur de chargement de la boutique:', error);
-        errorContainer.textContent = 'Erreur de connexion au serveur API pour la boutique.';
+        console.error("Erreur de chargement de la boutique:", error);
+        errorContainer.textContent = "Erreur de connexion au serveur API.";
         container.innerHTML = '';
     }
 }
 
-async function handleBuy(itemKey, quantity) {
+/**
+ * Affiche la boutique dans le DOM.
+ */
+function displayShop(items, currentMoney) {
+    const container = document.getElementById('shopContainer');
+    const messageContainer = document.getElementById('shop-message-container');
+    container.innerHTML = '';
+    messageContainer.textContent = ''; // Nettoyer les messages précédents
+
+    const moneyDisplay = document.createElement('p');
+    moneyDisplay.className = 'shop-money-display';
+    moneyDisplay.innerHTML = `Votre solde : <strong class="money-amount">${currentMoney.toLocaleString()} BotCoins</strong>`;
+    container.appendChild(moneyDisplay);
+
+    const itemsGrid = document.createElement('div');
+    itemsGrid.className = 'shop-grid-items';
+
+    Object.entries(items).forEach(([key, item]) => {
+        const itemCard = document.createElement('div');
+        itemCard.className = 'shop-item-card';
+
+        // L'imageFragment est le nom du fichier image (ex: "poke-ball.png")
+        const imageUrl = `${POKEBALL_IMAGE_BASE_URL}${item.imageFragment}`; 
+
+        itemCard.innerHTML = `
+            <img src="${imageUrl}" alt="${item.name}" class="ball-sprite shop-sprite">
+            <h3>${item.name}</h3>
+            <p class="item-description">${item.desc}</p>
+            <p class="item-price">Coût : ${item.cost.toLocaleString()} BotCoins</p>
+            <button onclick="handlePurchase('${key}')">Acheter</button>
+        `;
+        itemsGrid.appendChild(itemCard);
+    });
+
+    container.appendChild(itemsGrid);
+}
+
+
+/**
+ * Gère le clic sur le bouton d'achat.
+ * * Si c'est une Poké Ball simple (promo), ouvre un menu de quantité.
+ * Sinon, procède à l'achat unitaire.
+ */
+function handlePurchase(itemKey) {
+    const messageContainer = document.getElementById('shop-message-container');
+    messageContainer.textContent = '';
+
+    // Définir les quantités disponibles pour la Poké Ball promo
+    if (itemKey === 'pokeball') {
+        const quantityContainer = document.getElementById('shop-quantity-selection');
+        quantityContainer.innerHTML = `
+            <p>Combien de Poké Balls voulez-vous acheter ?</p>
+            <button onclick="processWebPurchase('pokeball', 1)">x1 (100 ₽)</button>
+            <button onclick="processWebPurchase('pokeball', 10)">x10 (1,000 ₽)</button>
+            <button onclick="processWebPurchase('pokeball', 50)">x50 (5,000 ₽)</button>
+            <button onclick="processWebPurchase('pokeball', 100)">x100 (10,000 ₽) + Bonus !</button>
+            <button onclick="document.getElementById('shop-quantity-selection').innerHTML = '';" style="background-color: var(--red-discord);">Annuler</button>
+        `;
+    } else {
+        // Pour toutes les autres balls, achat unitaire direct
+        processWebPurchase(itemKey, 1);
+    }
+}
+
+/**
+ * Lance l'achat via l'API Web.
+ */
+async function processWebPurchase(itemKey, qty) {
+    const messageContainer = document.getElementById('shop-message-container');
+    
     if (!currentUserId) {
-        document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant d'acheter.";
+        messageContainer.style.color = 'var(--red-discord)';
+        messageContainer.textContent = 'Erreur: Veuillez vous connecter pour effectuer un achat.';
         return;
     }
+    
+    // Fermer le menu de quantité si ouvert
+    const quantityContainer = document.getElementById('shop-quantity-selection');
+    quantityContainer.innerHTML = ''; 
 
-    const qty = parseInt(quantity);
-    if (isNaN(qty) || qty < 1) {
-        document.getElementById(`msg-${itemKey}`).textContent = "Quantité invalide.";
-        return;
-    }
-
-    const messageContainer = document.getElementById(`msg-${itemKey}`);
-    messageContainer.style.color = 'var(--shiny-color)'; 
-    messageContainer.textContent = `Achat de ${qty} ${itemKey.replace('ball', ' Ball')} en cours...`;
+    messageContainer.style.color = 'var(--text-secondary)';
+    messageContainer.textContent = `Achat de ${qty} ${itemKey} en cours...`;
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/shop/buy`, {
@@ -473,15 +508,19 @@ async function handleBuy(itemKey, quantity) {
         const data = await response.json();
 
         if (response.ok) {
-            messageContainer.style.color = 'var(--highlight-color)'; 
+            // Achat réussi
+            messageContainer.style.color = 'var(--highlight-color)'; // Vert pour succès
             messageContainer.textContent = data.message;
             
+            // Recharge la boutique et le profil pour voir les mises à jour
+            loadShop(); 
             if (document.getElementById('profile-page').classList.contains('active')) {
-                loadProfile(); 
+                 loadProfile(); 
             }
 
         } else {
-            messageContainer.style.color = 'var(--red-discord)'; 
+            // Erreur d'achat (solde insuffisant, etc.)
+            messageContainer.style.color = 'var(--red-discord)'; // Rouge pour erreur
             messageContainer.textContent = data.message || `Erreur: Statut ${response.status}.`;
         }
 
@@ -492,57 +531,5 @@ async function handleBuy(itemKey, quantity) {
     }
 }
 
-async function handleSell(pokemonId, pokemonName, estimatedPrice) {
-    if (!currentUserId) {
-        document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant de vendre.";
-        return;
-    }
-
-    const messageContainer = document.getElementById(`sell-msg-${pokemonId}`);
-    messageContainer.style.color = 'var(--shiny-color)'; 
-    messageContainer.textContent = `Vente de ${pokemonName} pour ${estimatedPrice} 💰 en cours...`;
-    
-    document.querySelectorAll('.sell-button').forEach(btn => btn.disabled = true);
-
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                userId: currentUserId,
-                pokemonIdToSell: pokemonId
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            messageContainer.style.color = 'var(--highlight-color)'; 
-            messageContainer.textContent = data.message;
-            
-            await loadPokedex(); 
-            
-            if (document.getElementById('profile-page').classList.contains('active')) {
-                loadProfile(); 
-            }
-
-        } else {
-            messageContainer.style.color = 'var(--red-discord)'; 
-            messageContainer.textContent = data.message || `Erreur: Statut ${response.status}.`;
-            document.querySelectorAll('.sell-button').forEach(btn => btn.disabled = false);
-        }
-
-    } catch (error) {
-        console.error('Erreur lors de la vente:', error);
-        messageContainer.style.color = 'var(--red-discord)';
-        messageContainer.textContent = 'Erreur de connexion au serveur API.';
-        document.querySelectorAll('.sell-button').forEach(btn => btn.disabled = false);
-    }
-}
-
-
-// --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
-window.onload = initializeApp;
+// --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT DE LA PAGE) ---
+document.addEventListener('DOMContentLoaded', initializeApp);
