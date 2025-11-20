@@ -104,10 +104,10 @@ function showPage(pageName) {
 
 /**
  * Crée une carte de Pokémon HTML (capturé ou manquant).
- * MODIFIÉ pour gérer les cartes manquantes (isCaptured: false).
+ * MODIFIÉ pour accepter un flag isSellable.
  */
-function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
-    const isCaptured = pokemon.isCaptured !== false; // Par défaut, c'est un Pokémon capturé si la propriété n'est pas présente.
+function createPokedexCard(pokemon, isSellable = false) { // MODIFIÉ: Ajout de isSellable
+    const isCaptured = pokemon.isCaptured !== false; 
     const pokeId = pokemon.pokedexId.toString().padStart(3, '0');
     
     // --- LOGIQUE POUR POKÉMON MANQUANT (GRISÉ) ---
@@ -126,7 +126,7 @@ function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
         `;
     }
     
-    // --- LOGIQUE POUR POKÉMON CAPTURÉ (AVEC VENTE ET STATS) ---
+    // --- LOGIQUE POUR POKÉMON CAPTURÉ ---
 
     const isShiny = pokemon.isShiny;
     const borderStyle = isShiny ? `border: 2px solid var(--shiny-color)` : `border: 2px solid var(--captured-border)`;
@@ -153,7 +153,7 @@ function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
     ];
     
     let ivsBlockHtml = '';
-    // Vérifier si le champ IVs est présent dans l'objet (pour la rétrocompatibilité)
+    // Vérifier si le champ IVs est présent dans l'objet 
     if (pokemon.iv_hp !== undefined || pokemon.iv_attack !== undefined) {
         let totalIVs = 0;
         let ivListHtml = '';
@@ -183,7 +183,6 @@ function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
     // --- Affichage des Base Stats et des IVs combinés dans le Details/Summary ---
     let statsDetailsHtml = '';
     
-    // Condition pour afficher le bloc "Détails des Stats" si on a soit les Base Stats, soit les IVs
     if ((pokemon.baseStats && pokemon.baseStats.length > 0) || ivsBlockHtml) {
         
         let baseStatsHtml = '';
@@ -225,14 +224,10 @@ function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
     }
     // --- FIN Base Stats et IVs ---
 
-    return `
-        <div class="pokedex-card" style="${borderStyle}">
-            <span class="pokedex-id">#${pokeId}</span>
-            <img src="${imageSource}" alt="${pokemon.name}" onerror="this.onerror=null; this.src='https://placehold.co/96x96/363636/ffffff?text=Err'">
-            <span class="pokemon-name">${nameDisplay}</span>
-            ${levelDisplay}
-            ${statsDetailsHtml} 
-            
+    // --- LOGIQUE POUR LE BOUTON DE VENTE (CONDITIONNEL) ---
+    let sellButtonHtml = '';
+    if (isSellable) {
+         sellButtonHtml = `
             <div style="margin-top: 10px; font-size: 0.9em; color: var(--text-secondary);">
                 Prix: ${salePrice} 💰
             </div>
@@ -241,13 +236,24 @@ function createPokedexCard(pokemon) { // RENOMMÉ DE createSellablePokedexCard
                 Vendre
             </button>
             <div id="sell-msg-${pokemon._id}" style="font-size: 0.8em; margin-top: 5px;"></div>
-        </div>
+        `;
+    }
+
+
+    return `
+        <div class="pokedex-card" style="${borderStyle}">
+            <span class="pokedex-id">#${pokeId}</span>
+            <img src="${imageSource}" alt="${pokemon.name}" onerror="this.onerror=null; this.src='https://placehold.co/96x96/363636/ffffff?text=Err'">
+            <span class="pokemon-name">${nameDisplay}</span>
+            ${levelDisplay}
+            ${statsDetailsHtml} 
+            ${sellButtonHtml} </div>
     `;
 }
 
 /**
- * Charge les données du Pokédex depuis l'API.
- * MODIFIÉ pour utiliser maxPokedexId/maxGen1Id et séparer l'affichage par génération.
+ * Charge les données du Pokédex depuis l'API, gère la séparation par Génération et l'affichage des manquants.
+ * MODIFIÉ: Sépare l'affichage en Pokédex unique et Collection complète (doublons/shinies).
  */
 async function loadPokedex() {
     const container = document.getElementById('pokedexContainer');
@@ -265,43 +271,87 @@ async function loadPokedex() {
             return;
         }
 
-        const { fullPokedex, uniquePokedexCount, maxPokedexId, maxGen1Id } = data; // NOUVEAU: maxGen1Id
+        // NOUVEAU: Récupération de capturedPokemonsList
+        const { fullPokedex, capturedPokemonsList, uniquePokedexCount, maxPokedexId, maxGen1Id } = data; 
         
-        let html = `
+        let html = '';
+        
+        // --- 1. SECTION POKÉDEX OFFICIEL (UNIQUE + MANQUANTS, SANS BOUTON VENTE) ---
+        
+        html += `
+            <h2>Pokédex Officiel (Unique)</h2>
             <p style="font-size: 1.1em; font-weight: bold;">Espèces uniques capturées : ${uniquePokedexCount}/${maxPokedexId}</p>
             <p style="font-size: 0.9em; color: var(--text-secondary);">
-                Le Pokédex affiche tous les Pokémon de la Gen 1 à la Gen 2 (1-${maxPokedexId}). 
-                Les cartes grisées n'ont pas encore été capturées.
+                Affiche les espèces capturées et celles manquantes (grisées) jusqu'à la Gen 2 (1-${maxPokedexId}).
             </p>
         `;
         
-        // --- NOUVEAU: SÉPARATION PAR GÉNÉRATION ---
-        
-        const gen1 = fullPokedex.filter(p => p.pokedexId <= maxGen1Id);
-        const gen2 = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
+        const gen1Unique = fullPokedex.filter(p => p.pokedexId <= maxGen1Id);
+        const gen2Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
 
-        const generateGrid = (title, pokemonList) => {
+        const generateUniqueGrid = (title, pokemonList) => {
             const capturedCount = pokemonList.filter(p => p.isCaptured).length;
             return `
                 <h3 style="margin-top: 30px; border-bottom: 2px solid var(--highlight-color); padding-bottom: 5px;">
                     ${title} (${capturedCount}/${pokemonList.length})
                 </h3>
                 <div class="pokedex-grid">
-                    ${pokemonList.map(p => createPokedexCard(p)).join('')}
-                </div>
+                    ${pokemonList.map(p => createPokedexCard(p, false)).join('')} </div>
             `;
         };
 
-        if (gen1.length > 0) {
-            html += generateGrid('Génération 1 (Kanto)', gen1);
+        if (gen1Unique.length > 0) {
+            html += generateUniqueGrid('Génération 1 (Kanto)', gen1Unique);
         }
         
-        if (gen2.length > 0) {
-            html += generateGrid('Génération 2 (Johto)', gen2);
+        if (gen2Unique.length > 0) {
+            html += generateUniqueGrid('Génération 2 (Johto)', gen2Unique);
         }
+
+        // --- 2. SECTION MA COLLECTION (DOUBLONS & SHINIES, AVEC BOUTON VENTE) ---
         
-        // Remplacer l'ancienne logique d'affichage unique
-        container.innerHTML = html; 
+        // Trier la liste complète pour l'affichage Collection
+        const shinies = capturedPokemonsList.filter(p => p.isShiny);
+        const nonShinies = capturedPokemonsList.filter(p => !p.isShiny);
+        
+        // On trie les non-shinies par ID puis par Niveau (les plus hauts niveaux d'abord)
+        const sortedNonShinies = nonShinies.sort((a, b) => {
+            if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
+            return b.level - a.level; 
+        });
+        
+        html += `
+            <h2 style="margin-top: 40px;">Ma Collection Complète (${capturedPokemonsList.length} Pokémon)</h2>
+            <p style="font-size: 0.9em; color: var(--text-secondary);">
+                Affiche TOUS vos Pokémon capturés (doublons inclus) pour la vente.
+                <span style="color: var(--shiny-color); font-weight: bold;">Les Shinies sont listés séparément !</span>
+            </p>
+        `;
+        
+        // Sous-section Shinies
+        if (shinies.length > 0) {
+            html += `
+                <h3 style="margin-top: 30px; border-bottom: 2px solid var(--shiny-color); padding-bottom: 5px; color: var(--shiny-color);">
+                    ✨ Mes Pokémon Chromatiques (Shinies) (${shinies.length})
+                </h3>
+                <div class="pokedex-grid">
+                    ${shinies.map(p => createPokedexCard(p, true)).join('')} </div>
+            `;
+        }
+
+        // Sous-section Non-Shinies/Doublons
+        if (sortedNonShinies.length > 0) {
+            html += `
+                <h3 style="margin-top: 30px; border-bottom: 2px solid var(--captured-border); padding-bottom: 5px;">
+                    Mes Pokémon Normaux (${sortedNonShinies.length})
+                </h3>
+                <div class="pokedex-grid">
+                    ${sortedNonShinies.map(p => createPokedexCard(p, true)).join('')} </div>
+            `;
+        }
+
+
+        container.innerHTML = html;
 
     } catch (error) {
         console.error('Erreur de chargement du Pokédex:', error);
@@ -343,7 +393,6 @@ function createCompanionCard(pokemon) {
 
 /**
  * Charge les données du Profil depuis l'API.
- * MODIFIÉ pour utiliser maxPokedexId.
  */
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
@@ -568,6 +617,7 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
             messageContainer.style.color = 'var(--highlight-color)'; 
             messageContainer.textContent = data.message;
             
+            // Recharger le Pokédex pour rafraîchir la liste de collection après la vente
             await loadPokedex(); 
             
             if (document.getElementById('profile-page').classList.contains('active')) {
