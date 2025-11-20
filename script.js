@@ -310,21 +310,40 @@ async function loadPokedex() {
 
         // --- 2. SECTION MA COLLECTION (DOUBLONS & SHINIES, AVEC BOUTON VENTE) ---
         
-        // Trier la liste complète pour l'affichage Collection
+        // 2.1. Séparer Shinies et Non-Shinies
         const shinies = capturedPokemonsList.filter(p => p.isShiny);
         const nonShinies = capturedPokemonsList.filter(p => !p.isShiny);
         
-        // On trie les non-shinies par ID puis par Niveau (les plus hauts niveaux d'abord)
-        const sortedNonShinies = nonShinies.sort((a, b) => {
+        // 2.2. Identifier les doublons parmi les Non-Shinies
+        // Trier pour identifier la 'meilleure' instance (niveau le plus haut) à garder
+        const nonShiniesSortedForDuplicationCheck = [...nonShinies].sort((a, b) => {
+            // 1. Tri par ID pour grouper
             if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
-            return b.level - a.level; 
+            // 2. Tri par Niveau (descendant: le plus haut est gardé)
+            return b.level - a.level;
         });
+
+        const nonShinyKeepers = new Map(); // Stocke l'unique instance (meilleur niveau) pour chaque ID
+        const actualDuplicates = [];
+
+        nonShiniesSortedForDuplicationCheck.forEach(p => {
+            if (!nonShinyKeepers.has(p.pokedexId)) {
+                // Premier rencontré (le meilleur) -> c'est celui que l'on garde.
+                nonShinyKeepers.set(p.pokedexId, p);
+            } else {
+                // Déjà un "keeper" pour cet ID -> c'est un doublon
+                actualDuplicates.push(p);
+            }
+        });
+
+        
+        // 2.3. Affichage de la Collection
         
         html += `
             <h2 style="margin-top: 40px;">Ma Collection Complète (${capturedPokemonsList.length} Pokémon)</h2>
             <p style="font-size: 0.9em; color: var(--text-secondary);">
-                Affiche TOUS vos Pokémon capturés (doublons inclus) pour la vente.
-                <span style="color: var(--shiny-color); font-weight: bold;">Les Shinies sont listés séparément !</span>
+                Affiche TOUS vos Pokémon <span style="font-weight: bold;">doublons</span> et <span style="color: var(--shiny-color); font-weight: bold;">chromatiques</span> pour la vente.
+                L'unique instance non-chromatique (celle de niveau le plus haut) de chaque espèce n'est pas affichée ici.
             </p>
         `;
         
@@ -339,14 +358,31 @@ async function loadPokedex() {
             `;
         }
 
-        // Sous-section Non-Shinies/Doublons
-        if (sortedNonShinies.length > 0) {
+        // Sous-section Doublons (Anciennement "Mes Pokémon Normaux")
+        if (actualDuplicates.length > 0) { 
             html += `
                 <h3 style="margin-top: 30px; border-bottom: 2px solid var(--captured-border); padding-bottom: 5px;">
-                    Mes Pokémon Normaux (${sortedNonShinies.length})
+                    Mes Pokémon Doublons (Non-Chromatiques) (${actualDuplicates.length})
                 </h3>
                 <div class="pokedex-grid">
-                    ${sortedNonShinies.map(p => createPokedexCard(p, true)).join('')} </div>
+                    ${actualDuplicates.map(p => createPokedexCard(p, true)).join('')} </div>
+            `;
+        } else if (capturedPokemonsList.length > 0) {
+             // S'il y a des Pokémon, mais aucun doublon ni shiny
+             html += `
+                <h3 style="margin-top: 30px; border-bottom: 2px solid var(--captured-border); padding-bottom: 5px;">
+                    Mes Pokémon Doublons (Non-Chromatiques) (0)
+                </h3>
+                <p style="margin-top: 15px; color: var(--text-secondary);">
+                    Vous ne possédez pas de doublons non-chromatiques à vendre ! Vous avez conservé l'unique instance (la meilleure) de chaque espèce.
+                </p>
+            `;
+        } else if (capturedPokemonsList.length === 0) {
+             // S'il n'y a aucun Pokémon
+             html += `
+                <p style="margin-top: 15px; color: var(--text-secondary);">
+                    Votre collection est vide. Capturez des Pokémon pour les vendre !
+                </p>
             `;
         }
 
