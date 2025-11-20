@@ -161,7 +161,7 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
 // --- 5. ROUTES API (POKÉDEX, PROFIL, SHOP) ---
 
-// Route 5.1: Pokédex (MODIFIÉ pour inclure les stats de base, les Pokémon manquants et les limites de génération)
+// Route 5.1: Pokédex (MODIFIÉ pour inclure la liste complète des capturés)
 app.get('/api/pokedex/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -189,7 +189,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
             return map;
         }, {});
         
-        // 5. Enrichir chaque Pokémon capturé avec ses stats
+        // 5. Enrichir chaque Pokémon capturé (y compris les doublons) avec ses stats
         const enrichedCapturedPokedex = capturedPokemons.map(pokemon => {
             const stats = statsMap[pokemon.pokedexId] || [];
             // Assurez-vous d'utiliser toObject() si ce n'est pas déjà un objet simple
@@ -201,7 +201,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
             };
         });
 
-        // --- NOUVEAU: Génération de la liste complète (Capturés + Manquants) ---
+        // --- Génération de la liste complète pour le Pokédex UNIQUE (Capturés + Manquants) ---
         const fullPokedexMap = new Map();
 
         // Remplir la Map avec tous les IDs (1 à 251) comme manquants par défaut
@@ -220,7 +220,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         // Remplacer les "manquants" par les Pokémon capturés s'ils existent (un par ID unique)
         const uniqueCapturedPokemons = new Map();
         enrichedCapturedPokedex.forEach(pokemon => {
-             // S'assurer qu'on ne garde qu'une entrée par pokedexId (le dernier capturé, ou n'importe lequel)
+             // On garde la dernière instance capturée pour l'affichage unique du Pokédex
             uniqueCapturedPokemons.set(pokemon.pokedexId, pokemon); 
         });
 
@@ -237,10 +237,11 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 
         // 6. Envoi de l'objet STRUCTURÉ
         res.json({
-            fullPokedex: fullPokedexList, // La liste complète triée
+            fullPokedex: fullPokedexList, // La liste unique (avec manquants)
+            capturedPokemonsList: enrichedCapturedPokedex, // NOUVEAU: La liste complète pour vente/doublons
             uniquePokedexCount: capturedPokedexIds.size,
             maxPokedexId: MAX_POKEDEX_ID_GEN_2, // La limite du Pokédex
-            maxGen1Id: MAX_POKEDEX_ID_GEN_1 // NOUVEAU: Limite Gen 1
+            maxGen1Id: MAX_POKEDEX_ID_GEN_1 // Limite Gen 1
         });
 
     } catch (error) {
@@ -250,7 +251,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
 });
 
 
-// Route 5.2: Profil (MODIFIÉ pour inclure la limite max)
+// Route 5.2: Profil 
 app.get('/api/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
@@ -288,7 +289,7 @@ app.get('/api/profile/:userId', async (req, res) => {
             ...userObject,
             stats: stats,
             companionPokemon: companionPokemon,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2 // NOUVEAU: Limite max
+            maxPokedexId: MAX_POKEDEX_ID_GEN_2 
         });
     } catch (error) {
         console.error('Erreur API Profil:', error);
