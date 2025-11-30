@@ -86,6 +86,10 @@
                 width: 100%;
                 box-sizing: border-box;
             }
+            /* Afficher le titre de la sidebar sur l'en-tête mobile */
+            .header-mobile h1 {
+                display: block !important;
+            }
         }
         
         #hamburger-menu {
@@ -142,7 +146,7 @@
             background-color: var(--highlight-hover);
             color: var(--text-color);
         }
-
+        
         /* --- MAIN CONTENT STYLES --- */
         h2 {
             color: var(--highlight-color);
@@ -235,8 +239,6 @@
             font-weight: bold;
         }
         
-        /* ... Autres styles (Profile, Shop) adaptés au Dark Mode ... */
-        
         .profile-stat-card {
             background-color: var(--surface-dark);
             border-radius: var(--border-radius);
@@ -255,6 +257,15 @@
         .shop-card-header {
             color: var(--highlight-color);
         }
+        
+        /* Assurer que seules les pages actives sont visibles */
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
+        }
+
 
     </style>
 </head>
@@ -282,7 +293,7 @@
                 <span class="bar"></span>
                 <span class="bar"></span>
             </button>
-            <h1 style="margin:0; color: var(--highlight-color); font-size: 1.5em; display: none;">Pokédex 3D</h1>
+            <h1 style="margin:0; color: var(--highlight-color); font-size: 1.5em;">Pokédex 3D</h1>
         </div>
 
         <div id="auth-area">
@@ -308,7 +319,7 @@
             </div>
         </div>
 
-        <div id="profile-page" class="page-section content-block" style="display:none;">
+        <div id="profile-page" class="page-section content-block">
             <div id="profileContainer">
                 <h2>Mon Profil</h2>
                 <div class="profile-stat-card">
@@ -317,7 +328,7 @@
             </div>
         </div>
         
-        <div id="shop-page" class="page-section content-block" style="display:none;">
+        <div id="shop-page" class="page-section content-block">
             <h2>Boutique Poké Balls</h2>
             <p style="color: var(--text-secondary);">Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
             <div id="shopContainer" class="shop-grid">
@@ -328,53 +339,56 @@
     </div>
 
     <script>
-        // --- LOGIQUE JS POUR LA NAVIGATION ---
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-             // S'assurer que le premier bouton est actif au chargement si l'utilisateur est connecté (géré par script.js normalement)
-             const defaultActiveButton = document.querySelector('#nav-pokedex');
-             if (defaultActiveButton) {
-                 defaultActiveButton.classList.add('active');
-             }
-        });
-
+        // Fonction pour gérer l'ouverture/fermeture de la sidebar en mobile
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar-nav');
             sidebar.classList.toggle('open');
         }
 
-        // La fonction `showPage` doit maintenant gérer l'état 'active' des boutons
+        // Fonction pour afficher la page sélectionnée et mettre à jour l'état actif du bouton
         function showPage(pageId, clickedButton) {
-            // 1. Gérer l'affichage de la page
+            // 1. Désactiver toutes les pages
             document.querySelectorAll('.page-section').forEach(page => {
                 page.classList.remove('active');
-                page.style.display = 'none';
             });
-            document.getElementById(pageId + '-page').classList.add('active');
-            document.getElementById(pageId + '-page').style.display = 'block';
 
-            // 2. Gérer l'état "active" du bouton
+            // 2. Activer la page correspondante
+            document.getElementById(pageId + '-page').classList.add('active');
+
+            // 3. Désactiver l'état 'active' de tous les boutons de navigation
             document.querySelectorAll('.sidebar nav button').forEach(btn => {
                 btn.classList.remove('active');
             });
 
+            // 4. Activer le bouton qui a été cliqué
             if (clickedButton) {
                 clickedButton.classList.add('active');
             }
             
-            // 3. Fermer la sidebar en mobile après la sélection
+            // 5. Fermer la sidebar en mobile après la sélection
             if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('sidebar-nav');
                 sidebar.classList.remove('open');
             }
         }
         
-        // Simuler les fonctions showPage, logout etc. si elles ne sont pas dans script.js
-        if (typeof window.showPage === 'undefined') {
+        // Initialisation : S'assurer que la première page et le premier bouton sont actifs au chargement
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // S'assurer que la première page est affichée
+            document.getElementById('pokedex-page').classList.add('active');
+            // S'assurer que le premier bouton est actif
+            document.querySelector('#nav-pokedex').classList.add('active');
+            
+            // Si votre script.js contient la fonction showPage, nous l'écrasons ici pour la correction.
+            // Si vous souhaitez conserver la logique de script.js, il faudrait y mettre cette nouvelle fonction.
             window.showPage = showPage;
+        });
+        
+        // Placeholder pour la fonction logout (si elle n'est pas dans script.js)
+        function logout() {
+            console.log('Déconnexion simulée. La logique réelle doit être dans script.js');
         }
-
-        // Le reste de votre logique (chargement du Pokédex, etc.) reste dans script.js
+        
     </script>
     <script src="./script.js"></script>
 </body>
