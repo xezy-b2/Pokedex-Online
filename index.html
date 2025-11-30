@@ -5,312 +5,431 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokédex en Ligne</title>
     <style>
+        /* --- VARIABLES COSY/CONFORT (Tons Doux/Terreux) --- */
         :root {
-            --background: #1e1e1e;
-            --header-background: #2a2a2a;
-            --card-background: #363636;
-            --text-color: #ffffff;
-            --text-secondary: #aaaaaa;
-            --highlight-color: #4CAF50; /* Vert Pokémon */
-            --red-discord: #f04747;
-            --discord-blue: #5865F2; /* Bleu Discord */
-            --captured-border: #007bff;
-            --missing-border: #5a5a5a; /* MISE À JOUR: Bien définir la couleur */
-            --shiny-color: #FFD700;
-            --pokeball-red: #cc3333; /* Rouge Poké Ball */
+            --background: #f7f3e8; /* Crème clair */
+            --header-background: #e9e5d6; /* Beige doux */
+            --card-background: #ffffff; /* Blanc pur pour les cartes */
+            --text-color: #3e3e3e; /* Gris-brun foncé */
+            --text-secondary: #7a7a7a; /* Gris chaud */
+            --highlight-color: #a8765c; /* Marron/Terreux, couleur principale */
+            --red-discord: #cc5252; /* Rouge doux */
+            --discord-blue: #5865F2; 
+            --captured-border: #a8765c;
+            --missing-border: #d0d0d0; 
+            --shiny-color: #daa520; /* Or/Jaune plus doux */
+            --pokeball-red: #c04f4f; /* Rouge bordeaux */
+            
+            /* Nouvelles variables pour l'ombre cosy */
+            --cosy-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Georgia', serif; /* Police avec des empattements pour un effet plus doux */
             background-color: var(--background);
             color: var(--text-color);
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
-            padding-top: 50px;
+            padding-top: 30px; /* Plus d'espace pour la tête */
         }
 
         .container {
             width: 90%;
-            max-width: 1200px;
-            background-color: var(--header-background);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 1100px; /* Légèrement réduit */
+            text-align: center;
         }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--card-background);
-            margin-bottom: 20px;
+        h1 {
+            color: var(--highlight-color);
+            margin-bottom: 30px;
+            text-shadow: none; /* Retrait de l'ombre trop "flashy" */
+            font-size: 2.5em;
         }
 
-        header h1 {
-            margin: 0;
+        h2 {
             color: var(--text-color);
-            font-size: 2em;
-        }
-
-        .user-status {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-status span {
-            font-size: 1em;
+            margin-top: 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--header-background);
+            font-size: 1.8em;
+            font-weight: normal; /* Moins agressif */
         }
         
-        button {
-            background-color: var(--discord-blue);
-            color: white;
+        /* --- Menu Hamburger (Nouveau) --- */
+        #hamburger-menu {
+            display: none; /* Caché par défaut */
+            background: none;
             border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            padding: 10px;
+            z-index: 1000;
         }
 
-        button:hover {
-            background-color: #4e58b9;
+        .bar {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: var(--text-color);
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* --- Global Layouts --- */
+        .input-area {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        /* NOUVEAU: Style spécifique pour les cartes manquantes */
-        .missing-card {
-            background-color: var(--card-background) !important;
-        }
-
         nav {
             display: flex;
-            gap: 10px;
+            justify-content: center;
             margin-bottom: 20px;
-            border-bottom: 1px solid var(--card-background);
-            padding-bottom: 10px;
+            gap: 10px;
+            border-bottom: 1px solid var(--header-background);
+            padding-bottom: 15px;
+            background-color: var(--header-background); /* Le menu a un fond */
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: var(--cosy-shadow);
         }
+        
+        /* Version Mobile du Menu */
+        @media (max-width: 768px) {
+            #hamburger-menu {
+                display: block; /* Affiché en mobile */
+                position: absolute;
+                top: 20px;
+                right: 20px;
+            }
+
+            nav {
+                flex-direction: column;
+                position: fixed; /* Fixé pour recouvrir */
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 70%;
+                padding-top: 60px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 999;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+                border-radius: 0;
+            }
+
+            nav.open {
+                transform: translateX(0); /* Affiché lorsque la classe 'open' est présente */
+            }
+
+            nav button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            /* Cacher les boutons de navigation lorsque le menu est en mode colonne et non ouvert */
+            nav:not(.open) button {
+                display: none;
+            }
+        }
+
 
         nav button {
             background-color: var(--card-background);
             color: var(--text-color);
-            border-radius: 6px 6px 0 0;
-            padding: 10px 20px;
+            border: 1px solid var(--highlight-color);
+            padding: 12px 25px;
+            cursor: pointer;
+            border-radius: 6px; /* Coins plus doux */
+            transition: background-color 0.2s, box-shadow 0.1s;
+            font-weight: bold;
         }
 
         nav button:hover {
-            background-color: #4a4a4a;
+            background-color: var(--highlight-color);
+            color: var(--card-background);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .page-section {
             display: none;
+            text-align: left;
+            padding-top: 20px;
         }
 
         .page-section.active {
             display: block;
         }
 
-        h2 {
-            color: var(--highlight-color);
-            border-bottom: 1px solid var(--card-background);
-            padding-bottom: 10px;
+        /* --- Forms & Buttons --- */
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid var(--missing-border); /* Bordure plus neutre */
+            border-radius: 6px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            flex-grow: 1;
+            max-width: 300px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        /* --- POKEDEX GRID --- */
-        .pokedex-grid {
+        button {
+            padding: 10px 15px;
+            background-color: var(--highlight-color);
+            color: var(--card-background); /* Texte clair sur fond foncé */
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #8c604b; /* Variante de highlight */
+            transform: translateY(-1px);
+        }
+        
+        /* Discord Auth Button */
+        #discord-login-btn {
+            background-color: var(--discord-blue);
+            padding: 12px 25px;
+            margin: 10px;
+            font-size: 1.1em;
+            border-radius: 8px;
+        }
+
+        #discord-login-btn:hover {
+            background-color: #4c57c4;
+        }
+
+        /* --- Pokédex Card Styles --- */
+        .pokedex-grid, .profile-balls-grid, .shop-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 20px;
-            margin-top: 20px;
+            padding: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            justify-items: center;
+        }
+        
+        @media (max-width: 600px) {
+            .pokedex-grid, .profile-balls-grid, .shop-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
         }
 
         .pokedex-card {
             background-color: var(--card-background);
+            border-radius: 10px; /* Coins arrondis */
             padding: 15px;
-            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--cosy-shadow); /* Ombre douce */
+            transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
-            transition: transform 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+            min-height: 220px;
+            border: 1px solid var(--header-background); /* Petite bordure subtile */
         }
 
         .pokedex-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
         }
 
         .pokedex-id {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.9em;
+            top: 8px;
+            right: 12px;
             color: var(--text-secondary);
+            font-weight: normal;
+            font-size: 0.8em;
+            background-color: var(--header-background);
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
         .pokedex-card img {
             width: 96px;
             height: 96px;
             image-rendering: pixelated;
+            margin: 10px 0;
+            filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2)); /* Ombre plus douce sur l'image */
         }
 
         .pokemon-name {
             display: block;
             font-weight: bold;
-            font-size: 1.2em;
             margin-top: 5px;
-        }
-
-        .pokemon-level {
-            display: block;
-            font-size: 0.9em;
-            color: var(--highlight-color);
-            margin-bottom: 10px;
-        }
-
-        .sell-button {
-            width: 100%;
-            background-color: var(--pokeball-red);
-            padding: 8px;
-        }
-
-        .sell-button:hover {
-            background-color: #a32929;
-        }
-
-        /* --- PROFILE --- */
-        .profile-stat-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
         }
         
+        .pokemon-count, .pokemon-level {
+            display: inline-block;
+            background-color: var(--header-background);
+            color: var(--text-secondary);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin: 2px;
+        }
+        
+        /* --- Styles pour les Stats (Plus propre) --- */
+        .pokedex-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0;
+            font-size: 0.8em;
+            border-top: 1px dashed var(--header-background);
+            padding-top: 8px;
+        }
+        .pokedex-card li {
+            display: flex;
+            justify-content: space-between;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+        /* --- FIN NOUVEAU STYLE --- */
+
+
+        /* --- Profile Styles --- */
+        .profile-stat-card {
+            background-color: var(--card-background); /* Fond clair */
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--cosy-shadow);
+            border: 1px solid var(--header-background);
+        }
+
         .profile-stat-card h3 {
             color: var(--highlight-color);
-            border-bottom: 1px dashed var(--header-background);
-            padding-bottom: 10px;
             margin-top: 0;
+            border-bottom: 1px solid var(--header-background);
+            padding-bottom: 5px;
         }
-        
-        .profile-balls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            text-align: center;
-        }
-        
-        .profile-balls-grid > div {
-            padding: 10px;
-            border: 1px solid var(--header-background);
-            border-radius: 6px;
-        }
-        
+
         .ball-count {
-            display: block;
-            font-size: 1.5em;
+            font-size: 1.4em;
             font-weight: bold;
-            color: var(--shiny-color);
+            color: var(--shiny-color); /* Or/Jaune doux */
         }
         
         .ball-name {
             display: block;
-            font-size: 0.8em;
             color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        /* --- BOUTIQUE (SHOP) --- */
+        .shop-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        
+        .shop-image {
+            width: 48px; 
+            height: 48px; 
+            image-rendering: pixelated; 
+            vertical-align: middle;
+            margin-right: 10px; 
         }
 
-        /* --- SHOP --- */
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+        .shop-emoji {
+            font-size: 2.2em;
         }
 
         .shop-card {
             background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--pokeball-red);
+            border-radius: 12px;
+            padding: 25px;
             text-align: center;
-            position: relative;
+            box-shadow: var(--cosy-shadow);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .shop-card:hover {
+            transform: scale(1.02);
+            border-color: var(--highlight-color);
         }
 
         .shop-card-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: var(--highlight-color);
-            margin-bottom: 10px;
+            gap: 10px; 
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--header-background);
         }
         
-        .shop-image {
-            width: 40px;
-            height: 40px;
-            image-rendering: pixelated;
-        }
-
         .shop-cost {
-            font-size: 1.2em;
-            color: var(--shiny-color);
-            margin-bottom: 10px;
+            font-size: 1.6em;
+            font-weight: bold;
+            color: var(--shiny-color); /* Jaune or doux */
+            margin: 15px 0;
         }
         
         .shop-cost span {
-            font-size: 0.8em;
+            font-size: 0.6em;
             color: var(--text-secondary);
-            font-weight: normal;
         }
-
+        
         .shop-desc {
             font-size: 0.9em;
             color: var(--text-secondary);
-            margin-bottom: 15px;
+            height: 40px; 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
+        
         .shop-promo {
-            position: absolute;
-            top: -10px;
-            right: -10px;
             background-color: var(--pokeball-red);
             color: white;
             padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.8em;
+            border-radius: 6px;
             font-weight: bold;
-            transform: rotate(5deg);
-        }
-        
-        input[type="number"] {
-            padding: 8px;
-            border: 1px solid var(--captured-border);
-            border-radius: 4px;
-            color: var(--text-color);
-            background-color: var(--header-background);
+            margin-top: 10px;
+            display: inline-block;
         }
 
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Pokédex en Ligne</h1>
-        </header>
+        <h1>Pokédex Confort 🛋️</h1>
         
-        <div class="user-status">
-            <div id="logged-out-user">
-                <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" target="_blank" style="text-decoration: none;">
-                    <button style="background-color: var(--discord-blue);">
-                        Se connecter avec Discord
-                    </button>
+        <div id="auth-area" style="margin-bottom: 30px;">
+            <div id="logged-out-user" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <a id="discord-login-btn" href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&response_type=code&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify" class="button">
+                    Se connecter avec Discord
                 </a>
+                <p style="color: var(--text-secondary); margin: 0;">(Vous devez vous connecter pour voir votre Pokédex !)</p>
             </div>
-            <div id="logged-in-user" style="display:none; align-items: center; gap: 15px;">
-                <span>Bienvenue, <span id="display-username" style="color: var(--shiny-color);">Dresseur</span> !</span>
+            
+            <div id="logged-in-user" style="display: none; justify-content: center; align-items: center; gap: 20px;">
+                <span style="font-size: 1.2em;">Bienvenue, <span id="display-username" style="color: var(--shiny-color); font-weight: bold;">Dresseur</span> !</span>
                 <button onclick="logout()">Déconnexion</button>
             </div>
         </div>
+
+        <button id="hamburger-menu" aria-label="Ouvrir le menu de navigation" onclick="toggleMenu()">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
 
         <nav id="main-nav" style="display:none;">
             <button id="nav-pokedex" onclick="showPage('pokedex')">Mon Pokédex</button>
@@ -337,12 +456,43 @@
             <h2>Boutique Poké Balls</h2>
             <p style="color: var(--text-secondary);">Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
             <div id="shopContainer" class="shop-grid">
-                </div>
+                <p>Chargement des articles...</p>
+            </div>
         </div>
-        
+
     </div>
-    
-    <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Assurez-vous que le menu principal est initialement masqué/géré par JS/CSS
+            const mainNav = document.getElementById('main-nav');
+            if (mainNav) {
+                mainNav.style.display = 'flex'; // Remplace le display:none statique pour que le JS gère l'affichage/la navigation
+            }
+        });
+
+        function toggleMenu() {
+            const nav = document.getElementById('main-nav');
+            const button = document.getElementById('hamburger-menu');
+            nav.classList.toggle('open');
+            
+            // Pour l'animation de la croix (optionnel, mais propre)
+            // button.classList.toggle('open');
+        }
+        
+        // Simuler la fonction showPage de votre script.js pour fermer le menu en mobile
+        const originalShowPage = window.showPage;
+        window.showPage = function(pageId) {
+            if (originalShowPage) {
+                originalShowPage(pageId);
+            }
+            // Fermer le menu après la sélection en mobile
+            if (window.innerWidth <= 768) {
+                const nav = document.getElementById('main-nav');
+                nav.classList.remove('open');
+            }
+        }
+    </script>
+    <script src="./script.js"></script>
 </body>
 </html>
-
