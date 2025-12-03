@@ -1,21 +1,22 @@
-// webserver.js
+// webserver.js (FICHIER COMPLET MODIFIÉ)
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
 const axios = require('axios'); 
-const User = require('./models/User.js'); 
+const User = require('./models/User.js'); // Assurez-vous que ce chemin est correct
 
 const app = express();
 const PORT = process.env.PORT || 3000; 
 
+// --- 0. CONFIGURATION ET MIDDLEWARES ---
+app.use(cors());
+app.use(express.json()); // pour parser les requêtes JSON
+
 // --- 0. CONSTANTES ET CACHE POUR POKEAPI ---
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
+const MAX_POKEDEX_ID = 151; // Utiliser la limite que vous souhaitez (ex: 1025 pour tous les Pokémon existants)
 const statsCache = {}; // Cache simple pour éviter les appels API redondants
-
-// NOUVEAU: Constantes pour les limites de Génération
-const MAX_POKEDEX_ID_GEN_1 = 151; 
-const MAX_POKEDEX_ID_GEN_2 = 251; // Limite pour la Génération 2
 
 async function fetchPokemonBaseStats(pokedexId) {
     if (statsCache[pokedexId]) {
@@ -37,332 +38,91 @@ async function fetchPokemonBaseStats(pokedexId) {
         return baseStats;
     } catch (error) {
         console.error(`Erreur de récupération des stats pour Pokedex ID ${pokedexId}:`, error.message);
-        return [];
+        return []; // Retourne un tableau vide en cas d'erreur
     }
 }
-// --- FIN POKEAPI ---
 
-// --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
-const POKEBALL_COST = 100;
-const GREATBALL_COST = 300;
-const ULTRABALL_COST = 800;
-const MASTERBALL_COST = 15000; 
-const SAFARIBALL_COST = 500;
-const PREMIERBALL_COST = 150;
-const LUXURYBALL_COST = 1000;
+/**
+ * Génère un Pokémon aléatoire avec des statistiques de base.
+ */
+async function generateRandomPokemon() {
+    const pokedexId = Math.floor(Math.random() * MAX_POKEDEX_ID) + 1; // ID de 1 à MAX
+    const level = Math.floor(Math.random() * 99) + 1; // Niveau de 1 à 100
+    // Une chance sur 100 pour la démonstration (ajustez selon votre taux)
+    const SHINY_RATE = 1 / 100; 
+    const isShiny = Math.random() < SHINY_RATE; 
 
-const SHOP_ITEMS = {
-    'pokeball': { key: 'pokeballs', name: 'Poké Ball', cost: POKEBALL_COST, promo: true, imageFragment: 'poke-ball.png', desc: `Coût unitaire: ${POKEBALL_COST} BotCoins. Promotion: +1 ball spéciale par 10 achetées!` },
-    'greatball': { key: 'greatballs', name: 'Super Ball', cost: GREATBALL_COST, promo: false, imageFragment: 'great-ball.png', desc: `Coût: ${GREATBALL_COST} BotCoins. (1.5x Taux de capture)` },
-    'ultraball': { key: 'ultraballs', name: 'Hyper Ball', cost: ULTRABALL_COST, promo: false, imageFragment: 'ultra-ball.png', desc: `Coût: ${ULTRABALL_COST} BotCoins. (2.0x Taux de capture)` },
-    'masterball': { key: 'masterballs', name: 'Master Ball', cost: MASTERBALL_COST, promo: false, imageFragment: 'master-ball.png', desc: `Coût: ${MASTERBALL_COST} BotCoins. (Capture Assurée!)` },
-    'safariball': { key: 'safariballs', name: 'Safari Ball', cost: SAFARIBALL_COST, promo: false, imageFragment: 'safari-ball.png', desc: `Coût: ${SAFARIBALL_COST} BotCoins.` },
-    'premierball': { key: 'premierballs', name: 'Honor Ball', cost: PREMIERBALL_COST, promo: false, imageFragment: 'premier-ball.png', desc: `Coût: ${PREMIERBALL_COST} BotCoins.` },
-    'luxuryball': { key: 'luxuryballs', name: 'Luxe Ball', cost: LUXURYBALL_COST, promo: false, imageFragment: 'luxury-ball.png', desc: `Coût: ${LUXURYBALL_COST} BotCoins.` },
-};
+    // 1. Récupérer le nom (nécessite une requête)
+    const pokeDataResponse = await axios.get(`${POKEAPI_BASE_URL}${pokedexId}`);
+    const pokemonName = pokeDataResponse.data.name;
 
-const BONUS_BALLS = [
-    { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
-    { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
-    { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
-];
-
-function getRandomBonusBall() {
-    const randomIndex = Math.floor(Math.random() * BONUS_BALLS.length);
-    return BONUS_BALLS[randomIndex];
-}
-
-// --- SECRETS & URLS ---
-const mongoUri = process.env.MONGO_URI; 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = 'https://pokedex-online-pxmg.onrender.com/api/auth/discord/callback'; 
-
-const RENDER_API_PUBLIC_URL = 'https://pokedex-online-pxmg.onrender.com';
-const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online'; 
-
-
-// --- 2. CONFIGURATION EXPRESS & CORS ---
-const corsOptions = {
-    origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
-    methods: 'GET, POST, OPTIONS', 
-    allowedHeaders: ['Content-Type'], 
-    credentials: true, 
-    optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions)); 
-app.use(express.json()); 
-
-
-// --- 3. CONNEXION MONGODB ---
-if (!mongoUri) {
-    console.error('❌ FATAL: La variable d\'environnement MONGO_URI n\'est pas définie.');
-    if (process.env.NODE_ENV === 'production') process.exit(1); 
-}
-
-mongoose.connect(mongoUri)
-    .then(() => console.log('✅ Connecté à la base de données MongoDB pour le site web !'))
-    .catch(err => {
-        console.error('❌ Erreur de connexion MongoDB :', err);
-        if (process.env.NODE_ENV === 'production') process.exit(1);
-    });
-
-
-// --- 4. ROUTES AUTHENTIFICATION ---
-
-app.get('/api/auth/discord/callback', async (req, res) => {
-    const code = req.query.code;
-
-    if (!code) {
-        return res.redirect(GITHUB_PAGES_URL); 
-    }
-
-    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-        console.error("Secrets Discord non définis.");
-        return res.status(500).send("Erreur de configuration OAuth.");
-    }
-
-    try {
-        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', new URLSearchParams({
-            client_id: DISCORD_CLIENT_ID,
-            client_secret: DISCORD_CLIENT_SECRET,
-            grant_type: 'authorization_code',
-            code: code,
-            redirect_uri: DISCORD_REDIRECT_URI,
-            scope: 'identify' 
-        }).toString(), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        });
-
-        const accessToken = tokenResponse.data.access_token;
-
-        const userResponse = await axios.get('https://discord.com/api/users/@me', {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-
-        const discordUser = userResponse.data;
-        
-        await User.findOneAndUpdate(
-            { userId: discordUser.id },
-            { $set: { username: discordUser.username } },
-            { upsert: true, new: true } 
-        );
-
-        const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
-        res.redirect(redirectUrl); 
-
-    } catch (error) {
-        console.error('Erreur lors de l\'échange OAuth2:', error.response?.data || error.message);
-        res.status(500).send('Échec de la connexion Discord.');
-    }
-});
-
-
-// --- 5. ROUTES API (POKÉDEX, PROFIL, SHOP) ---
-
-// Route 5.1: Pokédex (MODIFIÉ pour inclure la liste complète des capturés)
-app.get('/api/pokedex/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const user = await User.findOne({ userId: userId }).select('pokemons');
-
-        if (!user) {
-            return res.status(404).json({ message: "Dresseur non trouvé." });
-        }
-
-        const capturedPokemons = user.pokemons || [];
-        
-        // 1. Map pour un accès rapide aux IDs capturés uniques
-        const capturedPokedexIds = new Set(capturedPokemons.map(p => p.pokedexId));
-        
-        // 2. Collecter les IDs uniques pour les stats
-        const uniquePokedexIds = [...capturedPokedexIds];
-        
-        // 3. Fetcher les stats en parallèle
-        const statsPromises = uniquePokedexIds.map(id => fetchPokemonBaseStats(id));
-        const allStats = await Promise.all(statsPromises);
-        
-        // 4. Créer une map PokedexId -> Stats
-        const statsMap = uniquePokedexIds.reduce((map, id, index) => {
-            map[id] = allStats[index];
-            return map;
-        }, {});
-        
-        // 5. Enrichir chaque Pokémon capturé (y compris les doublons) avec ses stats
-        const enrichedCapturedPokedex = capturedPokemons.map(pokemon => {
-            const stats = statsMap[pokemon.pokedexId] || [];
-            // Assurez-vous d'utiliser toObject() si ce n'est pas déjà un objet simple
-            const enrichedPokemon = pokemon.toObject ? pokemon.toObject() : pokemon;
-            
-            return {
-                ...enrichedPokemon,
-                baseStats: stats // AJOUT DES STATS ICI
-            };
-        });
-
-        // --- Génération de la liste complète pour le Pokédex UNIQUE (Capturés + Manquants) ---
-        const fullPokedexMap = new Map();
-
-        // Remplir la Map avec tous les IDs (1 à 251) comme manquants par défaut
-        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_2; id++) {
-            fullPokedexMap.set(id, {
-                pokedexId: id,
-                name: `[${id.toString().padStart(3, '0')}] Inconnu`, 
-                isCaptured: false,
-                // Minimal properties for consistency
-                baseStats: [], level: 0, isShiny: false, 
-                iv_hp: 0, iv_attack: 0, iv_defense: 0, 
-                iv_special_attack: 0, iv_special_defense: 0, iv_speed: 0,
-            });
-        }
-        
-        // Remplacer les "manquants" par les Pokémon capturés s'ils existent (un par ID unique)
-        const uniqueCapturedPokemons = new Map();
-        enrichedCapturedPokedex.forEach(pokemon => {
-             // On garde la dernière instance capturée pour l'affichage unique du Pokédex
-            uniqueCapturedPokemons.set(pokemon.pokedexId, pokemon); 
-        });
-
-        uniqueCapturedPokemons.forEach((pokemon, pokedexId) => {
-            fullPokedexMap.set(pokedexId, {
-                ...pokemon,
-                isCaptured: true // S'assurer que le drapeau est correct
-            });
-        });
-
-        // Transformer la Map en tableau et la trier (normalement déjà triée)
-        const fullPokedexList = Array.from(fullPokedexMap.values()).sort((a, b) => a.pokedexId - b.pokedexId);
-
-
-        // 6. Envoi de l'objet STRUCTURÉ
-        res.json({
-            fullPokedex: fullPokedexList, // La liste unique (avec manquants)
-            capturedPokemonsList: enrichedCapturedPokedex, // NOUVEAU: La liste complète pour vente/doublons
-            uniquePokedexCount: capturedPokedexIds.size,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2, // La limite du Pokédex
-            maxGen1Id: MAX_POKEDEX_ID_GEN_1 // Limite Gen 1
-        });
-
-    } catch (error) {
-        console.error('Erreur API Pokédex:', error);
-        res.status(500).json({ message: 'Erreur interne du serveur.' });
-    }
-});
-
-
-// Route 5.2: Profil 
-app.get('/api/profile/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        
-        const user = await User.findOne({ userId: userId }).select('-__v'); 
-        
-        if (!user) {
-            return res.status(404).json({ message: "Dresseur non trouvé." });
-        }
-        
-        let companionPokemon = null;
-        if (user.companionPokemonId && user.pokemons) {
-            const companionIdString = user.companionPokemonId.toString();
-            companionPokemon = user.pokemons.find(p => p._id.toString() === companionIdString);
-        }
-
-        const totalPokemons = await User.aggregate([
-            { $match: { userId: userId } },
-            { $project: { 
-                totalCount: { $size: "$pokemons" },
-                uniqueCount: { $size: { $setUnion: ["$pokemons.pokedexId", []] } }
-            }}
-        ]);
-        
-        const stats = {
-            totalCaptures: totalPokemons[0]?.totalCount || 0,
-            uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
-        };
-
-        const userObject = user.toObject();
-        delete userObject.pokemons; 
-        delete userObject.companionPokemonId; 
-
-        res.json({
-            ...userObject,
-            stats: stats,
-            companionPokemon: companionPokemon,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2 
-        });
-    } catch (error) {
-        console.error('Erreur API Profil:', error);
-        res.status(500).json({ message: 'Erreur interne du serveur.' });
-    }
-});
-
-// Route 5.3: Boutique (GET) 
-app.get('/api/shop', (req, res) => {
-    res.json(SHOP_ITEMS);
-});
-
-
-// Route 5.4: Achat (POST) 
-app.post('/api/shop/buy', async (req, res) => {
-    const { userId, itemKey, quantity } = req.body;
-    const item = SHOP_ITEMS[itemKey];
-
-    if (!userId || !item || !quantity || quantity < 1) {
-        return res.status(400).json({ success: false, message: "Requête invalide." });
-    }
-
-    const totalCost = item.cost * quantity;
+    // 2. Générer les IVs aléatoires (de 0 à 31)
+    const generateIV = () => Math.floor(Math.random() * 32);
     
+    const newPokemon = {
+        pokedexId: pokedexId,
+        name: pokemonName.charAt(0).toUpperCase() + pokemonName.slice(1), // Capitalize
+        level: level,
+        isShiny: isShiny,
+        ivs: {
+            hp: generateIV(),
+            attack: generateIV(),
+            defense: generateIV(),
+            'special-attack': generateIV(),
+            'special-defense': generateIV(),
+            speed: generateIV(),
+        },
+        // Ajoutez ici tout autre champ que votre schéma `pokemons` requiert (ex: nature, moves)
+    };
+
+    return newPokemon;
+}
+
+
+// --- 1. CONNEXION MONGODB ---
+// Remplacez par votre URI de connexion
+const DB_URI = process.env.DB_URI || 'mongodb://localhost:27017/pokedex-discord'; 
+
+mongoose.connect(DB_URI)
+    .then(() => console.log('Connecté à MongoDB'))
+    .catch(err => console.error('Erreur de connexion MongoDB:', err));
+
+
+// --- 2. ROUTES API ---
+
+// Route 2.1: Récupération des données utilisateur et de la liste des Pokémon
+app.get('/api/user/:userId', async (req, res) => {
     try {
-        const user = await User.findOne({ userId });
-
+        const user = await User.findOne({ userId: req.params.userId });
         if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
-        }
-
-        if (user.money < totalCost) {
-            return res.status(400).json({ success: false, message: `Fonds insuffisants. Il vous manque ${totalCost - user.money} 💰.` });
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
         }
         
-        const update = {
-            $inc: { 
-                money: -totalCost,
-                [`${item.key}`]: quantity
-            }
-        };
-
-        let bonusMessage = '';
-        if (item.promo && itemKey === 'pokeball' && quantity >= 10) {
-            const bonusCount = Math.floor(quantity / 10);
-            for (let i = 0; i < bonusCount; i++) {
-                const bonusBall = getRandomBonusBall();
-                update.$inc[`${bonusBall.key}`] = (update.$inc[`${bonusBall.key}`] || 0) + 1;
-                bonusMessage += ` +1 ${bonusBall.name}`;
-            }
-        }
-        
-        await User.updateOne({ userId }, update);
+        // Récupérer les stats de base pour tous les Pokémon
+        const pokemonsWithStats = await Promise.all(user.pokemons.map(async p => {
+            // Utiliser le .toObject() si le pokémon est un sous-document Mongoose
+            const pokeObj = p.toObject ? p.toObject() : p; 
+            const baseStats = await fetchPokemonBaseStats(p.pokedexId);
+            return { ...pokeObj, baseStats };
+        }));
 
         res.json({
-            success: true,
-            message: `${quantity.toLocaleString()} ${item.name}(s) achetée(s) pour ${totalCost.toLocaleString()} 💰.` + (bonusMessage ? ` BONUS: ${bonusMessage.trim()}` : ''),
-            newMoney: user.money - totalCost
+            ...user.toObject(),
+            pokemons: pokemonsWithStats,
         });
 
     } catch (error) {
-        console.error('Erreur API Achat Boutique:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
+        console.error('Erreur API user:', error);
+        res.status(500).json({ message: 'Erreur interne du serveur.' });
     }
 });
 
-
-// Route 5.5: Vendre un Pokémon (POST) ---
+// Route 2.2: Vente d'un Pokémon
 app.post('/api/sell/pokemon', async (req, res) => {
-    const { userId, pokemonIdToSell } = req.body;
+    const { userId, pokemonIdToSell } = req.body; 
 
     if (!userId || !pokemonIdToSell) {
-        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
+        return res.status(400).json({ success: false, message: "Données manquantes (userId ou pokemonIdToSell)." });
     }
 
     try {
@@ -372,7 +132,6 @@ app.post('/api/sell/pokemon', async (req, res) => {
             return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
         }
         
-        // Convertir l'ID pour la comparaison (Mongoose ObjectID vs String)
         const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToSell);
 
         if (pokemonIndex === -1) {
@@ -381,20 +140,21 @@ app.post('/api/sell/pokemon', async (req, res) => {
 
         const pokemonToSell = user.pokemons[pokemonIndex];
         
-        // Calcul du prix (basé sur le frontend)
+        // Logique de calcul du prix
         const basePrice = 50; 
         const levelBonus = (pokemonToSell.level || 1) * 5; 
         const shinyBonus = pokemonToSell.isShiny ? 200 : 0; 
         
         const salePrice = basePrice + levelBonus + shinyBonus;
 
-        // Vérification du compagnon
         if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToSell) {
              return res.status(403).json({ success: false, message: `Vous ne pouvez pas vendre votre Compagnon (${pokemonToSell.name}). Retirez-le avec !removecompanion d'abord.` });
         }
 
-        // Transaction
+        // 1. Ajouter l'argent
         user.money += salePrice;
+        
+        // 2. Retirer le Pokémon
         user.pokemons.splice(pokemonIndex, 1); 
 
         await user.save();
@@ -407,17 +167,20 @@ app.post('/api/sell/pokemon', async (req, res) => {
 
     } catch (error) {
         console.error('Erreur API Vente Pokémon:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
+        res.status(500).json({ success: false, message: "Erreur interne du serveur lors de la vente." });
     }
 });
 
-// Route 5.6: Définir le Compagnon (POST)
-app.post('/api/companion/set', async (req, res) => {
-    const { userId, pokemonId } = req.body;
-    
-    if (!userId || !pokemonId) {
-        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
+// --- Route 2.3: Échange Miracle (POST) ---
+app.post('/api/trade/wonder', async (req, res) => {
+    const { userId, pokemonIdToTrade } = req.body; 
+
+    if (!userId || !pokemonIdToTrade) {
+        return res.status(400).json({ success: false, message: "Données manquantes (userId ou pokemonIdToTrade)." });
     }
+    
+    // Coût de l'échange (doit correspondre au frontend)
+    const TRADE_COST = 50; 
 
     try {
         const user = await User.findOne({ userId });
@@ -425,31 +188,53 @@ app.post('/api/companion/set', async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
         }
-        
-        const pokemonExists = user.pokemons.some(p => p._id.toString() === pokemonId);
 
-        if (!pokemonExists) {
-             return res.status(404).json({ success: false, message: "Ce Pokémon n'est pas dans votre collection." });
+        // 1. Vérification de l'argent
+        if (user.money < TRADE_COST) {
+             return res.status(403).json({ success: false, message: `L'échange miracle coûte ${TRADE_COST} 💰. Vous n'avez que ${user.money} 💰.` });
         }
         
-        user.companionPokemonId = pokemonId;
-        await user.save();
+        // 2. Trouver et vérifier le Pokémon à échanger
+        const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
 
-        res.json({
-            success: true,
-            message: `Nouveau compagnon défini !`,
-            companionId: pokemonId
+        if (pokemonIndex === -1) {
+            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
+        }
+
+        const pokemonToTrade = user.pokemons[pokemonIndex];
+
+        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
+             return res.status(403).json({ success: false, message: `Vous ne pouvez pas échanger votre Compagnon (${pokemonToTrade.name}).` });
+        }
+
+        // 3. Déduire la taxe et retirer le Pokémon
+        user.money -= TRADE_COST;
+        user.pokemons.splice(pokemonIndex, 1);
+        
+        // 4. Générer le nouveau Pokémon aléatoire
+        const receivedPokemon = await generateRandomPokemon();
+        
+        // 5. Ajouter le nouveau Pokémon à la collection de l'utilisateur
+        user.pokemons.push(receivedPokemon);
+
+        await user.save();
+        
+        const newPokemonName = receivedPokemon.isShiny ? `✨ ${receivedPokemon.name}` : receivedPokemon.name;
+        
+        res.json({ 
+            success: true, 
+            message: `Échange miracle réussi ! Vous avez reçu ${newPokemonName} (Niv.${receivedPokemon.level || 1}) en échange de ${pokemonToTrade.name}.`,
+            newMoney: user.money
         });
 
     } catch (error) {
-        console.error('Erreur API Set Compagnon:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
+        console.error('Erreur API Échange Miracle (Simplifié):', error);
+        res.status(500).json({ success: false, message: "Erreur interne du serveur lors de l'échange." });
     }
 });
 
 
-// --- 6. DÉMARRAGE DU SERVEUR ---
-
+// --- 3. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
-    console.log(`🌍 Serveur web démarré sur le port ${PORT}`);
+    console.log(`Serveur démarré sur le port ${PORT}`);
 });
