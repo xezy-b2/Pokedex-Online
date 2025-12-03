@@ -15,7 +15,7 @@
             --red-discord: #f04747;
             --discord-blue: #5865F2; /* Bleu Discord */
             --captured-border: #007bff;
-            --missing-border: #5a5a5a; /* MISE À JOUR: Bien définir la couleur */
+            --missing-border: #5a5a5a; 
             --shiny-color: #FFD700;
             --pokeball-red: #cc3333; /* Rouge Poké Ball */
         }
@@ -31,285 +31,206 @@
             padding-top: 50px;
         }
 
-        .container {
+        #app-container {
             width: 90%;
             max-width: 1200px;
-            background-color: var(--header-background);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
-        header {
+        /* --- Header/Nav/Login --- */
+        #user-info-bar, #login-section {
+            background-color: var(--header-background);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--card-background);
-            margin-bottom: 20px;
         }
 
-        header h1 {
-            margin: 0;
-            color: var(--text-color);
-            font-size: 2em;
-        }
-
-        .user-status {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-status span {
-            font-size: 1em;
-        }
-        
-        button {
-            background-color: var(--discord-blue);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #4e58b9;
-        }
-        
-        /* NOUVEAU: Style spécifique pour les cartes manquantes */
-        .missing-card {
-            background-color: var(--card-background) !important;
-        }
-
-        nav {
+        #main-nav {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
-            border-bottom: 1px solid var(--card-background);
-            padding-bottom: 10px;
         }
 
-        nav button {
+        #main-nav button {
             background-color: var(--card-background);
             color: var(--text-color);
-            border-radius: 6px 6px 0 0;
+            border: none;
             padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
 
-        nav button:hover {
-            background-color: #4a4a4a;
+        #main-nav button:hover {
+            background-color: var(--highlight-color);
         }
 
+        #login-section button, #user-info-bar button {
+            padding: 8px 15px;
+            background-color: var(--discord-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* --- Contenu des Pages --- */
         .page-section {
             display: none;
+            padding: 20px;
+            background-color: var(--card-background);
+            border-radius: 8px;
         }
-
         .page-section.active {
             display: block;
         }
 
-        h2 {
-            color: var(--highlight-color);
-            border-bottom: 1px solid var(--card-background);
-            padding-bottom: 10px;
-        }
-
-        /* --- POKEDEX GRID --- */
-        .pokedex-grid {
+        /* --- Pokédex Container (Grille) --- */
+        #pokedexContainer {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px;
-            margin-top: 20px;
+            padding-top: 10px;
         }
-
+        
         .pokedex-card {
-            background-color: var(--card-background);
+            background-color: var(--header-background);
             padding: 15px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             position: relative;
-            transition: transform 0.2s;
-        }
-
-        .pokedex-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .pokedex-id {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.9em;
-            color: var(--text-secondary);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .pokedex-card img {
             width: 96px;
             height: 96px;
+            margin: 0 auto 10px;
             image-rendering: pixelated;
         }
 
+        .pokedex-id {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
         .pokemon-name {
-            display: block;
-            font-weight: bold;
             font-size: 1.2em;
-            margin-top: 5px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
         .pokemon-level {
             display: block;
             font-size: 0.9em;
-            color: var(--highlight-color);
+            color: var(--text-secondary);
             margin-bottom: 10px;
         }
-
-        .sell-button {
-            width: 100%;
-            background-color: var(--pokeball-red);
-            padding: 8px;
-        }
-
-        .sell-button:hover {
-            background-color: #a32929;
-        }
-
-        /* --- PROFILE --- */
-        .profile-stat-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
         
-        .profile-stat-card h3 {
-            color: var(--highlight-color);
-            border-bottom: 1px dashed var(--header-background);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        
-        .profile-balls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            text-align: center;
-        }
-        
-        .profile-balls-grid > div {
-            padding: 10px;
-            border: 1px solid var(--header-background);
-            border-radius: 6px;
-        }
-        
-        .ball-count {
-            display: block;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: var(--shiny-color);
-        }
-        
-        .ball-name {
-            display: block;
-            font-size: 0.8em;
-            color: var(--text-secondary);
+        /* --- Détails des Stats --- */
+        .stats-details {
+            text-align: left;
+            margin-top: 10px;
+            border-top: 1px dashed var(--card-background);
+            padding-top: 5px;
         }
 
-        /* --- SHOP --- */
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .shop-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            position: relative;
-        }
-
-        .shop-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 1.5em;
+        .stats-details summary {
+            cursor: pointer;
             font-weight: bold;
             color: var(--highlight-color);
-            margin-bottom: 10px;
-        }
-        
-        .shop-image {
-            width: 40px;
-            height: 40px;
-            image-rendering: pixelated;
         }
 
-        .shop-cost {
-            font-size: 1.2em;
-            color: var(--shiny-color);
-            margin-bottom: 10px;
-        }
-        
-        .shop-cost span {
+        .stats-content {
             font-size: 0.8em;
-            color: var(--text-secondary);
-            font-weight: normal;
-        }
-
-        .shop-desc {
-            font-size: 0.9em;
-            color: var(--text-secondary);
-            margin-bottom: 15px;
-        }
-
-        .shop-promo {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background-color: var(--pokeball-red);
-            color: white;
-            padding: 5px 10px;
+            margin-top: 5px;
+            padding: 5px;
+            background-color: #2a2a2a;
             border-radius: 5px;
-            font-size: 0.8em;
-            font-weight: bold;
-            transform: rotate(5deg);
+        }
+
+        .stats-content p {
+            margin: 3px 0;
         }
         
-        input[type="number"] {
+        /* --- Boutons d'Action --- */
+        .sell-button, .trade-button {
+            width: 100%;
             padding: 8px;
-            border: 1px solid var(--captured-border);
-            border-radius: 4px;
-            color: var(--text-color);
-            background-color: var(--header-background);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .sell-button {
+            background-color: var(--pokeball-red); 
+        }
+
+        .sell-button:hover:not(:disabled) {
+            background-color: #a32a2a;
+        }
+
+        /* NOUVEAU STYLE POUR L'ÉCHANGE MIRACLE */
+        .trade-button {
+            width: 100%;
+            background-color: var(--highlight-color);
+            padding: 8px;
+        }
+
+        .trade-button:hover:not(:disabled) {
+            background-color: #3e8e41; /* Vert un peu plus foncé */
+        }
+        
+        .sell-button:disabled, .trade-button:disabled {
+            background-color: #5a5a5a;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+
+        /* --- Utilitaires --- */
+        .loader {
+            border: 4px solid var(--card-background);
+            border-top: 4px solid var(--highlight-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Pokédex en Ligne</h1>
-        </header>
-        
-        <div class="user-status">
-            <div id="logged-out-user">
-                <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" target="_blank" style="text-decoration: none;">
-                    <button style="background-color: var(--discord-blue);">
-                        Se connecter avec Discord
-                    </button>
-                </a>
-            </div>
-            <div id="logged-in-user" style="display:none; align-items: center; gap: 15px;">
-                <span>Bienvenue, <span id="display-username" style="color: var(--shiny-color);">Dresseur</span> !</span>
-                <button onclick="logout()">Déconnexion</button>
-            </div>
+    <div id="app-container">
+        <div id="login-section" style="display:none;">
+            <h2>Bienvenue sur votre Pokédex !</h2>
+            <a href="URL_DE_VOTRE_CONNEXION_DISCORD_ICI" target="_blank">
+                <button style="background-color: var(--discord-blue);">
+                    Se connecter avec Discord
+                </button>
+            </a>
+        </div>
+
+        <div id="user-info-bar" style="display:none;">
+            <span>Bonjour, <span id="display-username" style="color: var(--shiny-color);">Dresseur</span> !</span>
+            <button onclick="logout()">Déconnexion</button>
         </div>
 
         <nav id="main-nav" style="display:none;">
@@ -336,14 +257,18 @@
         <div id="shop-page" class="page-section">
             <h2>Boutique Poké Balls</h2>
             <p style="color: var(--text-secondary);">Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
-            <div id="shopContainer" class="shop-grid">
-                </div>
+            <div id="shopContainer">
+                <p>Fonctionnalité en cours de développement...</p>
+            </div>
         </div>
-        
+
+        <div id="login-page" class="page-section">
+            <h2 style="text-align: center;">Veuillez vous connecter pour accéder à votre collection.</h2>
+            <p style="text-align: center; color: var(--text-secondary);">Utilisez le lien de connexion en haut de la page.</p>
+        </div>
+
     </div>
-    
+
     <script src="script.js"></script>
 </body>
 </html>
-
-
