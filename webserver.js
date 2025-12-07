@@ -302,6 +302,87 @@ app.get('/api/shop', (req, res) => {
     res.json(SHOP_ITEMS);
 });
 
+// webserver.js (Ajouter dans la section 5. ROUTES API)
+
+// Route 5.7: Vendre tous les Doublons Non-Chromatiques (POST) ---
+app.post('/api/sell/duplicates', async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: "ID Dresseur requis." });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+        }
+        
+        const pokemonsToKeep = new Map(); // Stocke l'ID et le meilleur niveau pour chaque espèce non-shiny
+        const duplicatesIdsToSell = [];
+        let totalSalePrice = 0;
+
+        // 1. Trier les Pokémon non-chromatiques par ID puis par Niveau (décroissant)
+        const nonShinies = user.pokemons
+            .filter(p => !p.isShiny)
+            .sort((a, b) => {
+                if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
+                return (b.level || 1) - (a.level || 1); // Niveau le plus haut d'abord
+            });
+            
+        // 2. Identifier les doublons à vendre
+        for (const pokemon of nonShinies) {
+            const pokedexId = pokemon.pokedexId;
+            const pokemonMongoId = pokemon._id.toString();
+
+            if (!pokemonsToKeep.has(pokedexId)) {
+                // C'est le premier (et donc le meilleur) de son espèce non-shiny, on le garde.
+                pokemonsToKeep.set(pokedexId, pokemonMongoId);
+            } else {
+                // C'est un doublon. Vérifier s'il est le Compagnon.
+                if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonMongoId) {
+                    // Si c'est le compagnon, on ne le vend pas, mais on le laisse comme doublon.
+                    // On pourrait ajouter un message d'avertissement ici, mais pour l'API, on l'ignore silencieusement.
+                    continue; 
+                }
+                
+                // Calcul du prix et ajout à la liste de vente
+                const basePrice = 50; 
+                const levelBonus = (pokemon.level || 1) * 5; 
+                // Shiny bonus est 0 car on filtre déjà les non-shinies
+                const salePrice = basePrice + levelBonus; 
+                
+                totalSalePrice += salePrice;
+                duplicatesIdsToSell.push(pokemonMongoId);
+            }
+        }
+        
+        if (duplicatesIdsToSell.length === 0) {
+            return res.status(400).json({ success: false, message: "Aucun doublon non-chromatique à vendre n'a été trouvé." });
+        }
+
+        // 3. Effectuer la Transaction
+        
+        // Retirer les Pokémon de la liste de l'utilisateur
+        const updatedPokemons = user.pokemons.filter(p => !duplicatesIdsToSell.includes(p._id.toString()));
+        user.pokemons = updatedPokemons;
+        user.money += totalSalePrice;
+        
+        await user.save();
+        
+        res.json({ 
+            success: true, 
+            message: `${duplicatesIdsToSell.length} doublons vendus pour un total de ${totalSalePrice.toLocaleString()} 💰!`,
+            newMoney: user.money,
+            count: duplicatesIdsToSell.length
+        });
+
+    } catch (error) {
+        console.error('Erreur API Vente Doublons:', error);
+        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de la vente en masse.' });
+    }
+});
 
 // Route 5.4: Achat (POST) 
 app.post('/api/shop/buy', async (req, res) => {
@@ -453,3 +534,4 @@ app.post('/api/companion/set', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌍 Serveur web démarré sur le port ${PORT}`);
 });
+
