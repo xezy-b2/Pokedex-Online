@@ -347,19 +347,6 @@ async function loadPokedex() {
             </p>
         `;
         
-        // NOUVEAU: Bouton de vente en masse
-        if (actualDuplicates.length > 0) {
-             html += `
-                <div style="text-align: center; margin: 20px 0;">
-                    <button id="sell-all-button" 
-                            onclick="handleSellAllDuplicates(${actualDuplicates.length})"
-                            style="background-color: var(--pokeball-red); padding: 10px 20px;">
-                        Vendre les ${actualDuplicates.length} Doublons Non-Chromatiques
-                    </button>
-                    <div id="sell-all-message" style="margin-top: 10px; font-weight: bold;"></div>
-                </div>
-            `;
-        }
         
         // Sous-section Shinies
         if (shinies.length > 0) {
@@ -378,6 +365,15 @@ async function loadPokedex() {
                 <h3 style="margin-top: 30px; border-bottom: 2px solid var(--captured-border); padding-bottom: 5px;">
                     Mes Pokémon Doublons (Non-Chromatiques) (${actualDuplicates.length})
                 </h3>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <button id="sell-all-button" 
+                            onclick="handleSellAllDuplicates(${actualDuplicates.length})"
+                            style="background-color: var(--pokeball-red); padding: 10px 20px;">
+                        Vendre les ${actualDuplicates.length} Doublons Non-Chromatiques
+                    </button>
+                    <div id="sell-all-message" style="margin-top: 10px; font-weight: bold;"></div>
+                </div>
                 <div class="pokedex-grid">
                     ${actualDuplicates.map(p => createPokedexCard(p, true)).join('')} </div>
             `;
