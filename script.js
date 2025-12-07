@@ -674,6 +674,65 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
     }
 }
 
+// script.js (Ajouter à la fin du fichier)
+
+/**
+ * Gère la vente de tous les doublons non-chromatiques via l'API.
+ */
+async function handleSellAllDuplicates(count) {
+    if (!currentUserId) {
+        document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant de vendre.";
+        return;
+    }
+    
+    if (count === 0) {
+        document.getElementById('sell-all-message').textContent = "Aucun doublon à vendre !";
+        return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir vendre vos ${count} doublons non-chromatiques ?`)) {
+        return;
+    }
+
+    const button = document.getElementById('sell-all-button');
+    const messageContainer = document.getElementById('sell-all-message');
+    
+    button.disabled = true;
+    messageContainer.style.color = 'var(--shiny-color)';
+    messageContainer.textContent = `Vente de ${count} Pokémon en cours...`;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            messageContainer.style.color = 'var(--highlight-color)'; 
+            messageContainer.textContent = data.message;
+            
+            // Recharger les données après la vente
+            await loadPokedex(); 
+            loadProfile();
+
+        } else {
+            messageContainer.style.color = 'var(--red-discord)'; 
+            messageContainer.textContent = data.message || `Erreur: Statut ${response.status}.`;
+            button.disabled = false;
+        }
+
+    } catch (error) {
+        console.error('Erreur lors de la vente en masse:', error);
+        messageContainer.style.color = 'var(--red-discord)';
+        messageContainer.textContent = 'Erreur de connexion au serveur API.';
+        button.disabled = false;
+    }
+}
+
 
 // --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
 window.onload = initializeApp;
+
