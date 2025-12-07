@@ -347,6 +347,20 @@ async function loadPokedex() {
             </p>
         `;
         
+        // NOUVEAU: Bouton de vente en masse
+        if (actualDuplicates.length > 0) {
+             html += `
+                <div style="text-align: center; margin: 20px 0;">
+                    <button id="sell-all-button" 
+                            onclick="handleSellAllDuplicates(${actualDuplicates.length})"
+                            style="background-color: var(--pokeball-red); padding: 10px 20px;">
+                        Vendre les ${actualDuplicates.length} Doublons Non-Chromatiques
+                    </button>
+                    <div id="sell-all-message" style="margin-top: 10px; font-weight: bold;"></div>
+                </div>
+            `;
+        }
+        
         // Sous-section Shinies
         if (shinies.length > 0) {
             html += `
@@ -674,8 +688,6 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
     }
 }
 
-// script.js (Ajouter à la fin du fichier)
-
 /**
  * Gère la vente de tous les doublons non-chromatiques via l'API.
  */
@@ -697,6 +709,7 @@ async function handleSellAllDuplicates(count) {
     const button = document.getElementById('sell-all-button');
     const messageContainer = document.getElementById('sell-all-message');
     
+    // Désactiver le bouton pendant le traitement
     button.disabled = true;
     messageContainer.style.color = 'var(--shiny-color)';
     messageContainer.textContent = `Vente de ${count} Pokémon en cours...`;
@@ -716,7 +729,10 @@ async function handleSellAllDuplicates(count) {
             
             // Recharger les données après la vente
             await loadPokedex(); 
-            loadProfile();
+            // Mettre à jour l'argent si on est sur la page profil
+            if (document.getElementById('profile-page').classList.contains('active')) {
+                loadProfile(); 
+            }
 
         } else {
             messageContainer.style.color = 'var(--red-discord)'; 
@@ -735,4 +751,3 @@ async function handleSellAllDuplicates(count) {
 
 // --- INITIALISATION (S'EXÉCUTE AU CHARGEMENT) ---
 window.onload = initializeApp;
-
