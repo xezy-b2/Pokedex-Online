@@ -459,7 +459,7 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
 });
 
-// Route 5.8: Échange Miracle (POST) --- NOUVEAU
+// Route 5.8: Échange Miracle (POST)
 app.post('/api/trade/wonder', async (req, res) => {
     const { userId, pokemonIdToTrade } = req.body;
 
@@ -487,7 +487,7 @@ app.post('/api/trade/wonder', async (req, res) => {
             return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
         }
         
-        // Retirer le Pokémon de la liste
+        // Retirer le Pokémon de la liste 
         user.pokemons.splice(pokemonIndex, 1);
 
         // 2. Générer le Pokémon de remplacement (Miracle Trade)
@@ -502,9 +502,11 @@ app.post('/api/trade/wonder', async (req, res) => {
         // 5. Réponse
         res.json({
             success: true,
-            message: `${tradedPokemon.name} a été échangé contre un ${newPokemon.name} de niveau ${newPokemon.level} !`,
-            tradedPokemonName: tradedPokemon.name,
-            newPokemon: newPokemon
+            // Premier message (l'action)
+            message: `${tradedPokemon.isShiny ? '✨ ' : ''}${tradedPokemon.name} (N°${tradedPokemon.pokedexId}) a été envoyé pour un Échange Miracle !`, 
+            // Second message (le résultat)
+            newPokemonMessage: `Vous avez reçu : ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} (N°${newPokemon.pokedexId}) de Niveau ${newPokemon.level} !`,
+            newPokemon: newPokemon // Pour l'affichage de l'image côté client
         });
 
     } catch (error) {
@@ -592,7 +594,7 @@ app.post('/api/sell/duplicates', async (req, res) => {
             }
             
             if (!pokemonsToKeep.has(pokemon.pokedexId)) {
-                // Première instance (la plus forte) : on la garde
+                // Première instance (le meilleur) : on la garde
                 pokemonsToKeep.set(pokemon.pokedexId, pokemonMongoId);
             } else {
                 // Doublon : on le vend
