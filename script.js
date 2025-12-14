@@ -61,7 +61,6 @@ function logout() {
     localStorage.removeItem('currentUsername');
     updateUIState(false);
     showPage('pokedex');
-    document.getElementById('pokedexContainer').innerHTML = '<p>Connectez-vous avec Discord pour charger votre Pokédex.</p>';
     document.getElementById('pokedex-error-container').textContent = '';
 }
 
@@ -227,7 +226,7 @@ function createPokedexCard(pokemon, isSellable = false) {
     let sellAndTradeButtonsHtml = '';
     if (isSellable) {
         
-        // Bouton Échange Miracle (MIS À JOUR : Indisponible sur Shiny)
+        // Bouton Échange Miracle (Indisponible sur Shiny)
         let wonderTradeButtonHtml = '';
         if (isShiny) {
              wonderTradeButtonHtml = `
@@ -354,7 +353,7 @@ async function loadPokedex() {
         nonShiniesSortedForDuplicationCheck.forEach(p => {
             if (!nonShinyKeepers.has(p.pokedexId)) {
                 // Premier rencontré (le meilleur) -> c'est celui que l'on garde.
-                nonShinyKeepers.set(p.pokedexId, p);
+                nonShinyKeepers.set(p.pokedexId, p); 
             } else {
                 // Déjà un "keeper" pour cet ID -> c'est un doublon
                 actualDuplicates.push(p);
@@ -684,7 +683,7 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
     }
 }
 
-// --- GESTION ÉCHANGE MIRACLE ---
+// --- GESTION ÉCHANGE MIRACLE (MIS À JOUR POUR UN AFFICHAGE CLAIR) ---
 async function handleWonderTrade(pokemonIdToTrade, pokemonName) {
     if (!currentUserId) {
         document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant d'effectuer un échange.";
@@ -715,16 +714,17 @@ async function handleWonderTrade(pokemonIdToTrade, pokemonName) {
         const data = await response.json();
 
         if (response.ok) {
-            messageContainer.style.color = 'var(--highlight-color)'; 
             
-            // Affichage détaillé du Pokémon reçu 
+            // data.message contient maintenant l'échange complet : "A contre B"
             const newPokemon = data.newPokemon;
             const spriteUrl = `${POKEAPI_SPRITE_URL}${newPokemon.isShiny ? 'shiny/' : ''}${newPokemon.pokedexId}.png`;
             
             messageContainer.innerHTML = `
                 <div style="text-align: center; padding: 5px;">
-                    <p style="margin-bottom: 5px; font-weight: bold;">${data.message}</p>
-                    <p style="font-weight: bold; font-size: 1.1em; color: ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin: 5px 0;">${data.newPokemonMessage}</p>
+                    <p style="margin-bottom: 5px; font-weight: bold; font-size: 1.1em; color: var(--highlight-color);">${data.message}</p>
+                    <p style="font-weight: bold; font-size: 0.9em; color: ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin: 5px 0;">
+                        ${data.newPokemonMessage}
+                    </p>
                     <img src="${spriteUrl}" alt="${newPokemon.name}" 
                          style="width: 96px; height: 96px; image-rendering: pixelated; 
                                 border: 3px solid ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--captured-border)'}; 
@@ -762,15 +762,14 @@ async function handleSellAllDuplicates(count) {
         return;
     }
     
-    if (!confirm(`Êtes-vous sûr de vouloir vendre TOUS vos ${count} doublons non-chromatiques ? (Le Pokémon Compagnon sera épargné)`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir vendre vos ${count} doublons (non-chromatiques) ? L'unique instance non-chromatique de plus haut niveau de chaque espèce sera conservée.`)) {
         return;
     }
-
-    const button = document.querySelector('#sell-all-duplicates-msg').previousElementSibling.querySelector('button');
+    
     const messageContainer = document.getElementById('sell-all-duplicates-msg');
+    const button = messageContainer.previousElementSibling;
     
     button.disabled = true;
-
     messageContainer.style.color = 'var(--shiny-color)';
     messageContainer.textContent = `Vente de ${count} Pokémon en cours...`;
     
@@ -808,4 +807,15 @@ async function handleSellAllDuplicates(count) {
     }
 }
 
-initializeApp();
+
+// --- ÉVÉNEMENTS ---
+
+// S'assurer que le script s'exécute après le chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    
+    // Ajout des listeners pour la navigation
+    document.getElementById('nav-pokedex').addEventListener('click', () => showPage('pokedex'));
+    document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
+    document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
+});
