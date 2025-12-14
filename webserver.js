@@ -459,7 +459,7 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
 });
 
-// Route 5.8: Échange Miracle (POST)
+// Route 5.8: Échange Miracle (POST) --- MIS À JOUR POUR UN MESSAGE COMBINÉ
 app.post('/api/trade/wonder', async (req, res) => {
     const { userId, pokemonIdToTrade } = req.body;
 
@@ -499,13 +499,13 @@ app.post('/api/trade/wonder', async (req, res) => {
         // 4. Sauvegarder les changements
         await user.save();
         
-        // 5. Réponse
+        // 5. Réponse (avec messages enrichis)
         res.json({
             success: true,
-            // Premier message (l'action)
-            message: `${tradedPokemon.isShiny ? '✨ ' : ''}${tradedPokemon.name} (N°${tradedPokemon.pokedexId}) a été envoyé pour un Échange Miracle !`, 
-            // Second message (le résultat)
-            newPokemonMessage: `Vous avez reçu : ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} (N°${newPokemon.pokedexId}) de Niveau ${newPokemon.level} !`,
+            // NOUVEAU: Message combiné qui indique contre quel Pokémon il a été échangé.
+            message: `${tradedPokemon.isShiny ? '✨ ' : ''}${tradedPokemon.name} (N°${tradedPokemon.pokedexId}) a été échangé contre ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} (N°${newPokemon.pokedexId}) !`, 
+            // Ce message peut être utilisé comme highlight ou détail supplémentaire
+            newPokemonMessage: `Vous avez reçu : ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} de Niveau ${newPokemon.level}`,
             newPokemon: newPokemon // Pour l'affichage de l'image côté client
         });
 
@@ -547,12 +547,13 @@ app.post('/api/companion/set', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erreur API Compagnon Set:', error);
+        console.error('Erreur API Compagnon:', error);
         res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
     }
 });
 
-// Route 5.7: Vendre tous les Doublons Non-Chromatiques (POST)
+
+// Route 5.7: Vendre TOUS les Doublons (POST)
 app.post('/api/sell/duplicates', async (req, res) => {
     const { userId } = req.body;
 
@@ -566,67 +567,77 @@ app.post('/api/sell/duplicates', async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
         }
+        
+        const pokemonsToKeepIds = new Set();
+        let totalSalePrice = 0;
+        const pokemonsToSell = [];
 
-        // 1. Logique de tri pour déterminer les doublons
+        // 1. Identifier les keepers (la meilleure instance de chaque ID, non-shiny)
         const nonShinies = user.pokemons.filter(p => !p.isShiny);
         
-        // Trier par PokedexId, puis par Niveau (décroissant) pour identifier l'instance la plus forte (à garder)
-        const nonShiniesSorted = [...nonShinies].sort((a, b) => {
+        // Trier pour identifier la 'meilleure' instance (niveau le plus haut) à garder
+        const nonShiniesSortedForDuplicationCheck = [...nonShinies].sort((a, b) => {
+            // 1. Tri par ID pour grouper
             if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
+            // 2. Tri par Niveau (descendant: le plus haut est gardé)
             return b.level - a.level;
         });
 
-        const pokemonsToKeep = new Map(); // Stocke l'ID Mongo du Pokémon à garder pour chaque espèce
-        const duplicatesIdsToSell = [];
-        let totalSalePrice = 0;
-
-        // 2. Identifier les doublons et calculer le prix de vente
-        nonShiniesSorted.forEach(pokemon => {
-            const pokemonMongoId = pokemon._id.toString();
-            
-            // On ne peut pas vendre le compagnon
-            if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonMongoId) {
-                // S'assurer qu'il est marqué comme un "keeper" pour éviter de le vendre
-                if (!pokemonsToKeep.has(pokemon.pokedexId)) {
-                    pokemonsToKeep.set(pokemon.pokedexId, pokemonMongoId);
-                }
-                return; 
-            }
-            
-            if (!pokemonsToKeep.has(pokemon.pokedexId)) {
-                // Première instance (le meilleur) : on la garde
-                pokemonsToKeep.set(pokemon.pokedexId, pokemonMongoId);
-            } else {
-                // Doublon : on le vend
-                
-                // Calcul du prix (basé sur le frontend)
-                const basePrice = 50; 
-                const levelBonus = (pokemon.level || 1) * 5; 
-                const salePrice = basePrice + levelBonus; // Shiny bonus est 0 car on filtre déjà les non-shinies
-                
-                totalSalePrice += salePrice;
-                duplicatesIdsToSell.push(pokemonMongoId);
+        // Conserver l'ID de la 'meilleure' instance de chaque espèce non-shiny
+        const keepersMap = new Map();
+        nonShiniesSortedForDuplicationCheck.forEach(p => {
+            if (!keepersMap.has(p.pokedexId)) {
+                keepersMap.set(p.pokedexId, p._id.toString());
+                pokemonsToKeepIds.add(p._id.toString());
             }
         });
-
-        if (duplicatesIdsToSell.length === 0) {
-            return res.status(400).json({ success: false, message: "Aucun doublon non-chromatique à vendre n'a été trouvé." });
+        
+        // Ajouter l'ID du compagnon à la liste des à garder, s'il est défini
+        if (user.companionPokemonId) {
+             pokemonsToKeepIds.add(user.companionPokemonId.toString());
         }
 
-        // 3. Effectuer la Transaction
-        // Retirer les Pokémon de la liste de l'utilisateur
-        const updatedPokemons = user.pokemons.filter(p => !duplicatesIdsToSell.includes(p._id.toString()));
-        user.pokemons = updatedPokemons;
+        // 2. Filtrer les Pokémon qui DOIVENT être vendus
+        const remainingPokemons = [];
+        
+        user.pokemons.forEach(p => {
+            const pIdString = p._id.toString();
+            // Les Shinies et les keepers sont exclus de cette vente en masse.
+            if (p.isShiny) {
+                 remainingPokemons.push(p); // On ne vend pas les shinies
+                 return;
+            }
+            
+            if (pokemonsToKeepIds.has(pIdString)) {
+                remainingPokemons.push(p); // On garde les 'keepers' et le compagnon
+            } else {
+                // C'est un doublon non-shiny et non-compagnon -> À vendre
+                pokemonsToSell.push(p);
+                
+                // Calcul du prix
+                const basePrice = 50; 
+                const levelBonus = (p.level || 1) * 5; 
+                const salePrice = basePrice + levelBonus; 
+                totalSalePrice += salePrice;
+            }
+        });
+
+        // 3. Effectuer la transaction
+        if (pokemonsToSell.length === 0) {
+            return res.status(403).json({ success: false, message: "Aucun doublon non-chromatique à vendre (l'instance de plus haut niveau est conservée pour chaque espèce)." });
+        }
+
         user.money += totalSalePrice;
+        user.pokemons = remainingPokemons; // Remplacer la liste des pokémons
 
         await user.save();
-
-        res.json({
-            success: true,
-            message: `${duplicatesIdsToSell.length} doublons vendus pour un total de ${totalSalePrice.toLocaleString()} 💰!`,
-            newMoney: user.money,
-            count: duplicatesIdsToSell.length
+        
+        res.json({ 
+            success: true, 
+            message: `Vente en masse réussie : ${pokemonsToSell.length} doublon(s) vendu(s) pour ${totalSalePrice.toLocaleString()} 💰!`,
+            newMoney: user.money
         });
+
 
     } catch (error) {
         console.error('Erreur API Vente Doublons:', error);
@@ -637,5 +648,6 @@ app.post('/api/sell/duplicates', async (req, res) => {
 
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
-    console.log(`Server API listening at http://localhost:${PORT}`);
+    console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
+    console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
