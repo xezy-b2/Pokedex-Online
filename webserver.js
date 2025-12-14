@@ -40,6 +40,59 @@ async function fetchPokemonBaseStats(pokedexId) {
         return [];
     }
 }
+
+// Utility function for generating random numbers
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Génère un nouveau Pokémon aléatoire.
+ * Il inclut un appel à PokeAPI pour récupérer le nom.
+ * @returns {Object} Le nouvel objet Pokémon prêt à être inséré (avec nom).
+ */
+async function generateRandomPokemon() {
+    // ID aléatoire (1 à MAX_POKEDEX_ID_GEN_2, qui est défini à 251)
+    const pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_2); 
+    
+    // Niveau aléatoire entre 1 et 100
+    const level = getRandomInt(1, 100);
+    
+    // IVs aléatoires entre 0 et 31
+    const iv_hp = getRandomInt(0, 31);
+    const iv_attack = getRandomInt(0, 31);
+    const iv_defense = getRandomInt(0, 31);
+    const iv_special_attack = getRandomInt(0, 31);
+    const iv_special_defense = getRandomInt(0, 31);
+    const iv_speed = getRandomInt(0, 31);
+    
+    // Taux de Shiny: 1/100 (ajustez si besoin)
+    const isShiny = getRandomInt(1, 100) === 1; 
+
+    let pokemonName = 'Inconnu';
+    try {
+        const nameResponse = await axios.get(`${POKEAPI_BASE_URL}${pokedexId}`);
+        // Mettre la première lettre en majuscule
+        pokemonName = nameResponse.data.name.charAt(0).toUpperCase() + nameResponse.data.name.slice(1);
+    } catch (error) {
+        console.error(`Erreur de récupération du nom pour Pokedex ID ${pokedexId}:`, error.message);
+    }
+
+    return {
+        pokedexId,
+        name: pokemonName, 
+        level,
+        isShiny,
+        iv_hp,
+        iv_attack,
+        iv_defense,
+        iv_special_attack,
+        iv_special_defense,
+        iv_speed,
+    };
+}
 // --- FIN POKEAPI ---
 
 // --- 1. DÉFINITION DE LA BOUTIQUE (POUR L'API) ---
@@ -225,23 +278,21 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         });
 
         uniqueCapturedPokemons.forEach((pokemon, pokedexId) => {
-            fullPokedexMap.set(pokedexId, {
-                ...pokemon,
-                isCaptured: true // S'assurer que le drapeau est correct
+            fullPokedexMap.set(pokedexId, { 
+                ...pokemon, 
+                isCaptured: true 
             });
         });
 
-        // Transformer la Map en tableau et la trier (normalement déjà triée)
-        const fullPokedexList = Array.from(fullPokedexMap.values()).sort((a, b) => a.pokedexId - b.pokedexId);
+        // Convertir la Map en tableau trié
+        const fullPokedex = Array.from(fullPokedexMap.values()).sort((a, b) => a.pokedexId - b.pokedexId);
 
-
-        // 6. Envoi de l'objet STRUCTURÉ
         res.json({
-            fullPokedex: fullPokedexList, // La liste unique (avec manquants)
-            capturedPokemonsList: enrichedCapturedPokedex, // NOUVEAU: La liste complète pour vente/doublons
+            fullPokedex: fullPokedex,
+            capturedPokemonsList: enrichedCapturedPokedex, // La liste complète incluant les doublons
             uniquePokedexCount: capturedPokedexIds.size,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2, // La limite du Pokédex
-            maxGen1Id: MAX_POKEDEX_ID_GEN_1 // Limite Gen 1
+            maxPokedexId: MAX_POKEDEX_ID_GEN_2,
+            maxGen1Id: MAX_POKEDEX_ID_GEN_1
         });
 
     } catch (error) {
@@ -250,14 +301,12 @@ app.get('/api/pokedex/:userId', async (req, res) => {
     }
 });
 
-
-// Route 5.2: Profil 
+// Route 5.2: Profil
 app.get('/api/profile/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        
-        const user = await User.findOne({ userId: userId }).select('-__v'); 
-        
+        const user = await User.findOne({ userId: userId }).select('-discordAccessToken -discordRefreshToken -__v');
+
         if (!user) {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
@@ -270,131 +319,48 @@ app.get('/api/profile/:userId', async (req, res) => {
 
         const totalPokemons = await User.aggregate([
             { $match: { userId: userId } },
-            { $project: { 
-                totalCount: { $size: "$pokemons" },
-                uniqueCount: { $size: { $setUnion: ["$pokemons.pokedexId", []] } }
-            }}
+            { $project: { totalCount: { $size: "$pokemons" }, uniqueCount: { $size: { $setUnion: ["$pokemons.pokedexId", []] } } }}
         ]);
-        
+
         const stats = {
             totalCaptures: totalPokemons[0]?.totalCount || 0,
             uniqueCaptures: totalPokemons[0]?.uniqueCount || 0
         };
 
         const userObject = user.toObject();
-        delete userObject.pokemons; 
-        delete userObject.companionPokemonId; 
+        delete userObject.pokemons;
+        delete userObject.companionPokemonId;
 
-        res.json({
-            ...userObject,
+        res.json({ 
+            ...userObject, 
             stats: stats,
             companionPokemon: companionPokemon,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2 
+            maxPokedexId: MAX_POKEDEX_ID_GEN_2
         });
+
     } catch (error) {
         console.error('Erreur API Profil:', error);
         res.status(500).json({ message: 'Erreur interne du serveur.' });
     }
 });
 
-// Route 5.3: Boutique (GET) 
+
+// Route 5.3: Boutique (GET)
 app.get('/api/shop', (req, res) => {
     res.json(SHOP_ITEMS);
 });
 
-// webserver.js (Ajouter dans la section 5. ROUTES API)
-
-// Route 5.7: Vendre tous les Doublons Non-Chromatiques (POST) ---
-app.post('/api/sell/duplicates', async (req, res) => {
-    const { userId } = req.body;
-
-    if (!userId) {
-        return res.status(400).json({ success: false, message: "ID Dresseur requis." });
-    }
-
-    try {
-        const user = await User.findOne({ userId });
-
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
-        }
-        
-        const pokemonsToKeep = new Map(); // Stocke l'ID et le meilleur niveau pour chaque espèce non-shiny
-        const duplicatesIdsToSell = [];
-        let totalSalePrice = 0;
-
-        // 1. Trier les Pokémon non-chromatiques par ID puis par Niveau (décroissant)
-        const nonShinies = user.pokemons
-            .filter(p => !p.isShiny)
-            .sort((a, b) => {
-                if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
-                return (b.level || 1) - (a.level || 1); // Niveau le plus haut d'abord
-            });
-            
-        // 2. Identifier les doublons à vendre
-        for (const pokemon of nonShinies) {
-            const pokedexId = pokemon.pokedexId;
-            const pokemonMongoId = pokemon._id.toString();
-
-            if (!pokemonsToKeep.has(pokedexId)) {
-                // C'est le premier (et donc le meilleur) de son espèce non-shiny, on le garde.
-                pokemonsToKeep.set(pokedexId, pokemonMongoId);
-            } else {
-                // C'est un doublon. Vérifier s'il est le Compagnon.
-                if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonMongoId) {
-                    // Si c'est le compagnon, on ne le vend pas, mais on le laisse comme doublon.
-                    // On pourrait ajouter un message d'avertissement ici, mais pour l'API, on l'ignore silencieusement.
-                    continue; 
-                }
-                
-                // Calcul du prix et ajout à la liste de vente
-                const basePrice = 50; 
-                const levelBonus = (pokemon.level || 1) * 5; 
-                // Shiny bonus est 0 car on filtre déjà les non-shinies
-                const salePrice = basePrice + levelBonus; 
-                
-                totalSalePrice += salePrice;
-                duplicatesIdsToSell.push(pokemonMongoId);
-            }
-        }
-        
-        if (duplicatesIdsToSell.length === 0) {
-            return res.status(400).json({ success: false, message: "Aucun doublon non-chromatique à vendre n'a été trouvé." });
-        }
-
-        // 3. Effectuer la Transaction
-        
-        // Retirer les Pokémon de la liste de l'utilisateur
-        const updatedPokemons = user.pokemons.filter(p => !duplicatesIdsToSell.includes(p._id.toString()));
-        user.pokemons = updatedPokemons;
-        user.money += totalSalePrice;
-        
-        await user.save();
-        
-        res.json({ 
-            success: true, 
-            message: `${duplicatesIdsToSell.length} doublons vendus pour un total de ${totalSalePrice.toLocaleString()} 💰!`,
-            newMoney: user.money,
-            count: duplicatesIdsToSell.length
-        });
-
-    } catch (error) {
-        console.error('Erreur API Vente Doublons:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de la vente en masse.' });
-    }
-});
-
-// Route 5.4: Achat (POST) 
+// Route 5.4: Achat (POST)
 app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     const item = SHOP_ITEMS[itemKey];
-
+    
     if (!userId || !item || !quantity || quantity < 1) {
         return res.status(400).json({ success: false, message: "Requête invalide." });
     }
 
     const totalCost = item.cost * quantity;
-    
+
     try {
         const user = await User.findOne({ userId });
 
@@ -403,42 +369,43 @@ app.post('/api/shop/buy', async (req, res) => {
         }
 
         if (user.money < totalCost) {
-            return res.status(400).json({ success: false, message: `Fonds insuffisants. Il vous manque ${totalCost - user.money} 💰.` });
+            return res.status(403).json({ success: false, message: `Fonds insuffisants ! Il vous manque ${totalCost - user.money} 💰.` });
         }
-        
-        const update = {
-            $inc: { 
-                money: -totalCost,
-                [`${item.key}`]: quantity
-            }
-        };
 
+        // Transaction
+        user.money -= totalCost;
+        
+        // Utiliser la clé de l'objet utilisateur (ex: 'pokeballs')
+        const userItemKey = item.key; 
+        user[userItemKey] = (user[userItemKey] || 0) + quantity;
+        
         let bonusMessage = '';
-        if (item.promo && itemKey === 'pokeball' && quantity >= 10) {
+
+        // Logique de promotion: +1 ball spéciale par 10 Poké Balls achetées
+        if (itemKey === 'pokeball' && quantity >= 10) {
             const bonusCount = Math.floor(quantity / 10);
             for (let i = 0; i < bonusCount; i++) {
                 const bonusBall = getRandomBonusBall();
-                update.$inc[`${bonusBall.key}`] = (update.$inc[`${bonusBall.key}`] || 0) + 1;
-                bonusMessage += ` +1 ${bonusBall.name}`;
+                user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+                bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
             }
         }
         
-        await User.updateOne({ userId }, update);
+        await user.save();
 
         res.json({
             success: true,
-            message: `${quantity.toLocaleString()} ${item.name}(s) achetée(s) pour ${totalCost.toLocaleString()} 💰.` + (bonusMessage ? ` BONUS: ${bonusMessage.trim()}` : ''),
-            newMoney: user.money - totalCost
+            message: `Achat réussi : ${quantity} ${item.name}(s) pour ${totalCost.toLocaleString()} 💰. ${bonusMessage}`,
+            newMoney: user.money
         });
 
     } catch (error) {
-        console.error('Erreur API Achat Boutique:', error);
+        console.error('Erreur API Achat:', error);
         res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
     }
 });
 
-
-// Route 5.5: Vendre un Pokémon (POST) ---
+// Route 5.5: Vendre un Pokémon (POST)
 app.post('/api/sell/pokemon', async (req, res) => {
     const { userId, pokemonIdToSell } = req.body;
 
@@ -492,6 +459,61 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
 });
 
+// Route 5.8: Échange Miracle (POST) --- NOUVEAU
+app.post('/api/trade/wonder', async (req, res) => {
+    const { userId, pokemonIdToTrade } = req.body;
+
+    if (!userId || !pokemonIdToTrade) {
+        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+        }
+
+        // 1. Trouver et retirer le Pokémon à échanger
+        const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
+
+        if (pokemonIndex === -1) {
+            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
+        }
+
+        const tradedPokemon = user.pokemons[pokemonIndex];
+        
+        // Sécurité : On ne peut pas échanger le Pokémon compagnon
+        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
+            return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
+        }
+        
+        // Retirer le Pokémon de la liste
+        user.pokemons.splice(pokemonIndex, 1);
+
+        // 2. Générer le Pokémon de remplacement (Miracle Trade)
+        const newPokemon = await generateRandomPokemon();
+
+        // 3. Ajouter le nouveau Pokémon à la collection
+        user.pokemons.push(newPokemon);
+
+        // 4. Sauvegarder les changements
+        await user.save();
+        
+        // 5. Réponse
+        res.json({
+            success: true,
+            message: `${tradedPokemon.name} a été échangé contre un ${newPokemon.name} de niveau ${newPokemon.level} !`,
+            tradedPokemonName: tradedPokemon.name,
+            newPokemon: newPokemon
+        });
+
+    } catch (error) {
+        console.error('Erreur API Échange Miracle:', error);
+        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de l\'Échange Miracle.' });
+    }
+});
+
+
 // Route 5.6: Définir le Compagnon (POST)
 app.post('/api/companion/set', async (req, res) => {
     const { userId, pokemonId } = req.body;
@@ -523,15 +545,95 @@ app.post('/api/companion/set', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erreur API Set Compagnon:', error);
+        console.error('Erreur API Compagnon Set:', error);
         res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
+    }
+});
+
+// Route 5.7: Vendre tous les Doublons Non-Chromatiques (POST)
+app.post('/api/sell/duplicates', async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ success: false, message: "ID Dresseur requis." });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+        }
+
+        // 1. Logique de tri pour déterminer les doublons
+        const nonShinies = user.pokemons.filter(p => !p.isShiny);
+        
+        // Trier par PokedexId, puis par Niveau (décroissant) pour identifier l'instance la plus forte (à garder)
+        const nonShiniesSorted = [...nonShinies].sort((a, b) => {
+            if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
+            return b.level - a.level;
+        });
+
+        const pokemonsToKeep = new Map(); // Stocke l'ID Mongo du Pokémon à garder pour chaque espèce
+        const duplicatesIdsToSell = [];
+        let totalSalePrice = 0;
+
+        // 2. Identifier les doublons et calculer le prix de vente
+        nonShiniesSorted.forEach(pokemon => {
+            const pokemonMongoId = pokemon._id.toString();
+            
+            // On ne peut pas vendre le compagnon
+            if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonMongoId) {
+                // S'assurer qu'il est marqué comme un "keeper" pour éviter de le vendre
+                if (!pokemonsToKeep.has(pokemon.pokedexId)) {
+                    pokemonsToKeep.set(pokemon.pokedexId, pokemonMongoId);
+                }
+                return; 
+            }
+            
+            if (!pokemonsToKeep.has(pokemon.pokedexId)) {
+                // Première instance (la plus forte) : on la garde
+                pokemonsToKeep.set(pokemon.pokedexId, pokemonMongoId);
+            } else {
+                // Doublon : on le vend
+                
+                // Calcul du prix (basé sur le frontend)
+                const basePrice = 50; 
+                const levelBonus = (pokemon.level || 1) * 5; 
+                const salePrice = basePrice + levelBonus; // Shiny bonus est 0 car on filtre déjà les non-shinies
+                
+                totalSalePrice += salePrice;
+                duplicatesIdsToSell.push(pokemonMongoId);
+            }
+        });
+
+        if (duplicatesIdsToSell.length === 0) {
+            return res.status(400).json({ success: false, message: "Aucun doublon non-chromatique à vendre n'a été trouvé." });
+        }
+
+        // 3. Effectuer la Transaction
+        // Retirer les Pokémon de la liste de l'utilisateur
+        const updatedPokemons = user.pokemons.filter(p => !duplicatesIdsToSell.includes(p._id.toString()));
+        user.pokemons = updatedPokemons;
+        user.money += totalSalePrice;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: `${duplicatesIdsToSell.length} doublons vendus pour un total de ${totalSalePrice.toLocaleString()} 💰!`,
+            newMoney: user.money,
+            count: duplicatesIdsToSell.length
+        });
+
+    } catch (error) {
+        console.error('Erreur API Vente Doublons:', error);
+        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de la vente en masse.' });
     }
 });
 
 
 // --- 6. DÉMARRAGE DU SERVEUR ---
-
 app.listen(PORT, () => {
-    console.log(`🌍 Serveur web démarré sur le port ${PORT}`);
+    console.log(`Server API listening at http://localhost:${PORT}`);
 });
-
