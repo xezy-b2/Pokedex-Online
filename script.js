@@ -226,13 +226,24 @@ function createPokedexCard(pokemon, isSellable = false) {
     // --- LOGIQUE POUR LES BOUTONS (CONDITIONNEL) ---
     let sellAndTradeButtonsHtml = '';
     if (isSellable) {
-        // Bouton Échange Miracle
-        const wonderTradeButtonHtml = `
-            <button class="trade-button" onclick="handleWonderTrade('${pokemon._id}', '${pokemon.name}')" 
-                    style="margin-top: 10px; margin-left: 5px; background-color: var(--discord-blue);">
-                Échange Miracle
-            </button>
-        `;
+        
+        // Bouton Échange Miracle (MIS À JOUR : Indisponible sur Shiny)
+        let wonderTradeButtonHtml = '';
+        if (isShiny) {
+             wonderTradeButtonHtml = `
+                <button class="trade-button" disabled 
+                        style="margin-top: 10px; margin-left: 5px; background-color: var(--card-background); color: var(--text-secondary); cursor: not-allowed;">
+                    Échange Miracle (Indisponible sur ✨)
+                </button>
+            `;
+        } else {
+             wonderTradeButtonHtml = `
+                <button class="trade-button" onclick="handleWonderTrade('${pokemon._id}', '${pokemon.name}')" 
+                        style="margin-top: 10px; margin-left: 5px; background-color: var(--discord-blue);">
+                    Échange Miracle
+                </button>
+            `;
+        }
         
         // Bouton Vendre
         const sellButtonHtml = `
@@ -406,37 +417,6 @@ async function loadPokedex() {
 /**
  * Crée la carte HTML du Pokémon Compagnon.
  */
-function createCompanionCard(pokemon) {
-    if (!pokemon) {
-        return `
-            <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
-                <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
-                <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
-            </div>
-        `;
-    }
-
-    const isShiny = pokemon.isShiny;
-    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
-    const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name;
-    const borderColor = isShiny ? 'var(--shiny-color)' : 'var(--captured-border)';
-    
-    return `
-        <div class="profile-stat-card" style="border: 2px solid ${borderColor}; text-align: center;">
-            <h3 style="color: ${borderColor};">Pokémon Compagnon</h3>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <img src="${imageSource}" alt="${pokemon.name}" style="width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; border: 3px solid ${borderColor}; border-radius: 50%; background-color: var(--card-background);">
-                <span style="font-size: 1.8em; font-weight: bold; color: ${isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin-top: 5px;">${nameDisplay}</span>
-                <span style="font-size: 1.2em; color: var(--text-secondary);">Niv. ${pokemon.level || 5} | #${pokemon.pokedexId.toString().padStart(3, '0')}</span>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Charge les données du Profil depuis l'API.
- */
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     const errorContainer = document.getElementById('pokedex-error-container');
@@ -511,6 +491,35 @@ async function loadProfile() {
         errorContainer.textContent = 'Erreur de connexion au serveur API.';
         container.innerHTML = '';
     }
+}
+
+
+function createCompanionCard(pokemon) {
+    if (!pokemon) {
+        return `
+            <div class="profile-stat-card" style="text-align: center; border: 2px dashed var(--missing-border);">
+                <h3 style="color: var(--text-secondary);">Pokémon Compagnon</h3>
+                <p style="margin: 0; color: var(--text-secondary);">Vous n'avez pas de Pokémon compagnon défini !</p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: var(--text-secondary);">Utilisez la commande **!setcompanion** sur Discord.</p>
+            </div>
+        `;
+    }
+
+    const isShiny = pokemon.isShiny;
+    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
+    const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name;
+    const borderColor = isShiny ? 'var(--shiny-color)' : 'var(--captured-border)';
+    
+    return `
+        <div class="profile-stat-card" style="border: 2px solid ${borderColor}; text-align: center;">
+            <h3 style="color: ${borderColor};">Pokémon Compagnon</h3>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <img src="${imageSource}" alt="${pokemon.name}" style="width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; border: 3px solid ${borderColor}; border-radius: 50%; background-color: var(--card-background);">
+                <span style="font-size: 1.8em; font-weight: bold; color: ${isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin-top: 5px;">${nameDisplay}</span>
+                <span style="font-size: 1.2em; color: var(--text-secondary);">Niv. ${pokemon.level || 5} | #${pokemon.pokedexId.toString().padStart(3, '0')}</span>
+            </div>
+        </div>
+    `;
 }
 
 // --- GESTION DE LA BOUTIQUE (SHOP) et VENTE (SELL) ---
@@ -675,7 +684,7 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
     }
 }
 
-// --- NOUVEAU: GESTION ÉCHANGE MIRACLE ---
+// --- GESTION ÉCHANGE MIRACLE ---
 async function handleWonderTrade(pokemonIdToTrade, pokemonName) {
     if (!currentUserId) {
         document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant d'effectuer un échange.";
@@ -707,7 +716,22 @@ async function handleWonderTrade(pokemonIdToTrade, pokemonName) {
 
         if (response.ok) {
             messageContainer.style.color = 'var(--highlight-color)'; 
-            messageContainer.textContent = data.message;
+            
+            // Affichage détaillé du Pokémon reçu 
+            const newPokemon = data.newPokemon;
+            const spriteUrl = `${POKEAPI_SPRITE_URL}${newPokemon.isShiny ? 'shiny/' : ''}${newPokemon.pokedexId}.png`;
+            
+            messageContainer.innerHTML = `
+                <div style="text-align: center; padding: 5px;">
+                    <p style="margin-bottom: 5px; font-weight: bold;">${data.message}</p>
+                    <p style="font-weight: bold; font-size: 1.1em; color: ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin: 5px 0;">${data.newPokemonMessage}</p>
+                    <img src="${spriteUrl}" alt="${newPokemon.name}" 
+                         style="width: 96px; height: 96px; image-rendering: pixelated; 
+                                border: 3px solid ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--captured-border)'}; 
+                                border-radius: 8px; background-color: var(--header-background); margin-top: 5px;">
+                    <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">Le Pokédex se met à jour...</p>
+                </div>
+            `;
             
             // Recharger le Pokédex pour afficher la nouvelle carte et retirer l'ancienne
             await loadPokedex(); 
