@@ -129,7 +129,8 @@ function createPokedexCard(pokemon, isSellable = false) {
     const isShiny = pokemon.isShiny;
     const borderStyle = isShiny ? `border: 2px solid var(--shiny-color)` : `border: 2px solid var(--captured-border)`;
     
-    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png`;
+    const imageId = pokemon.formId || pokemon.pokedexId;
+    const imageSource = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${imageId}.png`;
     const nameDisplay = isShiny ? `✨ ${pokemon.name}` : pokemon.name;
     const levelDisplay = pokemon.level ? `<span class="pokemon-level">Lv.${pokemon.level}</span>` : '';
     
@@ -826,6 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
 
 
 
