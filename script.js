@@ -335,7 +335,7 @@ async function loadPokedex() {
 
         if (gen3Unique.length > 0) 
         {
-            html += generateUniqueGrid('Génération 3 (Advanced Generation)', gen2Unique);
+            html += generateUniqueGrid('Génération 3 (Advanced Generation)', gen3Unique);
         }
 
         // --- 2. SECTION MA COLLECTION (DOUBLONS & SHINIES, AVEC BOUTON VENTE) ---
@@ -825,4 +825,5 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
 
