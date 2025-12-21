@@ -288,13 +288,15 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         // Convertir la Map en tableau trié
         const fullPokedex = Array.from(fullPokedexMap.values()).sort((a, b) => a.pokedexId - b.pokedexId);
 
-        res.json({
-            fullPokedex: fullPokedex,
-            capturedPokemonsList: enrichedCapturedPokedex, // La liste complète incluant les doublons
-            uniquePokedexCount: capturedPokedexIds.size,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_3,
-            maxGen1Id: MAX_POKEDEX_ID_GEN_1
-        });
+res.json({
+    success: true,
+    fullPokedex,
+    capturedPokemonsList: capturedPokemons,
+    uniquePokedexCount: capturedPokedexIds.size,
+    maxPokedexId: MAX_POKEDEX_ID_GEN_3, // On passe à 386 ici
+    maxGen1Id: MAX_POKEDEX_ID_GEN_1,     // 151
+    maxGen2Id: MAX_POKEDEX_ID_GEN_2      // 251
+});
 
     } catch (error) {
         console.error('Erreur API Pokédex:', error);
@@ -652,4 +654,5 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
