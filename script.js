@@ -312,6 +312,7 @@ async function loadPokedex() {
         
         const gen1Unique = fullPokedex.filter(p => p.pokedexId <= maxGen1Id);
         const gen2Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
+        const gen3Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
 
         const generateUniqueGrid = (title, pokemonList) => {
             const capturedCount = pokemonList.filter(p => p.isCaptured).length;
@@ -330,6 +331,11 @@ async function loadPokedex() {
         
         if (gen2Unique.length > 0) {
             html += generateUniqueGrid('Génération 2 (Johto)', gen2Unique);
+        }
+
+        if (gen3Unique.length > 0) 
+        {
+            html += generateUniqueGrid('Génération 3 (Advanced Generation)', gen2Unique);
         }
 
         // --- 2. SECTION MA COLLECTION (DOUBLONS & SHINIES, AVEC BOUTON VENTE) ---
@@ -819,3 +825,4 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
