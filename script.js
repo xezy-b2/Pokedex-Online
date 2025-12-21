@@ -296,23 +296,24 @@ async function loadPokedex() {
             return;
         }
 
-        const { fullPokedex, capturedPokemonsList, uniquePokedexCount, maxPokedexId, maxGen1Id } = data; 
+const { fullPokedex, capturedPokemonsList, uniquePokedexCount, maxPokedexId, maxGen1Id, maxGen2Id } = data; 
         
         let html = '';
         
         // --- 1. SECTION POKÉDEX OFFICIEL (UNIQUE + MANQUANTS, SANS BOUTON VENTE) ---
         
-        html += `
-            <h2>Pokédex Officiel (Unique)</h2>
-            <p style="font-size: 1.1em; font-weight: bold;">Espèces uniques capturées : ${uniquePokedexCount}/${maxPokedexId}</p>
-            <p style="font-size: 0.9em; color: var(--text-secondary);">
-                Affiche les espèces capturées et celles manquantes (grisées) jusqu'à la Gen 2 (1-${maxPokedexId}).
-            </p>
-        `;
+html += `
+    <h2>Pokédex Officiel (Unique)</h2>
+    <p style="font-size: 1.1em; font-weight: bold;">Espèces uniques capturées : ${uniquePokedexCount}/${maxPokedexId}</p>
+    <p style="font-size: 0.9em; color: var(--text-secondary);">
+        Affiche les espèces capturées et celles manquantes (grisées) jusqu'à la Gen 3 (1-${maxPokedexId}).
+    </p>
+`;
         
-        const gen1Unique = fullPokedex.filter(p => p.pokedexId <= maxGen1Id);
-        const gen2Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
-        const gen3Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id);
+// Filtrage précis par génération
+const gen1Unique = fullPokedex.filter(p => p.pokedexId <= maxGen1Id);
+const gen2Unique = fullPokedex.filter(p => p.pokedexId > maxGen1Id && p.pokedexId <= maxGen2Id);
+const gen3Unique = fullPokedex.filter(p => p.pokedexId > maxGen2Id && p.pokedexId <= maxPokedexId);
 
         const generateUniqueGrid = (title, pokemonList) => {
             const capturedCount = pokemonList.filter(p => p.isCaptured).length;
@@ -825,5 +826,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
 
 
