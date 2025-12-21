@@ -16,6 +16,7 @@ const statsCache = {}; // Cache simple pour éviter les appels API redondants
 // NOUVEAU: Constantes pour les limites de Génération
 const MAX_POKEDEX_ID_GEN_1 = 151; 
 const MAX_POKEDEX_ID_GEN_2 = 251; // Limite pour la Génération 2
+const MAX_POKEDEX_ID_GEN_3 = 386;
 
 async function fetchPokemonBaseStats(pokedexId) {
     if (statsCache[pokedexId]) {
@@ -55,7 +56,7 @@ function getRandomInt(min, max) {
  */
 async function generateRandomPokemon() {
     // ID aléatoire (1 à MAX_POKEDEX_ID_GEN_2, qui est défini à 251)
-    const pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_2); 
+    const pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_3); 
     
     // Niveau aléatoire entre 1 et 100
     const level = getRandomInt(1, 100);
@@ -258,7 +259,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         const fullPokedexMap = new Map();
 
         // Remplir la Map avec tous les IDs (1 à 251) comme manquants par défaut
-        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_2; id++) {
+        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_3; id++) {
             fullPokedexMap.set(id, {
                 pokedexId: id,
                 name: `[${id.toString().padStart(3, '0')}] Inconnu`, 
@@ -291,7 +292,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
             fullPokedex: fullPokedex,
             capturedPokemonsList: enrichedCapturedPokedex, // La liste complète incluant les doublons
             uniquePokedexCount: capturedPokedexIds.size,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2,
+            maxPokedexId: MAX_POKEDEX_ID_GEN_3,
             maxGen1Id: MAX_POKEDEX_ID_GEN_1
         });
 
@@ -335,7 +336,7 @@ app.get('/api/profile/:userId', async (req, res) => {
             ...userObject, 
             stats: stats,
             companionPokemon: companionPokemon,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_2
+            maxPokedexId: MAX_POKEDEX_ID_GEN_3
         });
 
     } catch (error) {
@@ -651,3 +652,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
