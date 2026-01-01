@@ -289,25 +289,9 @@
             color: var(--text-color);
             background-color: var(--header-background);
         }
-
-        .modal {
-    display: none; /* Caché par défaut */
-    display: flex; /* Utilisé par le JS pour l'afficher */
-}
-
     </style>
 </head>
 <body>
-
-    <div id="trade-modal" class="modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
-    <div class="modal-content" style="background-color: var(--header-background); padding: 30px; border-radius: 15px; text-align: center; border: 3px solid var(--highlight-color); max-width: 400px; width: 90%;">
-        <h2 id="trade-title">Échange Réussi !</h2>
-        <p id="trade-text">Vous avez reçu :</p>
-        <div id="received-pokemon-card" style="margin: 20px 0;">
-            </div>
-        <button onclick="closeTradeModal()" style="background-color: var(--highlight-color); padding: 10px 30px; font-weight: bold;">Super !</button>
-    </div>
-</div>
     
     <div class="container">
         <header>
@@ -361,6 +345,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
-
