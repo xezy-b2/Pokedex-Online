@@ -692,50 +692,74 @@ async function handleSell(pokemonId, pokemonName, estimatedPrice) {
 }
 
 // --- GESTION ÉCHANGE MIRACLE (MIS À JOUR POUR UN AFFICHAGE CLAIR) ---
-// Fonction pour fermer le modal
-function closeTradeModal() {
-    document.getElementById('trade-modal').style.display = 'none';
-}
+async function handleWonderTrade(pokemonIdToTrade, pokemonName) {
+    if (!currentUserId) {
+        document.getElementById('pokedex-error-container').textContent = "Veuillez vous connecter avant d'effectuer un échange.";
+        return;
+    }
+    
+    // Confirmation avant l'échange miracle
+    if (!confirm(`Êtes-vous sûr de vouloir échanger votre ${pokemonName} contre un Pokémon aléatoire ? (Action définitive)`)) {
+        return;
+    }
+    
+    const messageContainer = document.getElementById(`action-msg-${pokemonIdToTrade}`);
+    const buttonDiv = messageContainer.previousElementSibling; 
+    
+    // Désactiver les boutons pour éviter les doubles clics
+    buttonDiv.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    
+    messageContainer.style.color = 'var(--shiny-color)';
+    messageContainer.textContent = `Échange Miracle de ${pokemonName} en cours...`;
 
-// Fonction pour gérer l'échange miracle
-async function handleWonderTrade(pokemonId, pokemonName) {
-    if (!confirm(`Voulez-vous envoyer ${pokemonName} en échange miracle ?`)) return;
-
-    const messageContainer = document.getElementById(`action-msg-${pokemonId}`);
     try {
         const response = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId, pokemonId: pokemonId })
+            body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            // 1. Afficher le modal avec le nouveau Pokémon
-            showTradeResult(data.newPokemon);
             
-            // 2. Rafraîchir le Pokédex en arrière-plan
-            loadPokedex();
+            // data.message contient maintenant l'échange complet : "A contre B"
+            const newPokemon = data.newPokemon;
+            const spriteUrl = `${POKEAPI_SPRITE_URL}${newPokemon.isShiny ? 'shiny/' : ''}${newPokemon.pokedexId}.png`;
+            
+            messageContainer.innerHTML = `
+                <div style="text-align: center; padding: 5px;">
+                    <p style="margin-bottom: 5px; font-weight: bold; font-size: 1.1em; color: var(--highlight-color);">${data.message}</p>
+                    <p style="font-weight: bold; font-size: 0.9em; color: ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--text-color)'}; margin: 5px 0;">
+                        ${data.newPokemonMessage}
+                    </p>
+                    <img src="${spriteUrl}" alt="${newPokemon.name}" 
+                         style="width: 96px; height: 96px; image-rendering: pixelated; 
+                                border: 3px solid ${newPokemon.isShiny ? 'var(--shiny-color)' : 'var(--captured-border)'}; 
+                                border-radius: 8px; background-color: var(--header-background); margin-top: 5px;">
+                    <p style="font-size: 0.8em; color: var(--text-secondary); margin-top: 5px;">Le Pokédex se met à jour...</p>
+                </div>
+            `;
+            
+            // Recharger le Pokédex pour afficher la nouvelle carte et retirer l'ancienne
+            await loadPokedex(); 
+
         } else {
-            alert(data.message || "Erreur lors de l'échange.");
+            messageContainer.style.color = 'var(--red-discord)'; 
+            messageContainer.textContent = data.message || `Erreur: Statut ${response.status}.`;
+            // Réactiver les boutons en cas d'erreur
+            buttonDiv.querySelectorAll('button').forEach(btn => btn.disabled = false);
         }
+
     } catch (error) {
-        console.error("Erreur d'échange:", error);
+        console.error('Erreur lors de l\'échange miracle:', error);
+        messageContainer.style.color = 'var(--red-discord)';
+        messageContainer.textContent = 'Erreur de connexion au serveur API.';
+        // Réactiver les boutons en cas d'erreur
+        buttonDiv.querySelectorAll('button').forEach(btn => btn.disabled = false);
     }
 }
 
-// Fonction pour injecter le Pokémon reçu dans le modal
-function showTradeResult(pokemon) {
-    const container = document.getElementById('received-pokemon-card');
-    
-    // On réutilise votre fonction de création de carte existante
-    // Mais on force l'affichage sans boutons de vente
-    container.innerHTML = createPokedexCard(pokemon, false);
-    
-    // Affichage du modal
-    document.getElementById('trade-modal').style.display = 'flex';
-}
 
 /**
  * Gère la vente de tous les doublons non-chromatiques via l'API.
