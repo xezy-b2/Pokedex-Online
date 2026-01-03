@@ -34,13 +34,15 @@ function openTradeModal(data, oldPokemonName) {
             PV: ${newPoke.iv_hp} | ATK: ${newPoke.iv_attack} | DEF: ${newPoke.iv_defense} | VIT: ${newPoke.iv_speed}
         </span>
     `;
-
+    modal.classList.add('modal-open'); // On ajoute la classe pour l'afficher
     modal.style.display = 'flex';
 }
 
 function closeTradeModal() {
     const modal = document.getElementById('trade-modal');
-    if (modal) modal.style.display = 'none';
+if (modal) {
+        modal.classList.remove('modal-open'); // On retire la classe pour la cacher
+    }
 }
 
 // --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE ---
@@ -823,6 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
 
 
 
