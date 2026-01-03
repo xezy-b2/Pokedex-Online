@@ -7,6 +7,42 @@ const POKEBALL_IMAGE_BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprit
 let currentUserId = localStorage.getItem('currentUserId'); 
 let currentUsername = localStorage.getItem('currentUsername');
 
+function openTradeModal(data, oldPokemonName) {
+    const modal = document.getElementById('trade-modal');
+    if (!modal) return;
+
+    const newPoke = data.newPokemon;
+    const isShiny = newPoke.isShiny;
+    
+    // Remplissage des infos du Pokémon donné
+    document.getElementById('modal-given-name').textContent = oldPokemonName;
+    
+    // Remplissage des infos du Pokémon reçu
+    const spriteUrl = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${newPoke.pokedexId}.png`;
+    document.getElementById('modal-received-img').src = spriteUrl;
+    document.getElementById('modal-received-name').textContent = (isShiny ? '✨ ' : '') + newPoke.name;
+    document.getElementById('modal-received-lv').textContent = `Niveau ${newPoke.level || 5}`;
+    
+    // Calcul et affichage des IVs
+    const totalIVs = (newPoke.iv_hp || 0) + (newPoke.iv_attack || 0) + (newPoke.iv_defense || 0) + 
+                     (newPoke.iv_special_attack || 0) + (newPoke.iv_special_defense || 0) + (newPoke.iv_speed || 0);
+    const ivPercentage = ((totalIVs / 186) * 100).toFixed(1);
+    
+    document.getElementById('modal-received-stats').innerHTML = `
+        <strong style="color: var(--shiny-color);">Potentiel : ${ivPercentage}%</strong><br>
+        <span style="font-size: 0.85em; color: var(--text-secondary);">
+            PV: ${newPoke.iv_hp} | ATK: ${newPoke.iv_attack} | DEF: ${newPoke.iv_defense} | VIT: ${newPoke.iv_speed}
+        </span>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+function closeTradeModal() {
+    const modal = document.getElementById('trade-modal');
+    if (modal) modal.style.display = 'none';
+}
+
 // --- GESTION DE L'ÉTAT ET DE L'AFFICHAGE ---
 
 function initializeApp() {
@@ -787,5 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
+
 
 
