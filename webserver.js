@@ -503,14 +503,11 @@ app.post('/api/trade/wonder', async (req, res) => {
         await user.save();
         
         // 5. Réponse (avec messages enrichis)
-        res.json({
-            success: true,
-            // NOUVEAU: Message combiné qui indique contre quel Pokémon il a été échangé.
-            message: `${tradedPokemon.isShiny ? '✨ ' : ''}${tradedPokemon.name} (N°${tradedPokemon.pokedexId}) a été échangé contre ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} (N°${newPokemon.pokedexId}) !`, 
-            // Ce message peut être utilisé comme highlight ou détail supplémentaire
-            newPokemonMessage: `Vous avez reçu : ${newPokemon.isShiny ? '✨ ' : ''}${newPokemon.name} de Niveau ${newPokemon.level}`,
-            newPokemon: newPokemon // Pour l'affichage de l'image côté client
-        });
+res.json({ 
+    success: true, 
+    message: "Échange réussi !", 
+    newPokemon: newPokemon // L'objet généré par generateRandomPokemon()
+});
 
     } catch (error) {
         console.error('Erreur API Échange Miracle:', error);
@@ -654,5 +651,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
