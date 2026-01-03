@@ -343,5 +343,34 @@
     </div>
     
     <script src="script.js"></script>
+
+    <div id="trade-modal" class="modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background-color: var(--header-background); padding: 30px; border-radius: 15px; border: 2px solid var(--discord-blue); max-width: 600px; width: 90%; text-align: center; position: relative;">
+        <h2 style="color: var(--shiny-color); margin-top: 0;">✨ Échange Miracle Réussi ! ✨</h2>
+        
+        <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
+            <div id="given-pokemon-details">
+                <p style="color: var(--text-secondary);">Vous avez envoyé :</p>
+                <img id="modal-given-img" src="" style="width: 80px;">
+                <p id="modal-given-name" style="font-weight: bold;"></p>
+            </div>
+
+            <div style="font-size: 2em;">➡️</div>
+
+            <div id="received-pokemon-details">
+                <p style="color: var(--highlight-color);">Vous avez reçu :</p>
+                <img id="modal-received-img" src="" style="width: 120px; image-rendering: pixelated;">
+                <p id="modal-received-name" style="font-weight: bold; font-size: 1.2em;"></p>
+                <p id="modal-received-lv" style="color: var(--highlight-color);"></p>
+            </div>
+        </div>
+
+        <div id="modal-received-stats" style="background: var(--card-background); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 20px;">
+            </div>
+
+        <button onclick="closeTradeModal()" style="background-color: var(--highlight-color); width: 100%; padding: 12px; font-weight: bold;">Génial !</button>
+    </div>
+</div>
 </body>
 </html>
+
