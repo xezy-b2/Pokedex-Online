@@ -466,60 +466,45 @@ app.post('/api/sell/pokemon', async (req, res) => {
 app.post('/api/trade/wonder', async (req, res) => {
     const { userId, pokemonIdToTrade } = req.body;
 
-    if (!userId || !pokemonIdToTrade) {
-        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
-    }
-
     try {
-        const user = await User.findOne({ userId });
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
-        }
+        const user = await User.findOne({ discordId: userId });
+        if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
-        // 1. Trouver et retirer le Pokémon à échanger
+        // 1. Trouver l'index du Pokémon à échanger
         const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
-
+        
         if (pokemonIndex === -1) {
-            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
+            return res.status(404).json({ message: "Pokémon non trouvé dans votre collection" });
         }
 
-        const tradedPokemon = user.pokemons[pokemonIndex];
+        // 2. Vérifier si c'est une nouvelle espèce AVANT de l'ajouter
+        // On génère le nouveau Pokémon (votre fonction existante)
+        const newPokemon = await generateRandomPokemon(); 
         
-        // Sécurité : On ne peut pas échanger le Pokémon compagnon
-        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
-            return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
-        }
+        const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
+
+        // 3. ACTION CRUCIALE : Retirer l'ancien et ajouter le nouveau
+        // .splice(index, 1) retire l'élément à la position trouvée
+        user.pokemons.splice(pokemonIndex, 1); 
         
-        // Retirer le Pokémon de la liste 
-        user.pokemons.splice(pokemonIndex, 1);
-
-        // 2. Générer le Pokémon de remplacement (Miracle Trade)
-        const newPokemon = await generateRandomPokemon();
-
-        // 3. Ajouter le nouveau Pokémon à la collection
+        // Ajouter le nouveau
         user.pokemons.push(newPokemon);
 
-        // 4. Sauvegarder les changements
-const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
+        // 4. Sauvegarder les modifications
+        await user.save();
 
-// 2. Ajouter le nouveau Pokémon
-user.pokemons.push(newPokemon);
-await user.save();
-
-// 3. Envoyer la réponse avec l'info 'isNewSlotCaptured'
-res.json({
-    success: true,
-    message: "Échange miracle réussi !",
-    newPokemon: newPokemon,
-    isNewSlotCaptured: !alreadyHadIt // True si c'est une nouvelle entrée au Pokédex
-});
+        res.json({
+            success: true,
+            message: "Échange miracle réussi !",
+            newPokemon: newPokemon,
+            isNewSlotCaptured: !alreadyHadIt
+        });
 
     } catch (error) {
-        console.error('Erreur API Échange Miracle:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de l\'Échange Miracle.' });
+        console.error('Erreur Échange Miracle:', error);
+        res.status(500).json({ message: "Erreur lors de l'échange" });
     }
 });
-
 
 // Route 5.6: Définir le Compagnon (POST)
 app.post('/api/companion/set', async (req, res) => {
@@ -656,6 +641,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
