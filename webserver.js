@@ -463,6 +463,7 @@ app.post('/api/sell/pokemon', async (req, res) => {
 });
 
 // Route 5.8: Échange Miracle (POST) --- MIS À JOUR POUR UN MESSAGE COMBINÉ
+// --- Route 5.8 (Corrigée) ---
 app.post('/api/trade/wonder', async (req, res) => {
     const { userId, pokemonIdToTrade } = req.body;
 
@@ -476,46 +477,38 @@ app.post('/api/trade/wonder', async (req, res) => {
             return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
         }
 
-        // 1. Trouver et retirer le Pokémon à échanger
         const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
-
         if (pokemonIndex === -1) {
             return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
         }
 
-        const tradedPokemon = user.pokemons[pokemonIndex];
-        
-        // Sécurité : On ne peut pas échanger le Pokémon compagnon
         if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
             return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
         }
         
-        // Retirer le Pokémon de la liste 
         user.pokemons.splice(pokemonIndex, 1);
 
-        // 2. Générer le Pokémon de remplacement (Miracle Trade)
         const newPokemon = await generateRandomPokemon();
 
-        // 3. Ajouter le nouveau Pokémon à la collection
-        user.pokemons.push(newPokemon);
+        // LOGIQUE POUR ISNEWSLOTCAPTURED
+        // On vérifie si l'utilisateur possède déjà ce PokedexId AVANT d'ajouter le nouveau
+        const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
 
-        // 4. Sauvegarder les changements
+        user.pokemons.push(newPokemon);
         await user.save();
         
-        // 5. Réponse (avec messages enrichis)
-res.json({ 
-    success: true, 
-    message: "Échange réussi !", 
-    newPokemon: newPokemon, // L'objet généré par generateRandomPokemon()
-    isNewSlotCaptured: !alreadyHadIt
-});
+        res.json({ 
+            success: true, 
+            message: "Échange réussi !", 
+            newPokemon: newPokemon, // Virgule ajoutée ici
+            isNewSlotCaptured: !alreadyHadIt 
+        });
 
     } catch (error) {
         console.error('Erreur API Échange Miracle:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de l\'Échange Miracle.' });
+        res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
     }
 });
-
 
 // Route 5.6: Définir le Compagnon (POST)
 app.post('/api/companion/set', async (req, res) => {
@@ -652,7 +645,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
 
 
 
