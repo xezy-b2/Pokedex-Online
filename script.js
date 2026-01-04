@@ -20,20 +20,6 @@ function openTradeModal(data, oldPokemonName) {
     document.getElementById('modal-received-img').src = `${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${newPoke.pokedexId}.png`;
     document.getElementById('modal-received-name').textContent = (isShiny ? '✨ ' : '') + newPoke.name;
     document.getElementById('modal-received-lv').textContent = `Niveau ${newPoke.level || 5}`;
-
-    // --- LOGIQUE "NOUVEAU POKÉMON" ---
-    const isNewElement = document.getElementById('modal-is-new');
-    
-    // Si votre API renvoie l'info 'isNew', on l'utilise, sinon on vérifie l'UI
-    // Ici on simule la vérification :
-    if (data.isNewSlotCaptured) { 
-        isNewElement.textContent = "NOUVEAU !";
-        isNewElement.style.color = "var(--shiny-color)"; // Jaune/Doré
-    } else {
-        isNewElement.textContent = "Déjà possédé";
-        isNewElement.style.color = "var(--text-secondary)"; // Gris
-    }
-    // --------------------------------
     
     const totalIVs = (newPoke.iv_hp || 0) + (newPoke.iv_attack || 0) + (newPoke.iv_defense || 0) + 
                      (newPoke.iv_special_attack || 0) + (newPoke.iv_special_defense || 0) + (newPoke.iv_speed || 0);
@@ -838,8 +824,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nav-profile').addEventListener('click', () => showPage('profile'));
     document.getElementById('nav-shop').addEventListener('click', () => showPage('shop'));
 });
-
-
 
 
 
