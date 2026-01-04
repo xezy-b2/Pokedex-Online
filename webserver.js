@@ -165,38 +165,6 @@ mongoose.connect(mongoUri)
 
 // --- 4. ROUTES AUTHENTIFICATION ---
 
-// --- ROUTES D'ÉCHANGE (À placer AVANT app.get('/api/:discordId')) ---
-app.post('/api/trade/wonder', async (req, res) => {
-    try {
-        const { userId, pokemonIdToTrade } = req.body;
-        const user = await User.findOne({ discordId: userId });
-        
-        if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
-        // Trouver l'index du pokemon
-        const index = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
-        if (index === -1) return res.status(404).json({ message: "Pokémon introuvable" });
-
-        // Générer le nouveau
-        const newPokemon = await generateRandomPokemon(); 
-        const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
-
-        // Remplacer
-        user.pokemons.splice(index, 1);
-        user.pokemons.push(newPokemon);
-        await user.save();
-
-        res.json({
-            success: true,
-            newPokemon: newPokemon,
-            isNewSlotCaptured: !alreadyHadIt
-        });
-    } catch (error) {
-        console.error("Erreur serveur:", error);
-        res.status(500).json({ message: "Erreur serveur" });
-    }
-});
-
 app.get('/api/auth/discord/callback', async (req, res) => {
     const code = req.query.code;
 
@@ -494,6 +462,61 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
 });
 
+// Route 5.8: Échange Miracle (POST) --- MIS À JOUR POUR UN MESSAGE COMBINÉ
+app.post('/api/trade/wonder', async (req, res) => {
+    const { userId, pokemonIdToTrade } = req.body;
+
+    if (!userId || !pokemonIdToTrade) {
+        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+        }
+
+        // 1. Trouver et retirer le Pokémon à échanger
+        const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
+
+        if (pokemonIndex === -1) {
+            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
+        }
+
+        const tradedPokemon = user.pokemons[pokemonIndex];
+        
+        // Sécurité : On ne peut pas échanger le Pokémon compagnon
+        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
+            return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
+        }
+        
+        // Retirer le Pokémon de la liste 
+        user.pokemons.splice(pokemonIndex, 1);
+
+        // 2. Générer le Pokémon de remplacement (Miracle Trade)
+        const newPokemon = await generateRandomPokemon();
+
+        // 3. Ajouter le nouveau Pokémon à la collection
+        user.pokemons.push(newPokemon);
+
+        // 4. Sauvegarder les changements
+        await user.save();
+        
+        // 5. Réponse (avec messages enrichis)
+res.json({ 
+    success: true, 
+    message: "Échange réussi !", 
+    newPokemon: newPokemon // L'objet généré par generateRandomPokemon()
+    isNewSlotCaptured: !alreadyHadIt
+});
+
+    } catch (error) {
+        console.error('Erreur API Échange Miracle:', error);
+        res.status(500).json({ success: false, message: 'Erreur interne du serveur lors de l\'Échange Miracle.' });
+    }
+});
+
+
 // Route 5.6: Définir le Compagnon (POST)
 app.post('/api/companion/set', async (req, res) => {
     const { userId, pokemonId } = req.body;
@@ -629,10 +652,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
-
-
 
 
 
