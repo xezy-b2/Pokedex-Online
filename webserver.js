@@ -507,6 +507,7 @@ res.json({
     success: true, 
     message: "Échange réussi !", 
     newPokemon: newPokemon // L'objet généré par generateRandomPokemon()
+    isNewSlotCaptured: !alreadyHadIt
 });
 
     } catch (error) {
@@ -651,6 +652,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
