@@ -500,14 +500,18 @@ app.post('/api/trade/wonder', async (req, res) => {
         user.pokemons.push(newPokemon);
 
         // 4. Sauvegarder les changements
-        await user.save();
-        
-        // 5. Réponse (avec messages enrichis)
-res.json({ 
-    success: true, 
-    message: "Échange réussi !", 
-    newPokemon: newPokemon // L'objet généré par generateRandomPokemon()
-    isNewSlotCaptured: !alreadyHadIt
+const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
+
+// 2. Ajouter le nouveau Pokémon
+user.pokemons.push(newPokemon);
+await user.save();
+
+// 3. Envoyer la réponse avec l'info 'isNewSlotCaptured'
+res.json({
+    success: true,
+    message: "Échange miracle réussi !",
+    newPokemon: newPokemon,
+    isNewSlotCaptured: !alreadyHadIt // True si c'est une nouvelle entrée au Pokédex
 });
 
     } catch (error) {
@@ -652,6 +656,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
