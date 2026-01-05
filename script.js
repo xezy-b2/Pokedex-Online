@@ -46,7 +46,7 @@ function filterGen(gen) {
     event.target.classList.add('active');
 }
 
-// --- LOGIQUE PRIX & CARTES ---
+// --- LOGIQUE PRIX ---
 function calculatePrice(p) {
     const levelBonus = (p.level || 5) * 5;
     const shinyBonus = p.isShiny ? 250 : 0;
@@ -55,6 +55,7 @@ function calculatePrice(p) {
     return 50 + levelBonus + shinyBonus + ivBonus;
 }
 
+// --- RENDU DES CARTES POKEMON ---
 function createCard(p, mode = 'pokedex') {
     const isShiny = p.isShiny;
     const isCaptured = p.isCaptured !== false;
@@ -78,13 +79,11 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DES DONNÉES ---
+// --- CHARGEMENT POKEDEX ---
 async function loadPokedex() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
-        
-        // Grilles Encyclopédie
         const grids = { 1: document.getElementById('grid-1'), 2: document.getElementById('grid-2'), 3: document.getElementById('grid-3') };
         [1,2,3].forEach(n => { if(grids[n]) grids[n].innerHTML = ''; });
 
@@ -93,7 +92,6 @@ async function loadPokedex() {
             if(grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
-        // Grilles Collection
         const shinyGrid = document.getElementById('shiny-grid');
         const dupGrid = document.getElementById('duplicate-grid');
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -114,6 +112,7 @@ async function loadPokedex() {
     } catch (e) { console.error(e); }
 }
 
+// --- PROFIL (C'EST TA VERSION QUI MARCHE) ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
@@ -150,6 +149,7 @@ async function loadProfile() {
     } catch (e) { container.innerHTML = "Erreur de chargement du profil."; }
 }
 
+// --- BOUTIQUE (CALQUÉE SUR LE PROFIL) ---
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     if(!container) return;
@@ -157,7 +157,7 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
         
-        // MAPPING STRICT (Le même que ton profil qui marche)
+        // On utilise ici les MÊMES noms de fichiers que ton profil
         const icons = { 
             'pokeball': 'poke-ball.png',
             'superball': 'great-ball.png',
@@ -170,27 +170,20 @@ async function loadShop() {
         
         let html = '';
         for (const [key, item] of Object.entries(items)) {
-            // On récupère l'image via le mapping
-            const fileName = icons[key];
-            
-            // Si le mapping existe, on affiche la carte
-            if (fileName) {
-                html += `
-                    <div class="pokedex-card">
-                        <img src="${BALL_URL}${fileName}" style="width:50px; height:50px; margin: 10px auto; display: block;">
-                        <h3 style="font-size:1em; margin: 5px 0;">${item.name}</h3>
-                        <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
-                        <input type="number" id="qty-${key}" value="1" min="1" style="width:60px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center; padding: 5px;">
-                        <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-                    </div>`;
-            }
+            const fileName = icons[key] || 'poke-ball.png';
+            html += `
+                <div class="pokedex-card">
+                    <img src="${BALL_URL}${fileName}" style="width:50px; display: block; margin: 0 auto;">
+                    <h3 style="font-size:1em; margin: 10px 0;">${item.name}</h3>
+                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
+                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                </div>`;
         }
         container.innerHTML = html;
-    } catch (e) { 
-        console.error("Erreur shop:", e);
-        container.innerHTML = "Erreur de chargement de la boutique."; 
-    }
+    } catch (e) { container.innerHTML = "Erreur shop."; }
 }
+
 // --- ACTIONS ---
 async function sellPoke(id, name, price) {
     if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
@@ -226,16 +219,11 @@ async function buyItem(key, qty) {
     });
     const data = await res.json();
     alert(data.message);
-    if(res.ok) loadShop();
+    if(res.ok) {
+        loadShop();
+        loadProfile();
+    }
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
-
-
-
-
-
-
