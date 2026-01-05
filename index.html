@@ -26,135 +26,77 @@
             background-color: var(--background);
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent);
             color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
+            margin: 0; padding: 20px; min-height: 100vh;
+            display: flex; justify-content: center;
         }
 
         .container {
-            width: 100%;
-            max-width: 1200px; /* Légèrement plus large pour 4 colonnes */
+            width: 100%; max-width: 1200px;
             background-color: var(--header-background);
             border: 1px solid var(--border-glass);
-            border-radius: 24px;
-            padding: 40px;
+            border-radius: 24px; padding: 40px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
         }
 
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-glass);
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border-glass);
         }
 
         nav {
-            display: none;
-            gap: 8px;
-            background: rgba(0,0,0,0.2);
-            padding: 6px;
-            border-radius: 14px;
-            margin-bottom: 30px;
-            width: fit-content;
+            display: none; gap: 8px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 14px; margin-bottom: 30px; width: fit-content;
         }
 
         nav button {
-            background: transparent;
-            color: var(--text-secondary);
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
+            background: transparent; color: var(--text-secondary); padding: 10px 20px;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: 600;
         }
 
-        nav button.active {
-            background: var(--accent-gradient);
-            color: white;
-        }
+        nav button.active { background: var(--accent-gradient); color: white; }
 
         .page-section { display: none; animation: fadeIn 0.4s ease-out; }
         .page-section.active { display: block; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- GRILLES (POKEMON & BOUTIQUE) : 4 COLONNES --- */
+        /* --- GRILLES (4 COLONNES) --- */
         .pokedex-grid, .shop-grid {
             display: grid;
-            /* Force 4 colonnes sur desktop, s'adapte sur tablette/mobile */
             grid-template-columns: repeat(4, 1fr); 
-            gap: 20px;
-            margin-top: 20px;
+            gap: 20px; margin-top: 20px;
         }
 
         @media (max-width: 1024px) { .pokedex-grid, .shop-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) { .pokedex-grid, .shop-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 480px) { .pokedex-grid, .shop-grid { grid-template-columns: 1fr; } }
 
-        /* --- CARTES POKEMON --- */
-        .pokedex-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-glass);
-            padding: 20px;
-            border-radius: 18px;
-            text-align: center;
-            transition: 0.3s;
+        /* --- CARTES --- */
+        .pokedex-card, .shop-card {
+            background: var(--card-background); border: 1px solid var(--border-glass);
+            padding: 20px; border-radius: 18px; text-align: center; transition: 0.3s;
         }
-        .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord-blue); }
+        .pokedex-card:hover, .shop-card:hover { transform: translateY(-5px); border-color: var(--discord-blue); }
+        
         .pokedex-card img { width: 90px; height: 90px; image-rendering: pixelated; }
-
-        /* --- CARTES BOUTIQUE --- */
-        .shop-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-glass);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .shop-image { width: 50px; height: 50px; margin: 0 auto 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+        .shop-image { width: 50px; height: 50px; margin: 0 auto 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+        
         .shop-cost { color: var(--shiny-color); font-weight: 800; margin-bottom: 10px; }
-        .shop-card input { width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border-glass); background: #000; color: white; text-align: center; }
-        .shop-card button { background: var(--accent-gradient); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        input[type="number"] { width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border-glass); background: #000; color: white; text-align: center; }
+        .btn-buy { background: var(--accent-gradient); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
 
-        /* --- INVENTAIRE PROFIL --- */
+        /* --- INVENTAIRE --- */
         .inventory-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px;
         }
         .inventory-item {
-            background: var(--card-background);
-            border: 1px solid var(--border-glass);
-            border-radius: 16px;
-            padding: 15px;
-            text-align: center;
-            position: relative;
+            background: var(--card-background); border: 1px solid var(--border-glass);
+            border-radius: 16px; padding: 15px; text-align: center; position: relative;
         }
         .inventory-item .ball-count {
-            position: absolute;
-            top: -5px; right: -5px;
-            background: var(--discord-blue);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 8px;
-            font-size: 0.75em;
-            font-weight: 800;
+            position: absolute; top: -5px; right: -5px; background: var(--discord-blue);
+            color: white; padding: 2px 8px; border-radius: 8px; font-size: 0.75em; font-weight: 800;
         }
         .inventory-item img { width: 35px; height: 35px; margin-bottom: 5px; }
-        .inventory-item span { display: block; font-size: 0.8em; color: var(--text-secondary); }
-
-        /* --- MODAL --- */
-        .modal-content { background-color: var(--header-background) !important; border-radius: 20px !important; border: 1px solid var(--border-glass) !important; }
     </style>
 </head>
 <body>
@@ -177,6 +119,12 @@
             <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
         </nav>
 
+        <div id="pokedex-stats-bar" style="margin-bottom: 20px; font-size: 0.9em; color: var(--text-secondary);">
+            Pokémon capturés : <span id="pokemon-count" style="color: var(--highlight-color); font-weight: bold;">0</span>
+        </div>
+
+        <div id="pokedex-error-container" style="color: var(--red-discord); margin-bottom: 15px;"></div>
+        
         <div id="pokedex-page" class="page-section active">
             <div id="pokedexContainer" class="pokedex-grid"></div>
         </div>
@@ -192,8 +140,13 @@
     
     <div id="trade-modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center;">
         <div class="modal-content" style="padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; border: 1px solid var(--border-glass);">
+            <div id="given-pokemon-details" style="display:none;">
+                <img id="modal-given-img" src="">
+                <p id="modal-given-name"></p>
+            </div>
             <h2 id="modal-received-name" style="color: var(--shiny-color);"></h2>
             <img id="modal-received-img" src="" style="width: 120px;">
+            <p id="modal-received-lv"></p>
             <div id="modal-received-stats"></div>
             <button onclick="closeTradeModal()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 20px;">Fermer</button>
         </div>
@@ -201,35 +154,20 @@
 
     <script src="script.js"></script>
     <script>
-        // On force les colonnes et on corrige les sprites de balles manquantes
+        // Correction des sprites et forçage du design
         window.createShopCard = function(itemKey, item) {
-            // Mapping de secours pour les noms de sprites PokeAPI
-            const spriteMap = {
-                'pokeball': 'poke-ball.png',
-                'superball': 'great-ball.png',
-                'hyperball': 'ultra-ball.png',
-                'masterball': 'master-ball.png',
-                'honorball': 'premier-ball.png',
-                'luxeball': 'luxury-ball.png'
-            };
+            const spriteMap = { 'pokeball': 'poke-ball.png', 'superball': 'great-ball.png', 'hyperball': 'ultra-ball.png', 'masterball': 'master-ball.png', 'honorball': 'premier-ball.png', 'luxeball': 'luxury-ball.png' };
             const sprite = spriteMap[itemKey] || item.imageFragment;
-
             return `
                 <div class="shop-card">
-                    <div>
-                        <img src="${POKEBALL_IMAGE_BASE_URL}${sprite}" class="shop-image">
-                        <div style="font-weight: 800; margin-bottom: 5px;">${item.name}</div>
-                        <div class="shop-cost">${item.cost.toLocaleString()} 💰</div>
-                    </div>
-                    <div>
-                        <input type="number" id="qty-${itemKey}" min="1" value="1">
-                        <button onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)">Acheter</button>
-                    </div>
-                </div>
-            `;
+                    <img src="${POKEBALL_IMAGE_BASE_URL}${sprite}" class="shop-image">
+                    <div style="font-weight: 800; margin-bottom: 5px;">${item.name}</div>
+                    <div class="shop-cost">${item.cost.toLocaleString()} 💰</div>
+                    <input type="number" id="qty-${itemKey}" min="1" value="1">
+                    <button class="btn-buy" onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)">Acheter</button>
+                </div>`;
         };
 
-        // Correction visuelle de l'inventaire
         const originalLoadProfile = window.loadProfile;
         window.loadProfile = async function() {
             await originalLoadProfile();
@@ -239,14 +177,7 @@
                 ballGrid.querySelectorAll('div').forEach(div => {
                     const count = div.querySelector('.ball-count').innerText;
                     const name = div.querySelector('.ball-name').innerText.toLowerCase();
-                    
-                    let img = "poke-ball.png";
-                    if(name.includes("super")) img = "great-ball.png";
-                    else if(name.includes("hyper")) img = "ultra-ball.png";
-                    else if(name.includes("master")) img = "master-ball.png";
-                    else if(name.includes("honor") || name.includes("premier")) img = "premier-ball.png";
-                    else if(name.includes("luxe")) img = "luxury-ball.png";
-
+                    let img = name.includes("super") ? "great-ball.png" : name.includes("hyper") ? "ultra-ball.png" : name.includes("master") ? "master-ball.png" : name.includes("honor") || name.includes("premier") ? "premier-ball.png" : name.includes("luxe") ? "luxury-ball.png" : "poke-ball.png";
                     div.className = 'inventory-item';
                     div.innerHTML = `<span class="ball-count">${count}</span><img src="${POKEBALL_IMAGE_BASE_URL}${img}"><span>${name}</span>`;
                 });
