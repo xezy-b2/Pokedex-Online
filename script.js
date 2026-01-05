@@ -157,31 +157,69 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
         
-        // On utilise ici les MÊMES noms de fichiers que ton profil
-        const icons = { 
-            'pokeball': 'poke-ball.png',
-            'superball': 'great-ball.png',
-            'hyperball': 'ultra-ball.png',
-            'masterball': 'master-ball.png',
-            'honorball': 'premier-ball.png',
-            'luxeball': 'luxury-ball.png',
-            'safariball': 'safari-ball.png'
-        };
-        
-        let html = '';
-        for (const [key, item] of Object.entries(items)) {
-            const fileName = icons[key] || 'poke-ball.png';
-            html += `
-                <div class="pokedex-card">
-                    <img src="${BALL_URL}${fileName}" style="width:50px; display: block; margin: 0 auto;">
-                    <h3 style="font-size:1em; margin: 10px 0;">${item.name}</h3>
-                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-                </div>`;
-        }
-        container.innerHTML = html;
-    } catch (e) { container.innerHTML = "Erreur shop."; }
+        // On écrit le HTML en dur pour chaque item comme dans ton profil
+        // En utilisant directement les bons noms de fichiers (great-ball.png, etc.)
+        container.innerHTML = `
+            <div class="pokedex-card">
+                <img src="${BALL_URL}poke-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Poké Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.pokeball.cost} 💰</p>
+                <input type="number" id="qty-pokeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('pokeball', document.getElementById('qty-pokeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}great-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Super Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.superball.cost} 💰</p>
+                <input type="number" id="qty-superball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('superball', document.getElementById('qty-superball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}ultra-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Hyper Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.hyperball.cost} 💰</p>
+                <input type="number" id="qty-hyperball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('hyperball', document.getElementById('qty-hyperball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}master-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Master Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.masterball.cost} 💰</p>
+                <input type="number" id="qty-masterball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('masterball', document.getElementById('qty-masterball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}safari-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Safari Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.safariball.cost} 💰</p>
+                <input type="number" id="qty-safariball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('safariball', document.getElementById('qty-safariball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}premier-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Honor Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.honorball.cost} 💰</p>
+                <input type="number" id="qty-honorball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('honorball', document.getElementById('qty-honorball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+
+            <div class="pokedex-card">
+                <img src="${BALL_URL}luxury-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <h3 style="font-size:1em; margin: 10px 0;">Luxe Ball</h3>
+                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${items.luxeball.cost} 💰</p>
+                <input type="number" id="qty-luxeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                <button onclick="buyItem('luxeball', document.getElementById('qty-luxeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+            </div>
+        `;
+    } catch (e) { 
+        console.error(e);
+        container.innerHTML = "Erreur de chargement de la boutique."; 
+    }
 }
 
 // --- ACTIONS ---
@@ -227,3 +265,4 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
