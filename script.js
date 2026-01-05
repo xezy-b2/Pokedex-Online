@@ -157,21 +157,20 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
         
-        // MAPPING EXACT : La clé à gauche doit correspondre à la clé de l'API
-        // Le nom de fichier à droite doit être le nom exact sur PokéAPI
+        // On utilise ici les mêmes noms de fichiers que dans votre section profil
         const icons = { 
             'pokeball': 'poke-ball.png',
-            'superball': 'great-ball.png',  // L'API envoie 'superball'
-            'hyperball': 'ultra-ball.png',  // L'API envoie 'hyperball'
+            'superball': 'great-ball.png',
+            'hyperball': 'ultra-ball.png',
             'masterball': 'master-ball.png',
-            'honorball': 'premier-ball.png', // L'API envoie 'honorball'
-            'luxeball': 'luxury-ball.png',   // L'API envoie 'luxeball'
+            'honorball': 'premier-ball.png',
+            'luxeball': 'luxury-ball.png',
             'safariball': 'safari-ball.png'
         };
         
         let html = '';
         for (const [key, item] of Object.entries(items)) {
-            // On récupère l'image dans le mapping, sinon on met poke-ball par défaut
+            // Utilisation de BALL_URL définie en haut de votre script
             const fileName = icons[key] || 'poke-ball.png';
             
             html += `
@@ -229,6 +228,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
