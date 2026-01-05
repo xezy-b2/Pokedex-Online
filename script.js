@@ -156,30 +156,39 @@ async function loadShop() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
+        
+        // MAPPING EXACT : La clé à gauche doit correspondre à la clé de l'API
+        // Le nom de fichier à droite doit être le nom exact sur PokéAPI
         const icons = { 
-'pokeball': 'poke-ball.png',
-    'superball': 'great-ball.png',
-    'hyperball': 'ultra-ball.png',
-    'masterball': 'master-ball.png',
-    'honorball': 'premier-ball.png',
-    'luxeball': 'luxury-ball.png'
+            'pokeball': 'poke-ball.png',
+            'superball': 'great-ball.png',  // L'API envoie 'superball'
+            'hyperball': 'ultra-ball.png',  // L'API envoie 'hyperball'
+            'masterball': 'master-ball.png',
+            'honorball': 'premier-ball.png', // L'API envoie 'honorball'
+            'luxeball': 'luxury-ball.png',   // L'API envoie 'luxeball'
+            'safariball': 'safari-ball.png'
         };
         
         let html = '';
         for (const [key, item] of Object.entries(items)) {
+            // On récupère l'image dans le mapping, sinon on met poke-ball par défaut
+            const fileName = icons[key] || 'poke-ball.png';
+            
             html += `
                 <div class="pokedex-card">
-                    <img src="${BALL_URL}${icons[key] || 'poke-ball.png'}" style="width:50px;">
-                    <h3 style="font-size:1em;">${item.name}</h3>
-                    <p style="color:var(--shiny); font-weight:bold;">${item.cost} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); margin-bottom:10px; text-align:center;">
+                    <img src="${BALL_URL}${fileName}" style="width:50px; height:50px; margin: 10px auto; display: block;">
+                    <h3 style="font-size:1em; margin: 5px 0;">${item.name}</h3>
+                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
+                    <input type="number" id="qty-${key}" value="1" min="1" style="width:60px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center; padding: 5px;">
                     <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
                 </div>`;
         }
         container.innerHTML = html;
-    } catch (e) { container.innerHTML = "Erreur shop."; }
+    } catch (e) { 
+        console.error("Erreur shop:", e);
+        container.innerHTML = "Erreur lors du chargement de la boutique."; 
+    }
 }
-
 // --- ACTIONS ---
 async function sellPoke(id, name, price) {
     if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
@@ -220,6 +229,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
