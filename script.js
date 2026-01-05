@@ -157,12 +157,12 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
         const icons = { 
-            'pokeball': 'poke-ball.png', 
-            'superball': 'great-ball.png', 
-            'hyperball': 'ultra-ball.png', 
-            'masterball': 'master-ball.png', 
-            'honorball': 'premier-ball.png', 
-            'luxeball': 'luxury-ball.png' 
+'pokeball': 'poke-ball.png',
+    'superball': 'great-ball.png',
+    'hyperball': 'ultra-ball.png',
+    'masterball': 'master-ball.png',
+    'honorball': 'premier-ball.png',
+    'luxeball': 'luxury-ball.png'
         };
         
         let html = '';
@@ -220,6 +220,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
