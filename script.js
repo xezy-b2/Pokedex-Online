@@ -157,7 +157,7 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const items = await res.json();
         
-        // On utilise ici les mêmes noms de fichiers que dans votre section profil
+        // MAPPING STRICT (Le même que ton profil qui marche)
         const icons = { 
             'pokeball': 'poke-ball.png',
             'superball': 'great-ball.png',
@@ -170,22 +170,25 @@ async function loadShop() {
         
         let html = '';
         for (const [key, item] of Object.entries(items)) {
-            // Utilisation de BALL_URL définie en haut de votre script
-            const fileName = icons[key] || 'poke-ball.png';
+            // On récupère l'image via le mapping
+            const fileName = icons[key];
             
-            html += `
-                <div class="pokedex-card">
-                    <img src="${BALL_URL}${fileName}" style="width:50px; height:50px; margin: 10px auto; display: block;">
-                    <h3 style="font-size:1em; margin: 5px 0;">${item.name}</h3>
-                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" style="width:60px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center; padding: 5px;">
-                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-                </div>`;
+            // Si le mapping existe, on affiche la carte
+            if (fileName) {
+                html += `
+                    <div class="pokedex-card">
+                        <img src="${BALL_URL}${fileName}" style="width:50px; height:50px; margin: 10px auto; display: block;">
+                        <h3 style="font-size:1em; margin: 5px 0;">${item.name}</h3>
+                        <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${item.cost.toLocaleString()} 💰</p>
+                        <input type="number" id="qty-${key}" value="1" min="1" style="width:60px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center; padding: 5px;">
+                        <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                    </div>`;
+            }
         }
         container.innerHTML = html;
     } catch (e) { 
         console.error("Erreur shop:", e);
-        container.innerHTML = "Erreur lors du chargement de la boutique."; 
+        container.innerHTML = "Erreur de chargement de la boutique."; 
     }
 }
 // --- ACTIONS ---
@@ -228,6 +231,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
