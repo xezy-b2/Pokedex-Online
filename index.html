@@ -3,267 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokédex en Ligne</title>
+    <title>Pokédex Online | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-    :root {
-        /* Palette de couleurs raffinée */
-        --background: #0b0e11;
-        --header-background: #151921;
-        --card-background: #1f2631;
-        --text-color: #f5f6f7;
-        --text-secondary: #94a3b8;
+        :root {
+            /* Palette Dark Premium */
+            --background: #0b0e14;
+            --header-background: #161b22;
+            --card-background: #1c2128;
+            --text-color: #f0f6fc;
+            --text-secondary: #8b949e;
+            
+            /* Accents Dynamiques */
+            --highlight-color: #4ade80; /* Vert émeraude */
+            --discord-blue: #5865F2;
+            --accent-gradient: linear-gradient(135deg, #5865F2, #a855f7);
+            --red-discord: #ff4655;
+            --shiny-color: #ff9d00;
+            --pokeball-red: #f84a4a;
+            
+            /* Glassmorphism & Effects */
+            --glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+        }
         
-        /* Accents & États */
-        --highlight-color: #4ade80; /* Vert émeraude vif */
-        --accent-gradient: linear-gradient(135deg, #6366f1, #a855f7); /* Dégradé violet/bleu */
-        --red-discord: #ff4655;
-        --discord-blue: #5865F2;
-        --shiny-color: #fbbf24; /* Or Pokémon */
-        --pokeball-red: #ef4444;
-        
-        /* Effets */
-        --glass: rgba(255, 255, 255, 0.03);
-        --border-glass: rgba(255, 255, 255, 0.1);
-        --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-    }
-    
-    body {
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background-color: var(--background);
-        background-image: radial-gradient(circle at top right, #1e1b4b, transparent); /* Halo lumineux discret */
-        color: var(--text-color);
-        margin: 0;
-        padding: 40px 20px;
-        line-height: 1.5;
-    }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--background);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(88, 101, 242, 0.1) 0%, transparent 25%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.05) 0%, transparent 25%);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
 
-    .container {
-        width: 100%;
-        max-width: 1100px;
-        margin: 0 auto;
-        background-color: var(--header-background);
-        border: 1px solid var(--border-glass);
-        border-radius: 24px;
-        padding: 30px;
-        box-shadow: var(--shadow-lg);
-    }
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background-color: var(--header-background);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+        }
 
-    header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-        padding-bottom: 30px;
-        border-bottom: 1px solid var(--border-glass);
-        margin-bottom: 30px;
-        text-align: center;
-    }
+        /* --- HEADER & USER BAR --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-glass);
+        }
 
-    header h1 {
-        margin: 0;
-        font-size: 2.5em;
-        letter-spacing: -1px;
-        background: linear-gradient(to bottom, #fff, #94a3b8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+        header h1 {
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.8em;
+            background: linear-gradient(to right, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    /* --- NAVIGATION STYLE APP --- */
-    nav {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 40px;
-        background: var(--glass);
-        padding: 8px;
-        border-radius: 16px;
-        border: 1px solid var(--border-glass);
-    }
+        .user-status {
+            display: flex;
+            align-items: center;
+        }
 
-    nav button {
-        background: transparent;
-        color: var(--text-secondary);
-        border: none;
-        padding: 10px 24px;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
+        button {
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    nav button:hover {
-        color: white;
-        background: rgba(255, 255, 255, 0.05);
-    }
+        .login-btn {
+            background-color: var(--discord-blue);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 0.95em;
+        }
 
-    nav button.active {
-        background: var(--accent-gradient);
-        color: white;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-    }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(88, 101, 242, 0.4);
+            filter: brightness(1.1);
+        }
 
-    /* --- POKEDEX GRID --- */
-    .pokedex-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 25px;
-    }
+        .logout-btn {
+            background: var(--glass);
+            color: var(--red-discord);
+            border: 1px solid rgba(255, 70, 85, 0.2);
+            padding: 8px 16px;
+            border-radius: 10px;
+        }
 
-    .pokedex-card {
-        background: var(--card-background);
-        border: 1px solid var(--border-glass);
-        padding: 20px;
-        border-radius: 20px;
-        text-align: center;
-        position: relative;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-    }
+        .logout-btn:hover {
+            background: var(--red-discord);
+            color: white;
+        }
 
-    .pokedex-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.5);
-        border-color: rgba(255, 255, 255, 0.2);
-    }
+        /* --- NAVIGATION --- */
+        nav {
+            display: flex;
+            gap: 8px;
+            background: var(--background);
+            padding: 6px;
+            border-radius: 14px;
+            margin-bottom: 30px;
+            width: fit-content;
+        }
 
-    .pokedex-card img {
-        width: 110px;
-        height: 110px;
-        filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
-        margin-bottom: 10px;
-    }
+        nav button {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
 
-    .pokemon-name {
-        display: block;
-        font-weight: 700;
-        font-size: 1.1em;
-        text-transform: capitalize;
-    }
+        nav button:hover {
+            color: white;
+            background: var(--glass);
+        }
 
-    .pokemon-level {
-        font-size: 0.85em;
-        color: var(--highlight-color);
-        background: rgba(74, 222, 128, 0.1);
-        padding: 2px 8px;
-        border-radius: 20px;
-        display: inline-block;
-        margin: 5px 0 15px 0;
-    }
+        nav button.active {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.3);
+        }
 
-    /* --- BOUTONS --- */
-    button {
-        border-radius: 12px;
-        font-family: inherit;
-        font-weight: 600;
-        transition: transform 0.1s active;
-    }
+        /* --- SECTIONS --- */
+        .page-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .page-section.active { display: block; }
 
-    .sell-button {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--pokeball-red);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        width: 100%;
-        padding: 10px;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .sell-button:hover {
-        background: var(--pokeball-red);
-        color: white;
-    }
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    /* --- MODAL LOOK --- */
-    .modal-content {
-        background: #1a1d23 !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 0 50px rgba(0, 0, 0, 0.8) !important;
-        backdrop-filter: blur(20px);
-    }
-</style>
+        h2::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: var(--border-glass);
+        }
+
+        /* --- POKEDEX GRID --- */
+        .pokedex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .pokedex-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-glass);
+            padding: 20px;
+            border-radius: 18px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .pokedex-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--discord-blue);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .pokedex-id {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 0.75em;
+            font-weight: 800;
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .pokedex-card img {
+            width: 90px;
+            height: 90px;
+            margin: 10px 0;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        }
+
+        .pokemon-name {
+            display: block;
+            font-weight: 700;
+            font-size: 1.05em;
+            text-transform: capitalize;
+            margin-bottom: 4px;
+        }
+
+        .pokemon-level {
+            font-size: 0.8em;
+            color: var(--highlight-color);
+            background: rgba(74, 222, 128, 0.1);
+            padding: 2px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .sell-button {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-glass);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .sell-button:hover {
+            background: var(--red-discord);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* --- SHOP & PROFILE --- */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .shop-card {
+            background: var(--card-background);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shop-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--accent-gradient);
+        }
+
+        .shop-image { width: 50px; height: 50px; margin-bottom: 15px; }
+
+        .shop-cost {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: var(--shiny-color);
+            margin: 10px 0;
+        }
+
+        .profile-stat-card {
+            background: var(--card-background);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+        }
+
+        /* --- MODAL --- */
+        .modal-content {
+            background: #161b22 !important;
+            border: 1px solid var(--border-glass) !important;
+            box-shadow: 0 0 80px rgba(0,0,0,0.9) !important;
+            border-radius: 24px !important;
+        }
+
+        input[type="number"] {
+            background: var(--background);
+            border: 1px solid var(--border-glass);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            width: 80px;
+            text-align: center;
+        }
+
+        /* Mobile Responsive */
+        @container (max-width: 600px) {
+            .container { padding: 20px; }
+            header { flex-direction: column; gap: 15px; }
+        }
+    </style>
 </head>
 <body>
     
     <div class="container">
         <header>
-            <h1>Pokédex en Ligne</h1>
+            <h1>Pokédex Online</h1>
+            <div class="user-status">
+                <div id="logged-out-user">
+                    <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" class="login-btn">
+                        <span>Se connecter avec Discord</span>
+                    </a>
+                </div>
+                <div id="logged-in-user" style="display:none; align-items: center; gap: 20px;">
+                    <span>Welcome back, <span id="display-username" style="color: var(--shiny-color); font-weight: bold;">Dresseur</span></span>
+                    <button class="logout-btn" onclick="logout()">Déconnexion</button>
+                </div>
+            </div>
         </header>
-        
-        <div class="user-status">
-            <div id="logged-out-user">
-                <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" target="_blank" style="text-decoration: none;">
-                    <button style="background-color: var(--discord-blue);">
-                        Se connecter avec Discord
-                    </button>
-                </a>
-            </div>
-            <div id="logged-in-user" style="display:none; align-items: center; gap: 15px;">
-                <span>Bienvenue, <span id="display-username" style="color: var(--shiny-color);">Dresseur</span> !</span>
-                <button onclick="logout()">Déconnexion</button>
-            </div>
-        </div>
 
         <nav id="main-nav" style="display:none;">
-            <button id="nav-pokedex" onclick="showPage('pokedex')">Mon Pokédex</button>
+            <button id="nav-pokedex" class="active" onclick="showPage('pokedex')">Mon Pokédex</button>
             <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
             <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
         </nav>
 
-        <div id="pokedex-error-container" style="color: var(--red-discord); margin-bottom: 15px;"></div>
+        <div id="pokedex-error-container"></div>
         
         <div id="pokedex-page" class="page-section active">
             <h2>Mon Pokédex</h2>
             <div id="pokedexContainer">
-                <p>Connectez-vous avec Discord pour charger votre Pokédex.</p>
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <p>Connectez-vous pour voir vos Pokémon capturés.</p>
+                </div>
             </div>
         </div>
 
         <div id="profile-page" class="page-section">
+            <h2>Profil Dresseur</h2>
             <div id="profileContainer">
-                <h2>Chargement du Profil...</h2>
+                <p>Chargement des statistiques...</p>
             </div>
         </div>
         
         <div id="shop-page" class="page-section">
             <h2>Boutique Poké Balls</h2>
-            <p style="color: var(--text-secondary);">Achetez directement ici (via l'API) ou utilisez la commande **!pokeshop** sur Discord.</p>
-            <div id="shopContainer" class="shop-grid">
-                </div>
+            <p style="color: var(--text-secondary); margin-bottom: 25px;">Équipez-vous pour vos prochaines chasses.</p>
+            <div id="shopContainer" class="shop-grid"></div>
         </div>
-        
     </div>
     
-    <script src="script.js"></script>
-
-    <div id="trade-modal" class="modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
-    <div class="modal-content" style="background-color: var(--header-background); padding: 30px; border-radius: 15px; border: 2px solid var(--discord-blue); max-width: 600px; width: 90%; text-align: center; position: relative;">
-        <h2 style="color: var(--shiny-color); margin-top: 0;">✨ Échange Miracle Réussi ! ✨</h2>
-        
-        <div style="display: flex; justify-content: space-around; align-items: center; margin: 20px 0;">
-            <div id="given-pokemon-details">
-                <p style="color: var(--text-secondary);">Vous avez envoyé :</p>
-                <img id="modal-given-img" src="" style="width: 80px;">
-                <p id="modal-given-name" style="font-weight: bold;"></p>
+    <div id="trade-modal" style="display:none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+        <div class="modal-content" style="padding: 40px; max-width: 550px; width: 90%; text-align: center;">
+            <h2 style="color: var(--shiny-color); border: none; justify-content: center; margin-bottom: 10px;">✨ Échange Miracle !</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">L'échange a été effectué avec succès.</p>
+            
+            <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 30px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px;">
+                <div id="given-pokemon-details">
+                    <img id="modal-given-img" src="" style="width: 70px; opacity: 0.6;">
+                    <p id="modal-given-name" style="font-size: 0.9em;"></p>
+                </div>
+                <div style="font-size: 2em; color: var(--discord-blue);">➜</div>
+                <div id="received-pokemon-details">
+                    <img id="modal-received-img" src="" style="width: 110px; filter: drop-shadow(0 0 10px var(--highlight-color));">
+                    <p id="modal-received-name" style="font-weight: 800; font-size: 1.3em; margin-top: 5px;"></p>
+                    <div id="modal-received-lv" style="color: var(--highlight-color); font-weight: bold;"></div>
+                </div>
             </div>
 
-            <div style="font-size: 2em;">➡️</div>
-
-            <div id="received-pokemon-details">
-                <p style="color: var(--highlight-color);">Vous avez reçu :</p>
-                <img id="modal-received-img" src="" style="width: 120px; image-rendering: pixelated;">
-                <p id="modal-received-name" style="font-weight: bold; font-size: 1.2em;"></p>
-                <p id="modal-is-new" style="font-size: 0.85em; font-weight: bold; margin: 0;"></p>
-                <p id="modal-received-lv" style="color: var(--highlight-color);"></p>
-            </div>
+            <div id="modal-received-stats" style="margin-bottom: 25px;"></div>
+            <button onclick="closeTradeModal()" style="background: var(--accent-gradient); color: white; width: 100%; justify-content: center; padding: 15px; border-radius: 12px; font-size: 1.1em;">Continuer l'aventure</button>
         </div>
-
-        <div id="modal-received-stats" style="background: var(--card-background); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 20px;">
-            </div>
-
-        <button onclick="closeTradeModal()" style="background-color: var(--highlight-color); width: 100%; padding: 12px; font-weight: bold;">Génial !</button>
     </div>
-</div>
+
+    <script src="script.js"></script>
+    <script>
+        // Petit ajout pour gérer l'état visuel des boutons de nav
+        function showPage(pageId) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            // Désactiver tous les boutons
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Activer la section et le bouton correspondant
+            document.getElementById(pageId + '-page').classList.add('active');
+            document.getElementById('nav-' + pageId).classList.add('active');
+        }
+    </script>
 </body>
 </html>
-
-
-
-
-
