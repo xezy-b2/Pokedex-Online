@@ -14,41 +14,25 @@
         }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--background); color: var(--text-main); margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
-        
-        /* HEADER & NAV */
         header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
         nav { display: none; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         nav button { background: var(--card-bg); color: var(--text-sec); border: 1px solid var(--border); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; }
         nav button.active { background: var(--discord); color: white; }
-
-        /* TABS GÉNÉRATIONS */
         .gen-nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
         .gen-nav button { background: rgba(255,255,255,0.05); color: var(--text-sec); border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
         .gen-nav button.active { background: var(--highlight); color: white; }
-
-        /* GRILLES */
-        .pokedex-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        @media (max-width: 900px) { .pokedex-grid { grid-template-columns: repeat(2, 1fr); } }
-
+        .pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
         .pokedex-card { background: var(--card-bg); border-radius: 15px; padding: 15px; border: 1px solid var(--border); text-align: center; position: relative; display: flex; flex-direction: column; }
         .pokedex-card img { width: 80px; height: 80px; margin: 0 auto; image-rendering: pixelated; }
         .is-shiny { border-color: var(--shiny) !important; box-shadow: 0 0 10px rgba(241, 224, 90, 0.2); }
         .missing { opacity: 0.3; filter: grayscale(1); }
-
-        /* BOUTONS ACTIONS */
         .btn-action { margin-top: 10px; padding: 6px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; }
         .btn-sell { background: rgba(218, 54, 51, 0.2); color: #ff7b72; }
         .btn-trade { background: rgba(88, 101, 242, 0.2); color: #7982f2; }
-
-        /* SECTIONS */
-        .page-section { display: none; animation: fadeIn 0.3s; }
+        .page-section { display: none; }
         .page-section.active { display: block; }
         .gen-content { display: none; }
         .gen-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        /* SHOP & PROFILE */
-        .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .stat-box { background: var(--header-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
     </style>
 </head>
@@ -65,16 +49,16 @@
 
     <nav id="main-nav">
         <button id="nav-pokedex" class="active" onclick="showPage('pokedex')">Encyclopédie</button>
-        <button id="nav-collection" onclick="showPage('collection')">Ma Collection (Shinies/Doublons)</button>
-        <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
+        <button id="nav-collection" onclick="showPage('collection')">Ma Collection</button>
+        <button id="nav-profile" onclick="showPage('profile')">Profil</button>
         <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
     </nav>
 
     <div id="pokedex-page" class="page-section active">
         <div class="gen-nav" id="gen-tabs">
-            <button class="active" onclick="filterGen(1)">Gen 1</button>
-            <button onclick="filterGen(2)">Gen 2</button>
-            <button onclick="filterGen(3)">Gen 3</button>
+            <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
+            <button onclick="filterGen(2)">Gen 2 (Johto)</button>
+            <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
         </div>
         <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
         <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
@@ -82,13 +66,10 @@
     </div>
 
     <div id="collection-page" class="page-section">
-        <h2 style="color: var(--shiny)">✨ Mes Pokémon Chromatiques</h2>
+        <h2 style="color: var(--shiny)">✨ Pokémon Chromatiques</h2>
         <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
         
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>📦 Mes Doublons & Échanges</h2>
-            <button onclick="handleSellAll()" style="background:var(--red-poke); color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">Tout vendre</button>
-        </div>
+        <h2>📦 Mes Doublons</h2>
         <div id="duplicate-grid" class="pokedex-grid"></div>
     </div>
 
@@ -98,16 +79,16 @@
 
     <div id="shop-page" class="page-section">
         <h2>Marché Pokémon</h2>
-        <div id="shopContainer" class="shop-grid"></div>
+        <div id="shopContainer" class="pokedex-grid"></div>
     </div>
 </div>
 
 <div id="trade-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:var(--header-bg); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--shiny); max-width:400px;">
-        <h2 id="modal-title" style="color:var(--shiny)">Échange Miracle !</h2>
+        <h2 style="color:var(--shiny)">Échange Miracle Réussi !</h2>
         <img id="modal-img" src="" style="width:150px;">
         <p id="modal-text"></p>
-        <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; width:100%;">Super !</button>
+        <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; width:100%;">Génial !</button>
     </div>
 </div>
 
