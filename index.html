@@ -3,152 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokédex Online | TCG Edition</title>
-    <link rel="icon" href="data:,"> <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Pokédex Online | Expert Edition</title>
+    <link rel="icon" href="data:,">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --background: #0b0e14;
-            --header-background: #161b22;
-            --card-background: #1c2128;
-            --text-color: #f0f6fc;
-            --text-secondary: #8b949e;
-            --highlight-color: #4ade80;
-            --discord-blue: #5865F2;
-            --accent-gradient: linear-gradient(135deg, #5865F2, #a855f7);
-            --shiny-color: #ff9d00;
-            --red-discord: #ff4655;
-            --border-glass: rgba(255, 255, 255, 0.1);
+            --background: #0d1117;
+            --header-bg: #161b22;
+            --card-bg: #21262d;
+            --text-main: #f0f6fc;
+            --text-sec: #8b949e;
+            --highlight: #238636;
+            --discord: #5865F2;
+            --shiny: #f1e05a;
+            --red-poke: #da3633;
+            --border: rgba(240, 246, 252, 0.1);
         }
-        
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--background); color: var(--text-color); margin: 0; padding: 20px; }
-        .container { width: 100%; max-width: 1200px; background-color: var(--header-background); border-radius: 24px; padding: 30px; margin: 0 auto; border: 1px solid var(--border-glass); }
-        
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 20px; margin-bottom: 20px; }
-        
-        nav { display: none; gap: 8px; margin-bottom: 30px; }
-        nav button { background: transparent; color: var(--text-secondary); border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-        nav button.active { background: var(--accent-gradient); color: white; }
 
-        .pokedex-controls { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; margin-bottom: 20px; }
-        .search-box { background: var(--background); border: 1px solid var(--border-glass); color: white; padding: 8px; border-radius: 8px; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--background); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding-bottom: 50px;
+        }
 
-        .pokedex-grid, .shop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-        
-        /* STYLE TCG */
-        .pokedex-card { background: var(--card-background); border-radius: 20px; padding: 15px; border: 2px solid var(--border-glass); transition: 0.3s; text-align: center; position: relative; }
-        .pokedex-card:hover { transform: translateY(-10px); border-color: var(--discord-blue); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .pokedex-card img { width: 110px; height: 110px; image-rendering: pixelated; margin: 10px 0; }
-        .card-lvl { position: absolute; top: 10px; left: 10px; font-weight: 800; color: var(--highlight-color); font-size: 0.8em; }
-        .pokemon-name { display: block; font-weight: 800; text-transform: capitalize; }
-        .sell-button { background: rgba(255, 70, 85, 0.1); color: var(--red-discord); border: 1px solid rgba(255, 70, 85, 0.2); width: 100%; padding: 8px; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-        
-        .is-shiny { border-color: var(--shiny-color) !important; }
-        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--header-bg); padding: 20px 40px; border-radius: 20px;
+            border: 1px solid var(--border); margin-bottom: 20px;
+        }
+
+        /* NAVIGATION PRINCIPALE */
+        nav#main-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        nav button { 
+            background: var(--card-bg); color: var(--text-sec); border: 1px solid var(--border);
+            padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
+        }
+        nav button.active { background: var(--discord); color: white; border-color: var(--discord); }
+
+        /* MENU DES GÉNÉRATIONS (BURGER/TABS) */
+        .gen-nav { 
+            display: flex; background: var(--header-bg); padding: 10px; 
+            border-radius: 15px; gap: 10px; margin-bottom: 30px; border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .gen-nav button {
+            background: transparent; color: var(--text-sec); border: none; padding: 8px 16px;
+            white-space: nowrap; border-radius: 8px; cursor: pointer;
+        }
+        .gen-nav button.active { background: var(--highlight); color: white; }
+
+        /* GRILLE POKÉMON */
+        .pokedex-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 20px; width: 100%;
+        }
+
+        .pokedex-card {
+            background: var(--card-bg); border-radius: 16px; padding: 15px;
+            border: 1px solid var(--border); text-align: center; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord); }
+        .pokedex-card img { width: 100px; height: 100px; image-rendering: pixelated; }
+        .pokedex-id { font-size: 0.8em; color: var(--text-sec); font-weight: 800; }
+        .pokemon-name { font-weight: 700; margin: 5px 0; text-transform: capitalize; }
+        .pokemon-level { color: var(--highlight); font-weight: 600; font-size: 0.9em; }
+
+        .missing-card { opacity: 0.4; filter: grayscale(1); border-style: dashed; }
+
+        /* SECTIONS */
         .page-section { display: none; }
         .page-section.active { display: block; }
+        .gen-content { display: none; }
+        .gen-content.active { display: block; }
 
-        /* INVENTAIRE PROFIL */
-        .inventory-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; }
-        .inventory-item { background: var(--card-background); border: 1px solid var(--border-glass); border-radius: 15px; padding: 15px; text-align: center; position: relative; }
-        .inventory-item .ball-count { position: absolute; top: -5px; right: -5px; background: var(--discord-blue); color: white; padding: 2px 7px; border-radius: 7px; font-size: 0.75em; }
+        .stats-banner {
+            display: flex; justify-content: space-around; background: rgba(0,0,0,0.3);
+            padding: 20px; border-radius: 15px; margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Pokédex Online</h1>
+
+<div class="container">
+    <header>
+        <h1>Pokédex Online</h1>
+        <div id="auth-zone">
             <div id="logged-out-user">
-                <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" style="background: var(--discord-blue); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none;">Connexion</a>
+                <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" 
+                   style="background: var(--discord); color: white; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: bold;">
+                   Connexion Discord
+                </a>
             </div>
             <div id="logged-in-user" style="display:none;">
-                <span id="display-username" style="color: var(--shiny-color); font-weight: bold;">...</span>
-                <button onclick="logout()">Déconnexion</button>
+                <span id="display-username" style="color: var(--shiny); font-weight: bold; margin-right: 15px;">...</span>
+                <button onclick="logout()" style="background: var(--red-poke);">Déconnexion</button>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <nav id="main-nav">
-            <button id="nav-pokedex" onclick="showPage('pokedex')">Ma Collection</button>
-            <button id="nav-profile" onclick="showPage('profile')">Profil</button>
-            <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
-        </nav>
+    <nav id="main-nav" style="display:none;">
+        <button id="nav-pokedex" class="active" onclick="showPage('pokedex')">Encyclopédie</button>
+        <button id="nav-collection" onclick="showPage('collection')">Ma Collection</button>
+        <button id="nav-profile" onclick="showPage('profile')">Profil</button>
+        <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
+    </nav>
 
-        <div id="pokedex-page" class="page-section active">
-            <div class="pokedex-controls">
-                <div>📦 <span id="pokemon-count">0</span> Pokémon</div>
-                <input type="text" class="search-box" placeholder="Rechercher..." onkeyup="filterPokemon(this.value)">
+    <div id="pokedex-page" class="page-section active">
+        <div id="stats-summary" class="stats-banner">
             </div>
-            <div id="pokedex-error-container"></div> <div id="pokedexContainer" class="pokedex-grid"></div>
+
+        <div class="gen-nav" id="gen-tabs">
+            <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
+            <button onclick="filterGen(2)">Gen 2 (Johto)</button>
+            <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
         </div>
 
-        <div id="profile-page" class="page-section">
-            <div id="profileContainer"></div>
-        </div>
-
-        <div id="shop-page" class="page-section">
-            <div id="shopContainer" class="shop-grid"></div>
+        <div id="pokedex-content">
+            <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-gen-1"></div></div>
+            <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-gen-2"></div></div>
+            <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-gen-3"></div></div>
         </div>
     </div>
 
-    <div id="trade-modal" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center;">
-        <div style="background: var(--header-background); padding: 30px; border-radius: 20px; border: 1px solid var(--border-glass); text-align: center; max-width: 400px; width: 90%;">
-            <div id="given-pokemon-details" style="display:none;"><img id="modal-given-img" src=""><p id="modal-given-name"></p></div>
-            <h2 id="modal-received-name" style="color: var(--shiny-color);"></h2>
-            <img id="modal-received-img" src="" style="width: 120px;">
-            <p id="modal-received-lv"></p>
-            <div id="modal-received-stats"></div>
-            <button onclick="closeTradeModal()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer;">Génial !</button>
+    <div id="collection-page" class="page-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Mes Pokémon Capturés</h2>
+            <button id="btn-sell-all" style="background: var(--red-poke); display: none;">Vendre tous les doublons</button>
         </div>
+        <div id="collection-grid" class="pokedex-grid"></div>
     </div>
 
-    <script src="script.js"></script>
-    <script>
-        // Surcharge pour le look TCG
-        window.createPokemonCard = function(pokemon) {
-            const isShiny = pokemon.isShiny;
-            return `
-                <div class="pokedex-card ${isShiny ? 'is-shiny' : ''}">
-                    <span class="card-lvl">Lv.${pokemon.level || 5}</span>
-                    <img src="${POKEAPI_SPRITE_URL}${isShiny ? 'shiny/' : ''}${pokemon.pokedexId}.png">
-                    <span class="pokemon-name">${pokemon.name}</span>
-                    <div style="font-size: 0.7em; color: var(--text-secondary);">IV: ${((pokemon.iv_hp + pokemon.iv_attack + pokemon.iv_defense + pokemon.iv_sp_attack + pokemon.iv_sp_defense + pokemon.iv_speed) / 186 * 100).toFixed(0)}%</div>
-                    <button class="sell-button" onclick="sellPokemon('${pokemon._id}')">Relâcher</button>
-                </div>`;
-        };
+    <div id="profile-page" class="page-section">
+        <div id="profileContainer"></div>
+    </div>
 
-        window.createShopCard = function(itemKey, item) {
-            const spriteMap = { 'pokeball': 'poke-ball.png', 'superball': 'great-ball.png', 'hyperball': 'ultra-ball.png', 'masterball': 'master-ball.png', 'honorball': 'premier-ball.png', 'luxeball': 'luxury-ball.png' };
-            return `<div class="shop-card">
-                <img src="${POKEBALL_IMAGE_BASE_URL}${spriteMap[itemKey] || item.imageFragment}" style="width:50px;">
-                <div style="font-weight: 800;">${item.name}</div>
-                <div style="color: var(--shiny-color); margin: 5px 0;">${item.cost.toLocaleString()} 💰</div>
-                <input type="number" id="qty-${itemKey}" min="1" value="1" style="width: 50px; background: #000; color: #fff; border: 1px solid var(--border-glass);">
-                <button onclick="handleBuy('${itemKey}', document.getElementById('qty-${itemKey}').value)" style="background: var(--accent-gradient); color: white; border: none; padding: 8px; border-radius: 5px; width: 100%; margin-top: 10px; cursor: pointer;">Acheter</button>
-            </div>`;
-        };
+    <div id="shop-page" class="page-section">
+        <div id="shopContainer" class="shop-grid"></div>
+    </div>
+</div>
 
-        const originalLoadProfile = window.loadProfile;
-        window.loadProfile = async function() {
-            await originalLoadProfile();
-            const ballGrid = document.querySelector('.profile-balls-grid');
-            if (ballGrid) {
-                ballGrid.className = 'inventory-container';
-                ballGrid.querySelectorAll('div').forEach(div => {
-                    const count = div.querySelector('.ball-count').innerText;
-                    const name = div.querySelector('.ball-name').innerText.toLowerCase();
-                    let img = name.includes("super") ? "great-ball.png" : name.includes("hyper") ? "ultra-ball.png" : name.includes("master") ? "master-ball.png" : name.includes("honor") || name.includes("premier") ? "premier-ball.png" : name.includes("luxe") ? "luxury-ball.png" : "poke-ball.png";
-                    div.className = 'inventory-item';
-                    div.innerHTML = `<span class="ball-count">${count}</span><img src="${POKEBALL_IMAGE_BASE_URL}${img}" style="width:30px;"><br><span>${name}</span>`;
-                });
-            }
-        };
-
-        function filterPokemon(query) {
-            const cards = document.querySelectorAll('.pokedex-card');
-            cards.forEach(card => {
-                const name = card.querySelector('.pokemon-name').innerText.toLowerCase();
-                card.style.display = name.includes(query.toLowerCase()) ? 'block' : 'none';
-            });
-        }
-    </script>
+<script src="script.js"></script>
 </body>
 </html>
