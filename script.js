@@ -39,7 +39,6 @@ function filterGen(gen) {
     event.target.classList.add('active');
 }
 
-// Rendu des cartes
 function createCard(p, mode = 'pokedex') {
     const isShiny = p.isShiny;
     const isCaptured = p.isCaptured !== false;
@@ -63,50 +62,62 @@ function createCard(p, mode = 'pokedex') {
 }
 
 async function loadPokedex() {
-    const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
-    const data = await res.json();
-    
-    // Remplir les Générations
-    const grids = { 1: document.getElementById('grid-1'), 2: document.getElementById('grid-2'), 3: document.getElementById('grid-3') };
-    Object.values(grids).forEach(g => g.innerHTML = '');
-    
-    data.fullPokedex.forEach(p => {
-        const gen = p.pokedexId <= 151 ? 1 : p.pokedexId <= 251 ? 2 : 3;
-        grids[gen].innerHTML += createCard(p, 'pokedex');
-    });
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+        const data = await res.json();
+        
+        const grids = { 
+            1: document.getElementById('grid-1'), 
+            2: document.getElementById('grid-2'), 
+            3: document.getElementById('grid-3') 
+        };
+        
+        // Sécurité : on vide si les éléments existent
+        if(grids[1]) grids[1].innerHTML = '';
+        if(grids[2]) grids[2].innerHTML = '';
+        if(grids[3]) grids[3].innerHTML = '';
+        
+        data.fullPokedex.forEach(p => {
+            const gen = p.pokedexId <= 151 ? 1 : p.pokedexId <= 251 ? 2 : 3;
+            if(grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
+        });
 
-    // Remplir Ma Collection (Shinies et Doublons)
-    const shinyGrid = document.getElementById('shiny-grid');
-    const dupGrid = document.getElementById('duplicate-grid');
-    shinyGrid.innerHTML = ''; dupGrid.innerHTML = '';
+        const shinyGrid = document.getElementById('shiny-grid');
+        const dupGrid = document.getElementById('duplicate-grid');
+        if(shinyGrid) shinyGrid.innerHTML = ''; 
+        if(dupGrid) dupGrid.innerHTML = '';
 
-    const keepers = new Set();
-    data.capturedPokemonsList.forEach(p => {
-        if (p.isShiny) {
-            shinyGrid.innerHTML += createCard(p, 'collection');
-        } else {
-            if (keepers.has(p.pokedexId)) {
-                dupGrid.innerHTML += createCard(p, 'collection');
+        const keepers = new Set();
+        data.capturedPokemonsList.forEach(p => {
+            if (p.isShiny) {
+                if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
             } else {
-                keepers.add(p.pokedexId);
+                if (keepers.has(p.pokedexId)) {
+                    if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
+                } else {
+                    keepers.add(p.pokedexId);
+                }
             }
-        }
-    });
+        });
+    } catch (err) { console.error(err); }
 }
 
 async function loadProfile() {
     const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
     const user = await res.json();
-    document.getElementById('profileContainer').innerHTML = `
+    const container = document.getElementById('profileContainer');
+    if(!container) return;
+    
+    container.innerHTML = `
         <div class="stat-box">
             <h2>💰 Portefeuille : ${user.money.toLocaleString()} BotCoins</h2>
         </div>
         <div class="stat-box">
             <h3>🎒 Inventaire de Balls</h3>
-            <div style="display:flex; gap:20px; justify-content:center;">
-                <div class="item"><img src="${BALL_URL}poke-ball.png"><br>x${user.pokeballs}</div>
-                <div class="item"><img src="${BALL_URL}great-ball.png"><br>x${user.superballs}</div>
-                <div class="item"><img src="${BALL_URL}ultra-ball.png"><br>x${user.hyperballs}</div>
+            <div style="display:flex; gap:20px; justify-content:center; text-align:center;">
+                <div><img src="${BALL_URL}poke-ball.png"><br>x${user.pokeballs}</div>
+                <div><img src="${BALL_URL}great-ball.png"><br>x${user.superballs}</div>
+                <div><img src="${BALL_URL}ultra-ball.png"><br>x${user.hyperballs}</div>
             </div>
         </div>
     `;
@@ -115,34 +126,51 @@ async function loadProfile() {
 async function loadShop() {
     const res = await fetch(`${API_BASE_URL}/api/shop`);
     const items = await res.json();
+    const container = document.getElementById('shopContainer');
+    if(!container) return;
+    
     let html = '';
+    const ballIcons = { 'pokeball': 'poke-ball.png', 'superball': 'great-ball.png', 'hyperball': 'ultra-ball.png' };
+    
     for (const [key, item] of Object.entries(items)) {
+        if(!ballIcons[key]) continue;
         html += `
             <div class="pokedex-card">
-                <img src="${BALL_URL}${key === 'pokeball' ? 'poke-ball' : key === 'superball' ? 'great-ball' : 'ultra-ball'}.png">
+                <img src="${BALL_URL}${ballIcons[key]}">
                 <h3>${item.name}</h3>
                 <p style="color:var(--shiny)">${item.cost} 💰</p>
                 <button onclick="buyItem('${key}')" class="btn-action btn-trade" style="width:100%">Acheter</button>
             </div>`;
     }
-    document.getElementById('shopContainer').innerHTML = html;
+    container.innerHTML = html;
 }
 
 async function wonderTrade(id, name) {
     if(!confirm(`Envoyer ${name} dans l'échange miracle ?`)) return;
-    const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
+        });
+        const data = await res.json();
+        if(res.ok) {
+            document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
+            document.getElementById('modal-text').innerHTML = `Bravo ! Vous avez reçu <b>${data.newPokemon.name}</b> !`;
+            document.getElementById('trade-modal').style.display = 'flex';
+            loadPokedex();
+        }
+    } catch(e) { alert("Erreur lors de l'échange."); }
+}
+
+async function sellPoke(id) {
+    if(!confirm("Vendre ce Pokémon ?")) return;
+    const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
+        body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
     });
-    const data = await res.json();
-    if(res.ok) {
-        const modal = document.getElementById('trade-modal');
-        document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
-        document.getElementById('modal-text').innerHTML = `Vous avez reçu <b>${data.newPokemon.name}</b> !`;
-        modal.style.display = 'flex';
-        loadPokedex();
-    }
+    if(res.ok) loadPokedex();
 }
 
 function logout() { localStorage.clear(); location.reload(); }
