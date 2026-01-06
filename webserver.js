@@ -59,7 +59,7 @@ function getRandomInt(min, max) {
  */
 async function generateRandomPokemon() {
     // ID aléatoire (1 à MAX_POKEDEX_ID_GEN_2, qui est défini à 251)
-    const pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_3); 
+    const pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_6); 
     
     // Niveau aléatoire entre 1 et 100
     const level = getRandomInt(1, 100);
@@ -262,7 +262,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         const fullPokedexMap = new Map();
 
         // Remplir la Map avec tous les IDs (1 à 251) comme manquants par défaut
-        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_3; id++) {
+        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_6; id++) {
             fullPokedexMap.set(id, {
                 pokedexId: id,
                 name: `[${id.toString().padStart(3, '0')}] Inconnu`, 
@@ -341,7 +341,7 @@ app.get('/api/profile/:userId', async (req, res) => {
             ...userObject, 
             stats: stats,
             companionPokemon: companionPokemon,
-            maxPokedexId: MAX_POKEDEX_ID_GEN_3
+            maxPokedexId: MAX_POKEDEX_ID_GEN_6
         });
 
     } catch (error) {
@@ -648,6 +648,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
