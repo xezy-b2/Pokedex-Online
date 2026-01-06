@@ -84,14 +84,36 @@ async function loadPokedex() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
+        
+        // Initialisation des compteurs
+        const counts = { 1: 0, 2: 0, 3: 0 };
+        const totals = { 1: 151, 2: 100, 3: 135 }; // Totaux par génération (G1: 151, G2: 100, G3: 135)
+
+        // Grilles Encyclopédie
         const grids = { 1: document.getElementById('grid-1'), 2: document.getElementById('grid-2'), 3: document.getElementById('grid-3') };
         [1,2,3].forEach(n => { if(grids[n]) grids[n].innerHTML = ''; });
 
         data.fullPokedex.forEach(p => {
             const gen = p.pokedexId <= 151 ? 1 : p.pokedexId <= 251 ? 2 : 3;
+            
+            // Si le pokémon est marqué comme capturé dans l'encyclopédie, on augmente le compteur
+            if (p.isCaptured) {
+                counts[gen]++;
+            }
+            
             if(grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
+        // MISE À JOUR DES TITRES (Affiche 132/151 par exemple)
+        for (let i = 1; i <= 3; i++) {
+            const tabBtn = document.querySelector(`button[onclick="filterGen(${i})"]`);
+            if (tabBtn) {
+                const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn' };
+                tabBtn.innerHTML = `${genNames[i]} <br><small>${counts[i]}/${totals[i]}</small>`;
+            }
+        }
+
+        // Grilles Collection (Reste inchangé)
         const shinyGrid = document.getElementById('shiny-grid');
         const dupGrid = document.getElementById('duplicate-grid');
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -276,6 +298,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
