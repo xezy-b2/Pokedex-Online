@@ -17,6 +17,9 @@ const statsCache = {}; // Cache simple pour éviter les appels API redondants
 const MAX_POKEDEX_ID_GEN_1 = 151; 
 const MAX_POKEDEX_ID_GEN_2 = 251; // Limite pour la Génération 2
 const MAX_POKEDEX_ID_GEN_3 = 386;
+const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
+const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
+const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 
 async function fetchPokemonBaseStats(pokedexId) {
     if (statsCache[pokedexId]) {
@@ -645,6 +648,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
