@@ -171,7 +171,7 @@ async function loadShop() {
 
         container.innerHTML = `
             <div class="pokedex-card">
-                <img src="${BALL_URL}poke-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}poke-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Poké Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['pokeball'])} 💰</p>
                 <input type="number" id="qty-pokeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -179,7 +179,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}great-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}great-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Super Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['superball', 'greatball'])} 💰</p>
                 <input type="number" id="qty-superball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -187,7 +187,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}ultra-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}ultra-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Hyper Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['hyperball', 'ultraball'])} 💰</p>
                 <input type="number" id="qty-hyperball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -195,7 +195,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}master-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}master-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Master Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['masterball'])} 💰</p>
                 <input type="number" id="qty-masterball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -203,7 +203,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}safari-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}safari-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Safari Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['safariball'])} 💰</p>
                 <input type="number" id="qty-safariball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -211,7 +211,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}premier-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}premier-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Honor Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['honorball', 'premierball'])} 💰</p>
                 <input type="number" id="qty-honorball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -219,7 +219,7 @@ async function loadShop() {
             </div>
 
             <div class="pokedex-card">
-                <img src="${BALL_URL}luxury-ball.png" style="width:50px; display: block; margin: 0 auto;">
+                <img src="${BALL_URL}luxury-ball.png" style="width:35px; display: block; margin: 0 auto;">
                 <h3 style="font-size:1em; margin: 10px 0;">Luxe Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['luxeball', 'luxuryball'])} 💰</p>
                 <input type="number" id="qty-luxeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
@@ -275,6 +275,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
