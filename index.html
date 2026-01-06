@@ -66,17 +66,23 @@
         <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
     </nav>
 
-    <div id="pokedex-page" class="page-section active">
-        <div class="gen-nav" id="gen-tabs">
-            <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
-            <button onclick="filterGen(2)">Gen 2 (Johto)</button>
-            <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
-        </div>
-        <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
-        <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
-        <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
+<div id="pokedex-page" class="page-section active">
+    <div class="gen-nav" id="gen-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
+        <button onclick="filterGen(2)">Gen 2 (Johto)</button>
+        <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
+        <button onclick="filterGen(4)">Gen 4 (Sinnoh)</button>
+        <button onclick="filterGen(5)">Gen 5 (Unys)</button>
+        <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
     </div>
-
+    
+    <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
+    <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
+    <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
+    <div id="gen-4" class="gen-content"><div class="pokedex-grid" id="grid-4"></div></div>
+    <div id="gen-5" class="gen-content"><div class="pokedex-grid" id="grid-5"></div></div>
+    <div id="gen-6" class="gen-content"><div class="pokedex-grid" id="grid-6"></div></div>
+</div>
     <div id="collection-page" class="page-section">
         <h2 style="color: var(--shiny)">✨ Pokémon Chromatiques</h2>
         <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
@@ -107,3 +113,4 @@
 <script src="script.js"></script>
 </body>
 </html>
+
