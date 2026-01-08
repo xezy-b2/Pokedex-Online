@@ -287,21 +287,39 @@ async function wonderTrade(id, name) {
 }
 
 async function buyItem(key, qty) {
-    const res = await fetch(`${API_BASE_URL}/api/shop/buy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, itemKey: key, quantity: parseInt(qty) })
-    });
-    const data = await res.json();
-    alert(data.message);
-    if(res.ok) {
-        loadShop();
-        loadProfile();
+    const quantity = parseInt(qty);
+    if (isNaN(quantity) || quantity <= 0) return alert("Quantité invalide");
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/shop/buy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                userId: currentUserId, 
+                itemKey: key, 
+                quantity: quantity 
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            // Ici on affiche l'erreur précise renvoyée par le serveur
+            alert("Erreur : " + (data.message || "Achat impossible"));
+        } else {
+            alert(data.message);
+            loadShop();
+            loadProfile(); // Pour mettre à jour l'argent et l'inventaire
+        }
+    } catch (e) {
+        console.error("Erreur achat:", e);
+        alert("Impossible de contacter le serveur.");
     }
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
