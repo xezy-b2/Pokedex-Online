@@ -218,7 +218,7 @@ async function loadShop() {
                 <h3 style="font-size:1em; margin: 5px 0;">Hyper Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['hyperball', 'ultraball'])} 💰</p>
                 <input type="number" id="qty-hyperball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('hyperball', document.getElementById('qty-hyperball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                <button onclick="buyItem('ultraball', document.getElementById('qty-hyperball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
             </div>
 
             <div class="pokedex-card">
@@ -242,7 +242,7 @@ async function loadShop() {
                 <h3 style="font-size:1em; margin: 5px 0;">Honor Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['honorball', 'premierball'])} 💰</p>
                 <input type="number" id="qty-honorball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('honorball', document.getElementById('qty-honorball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                <button onclick="buyItem('premierball', document.getElementById('qty-honorball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
             </div>
 
             <div class="pokedex-card">
@@ -250,7 +250,7 @@ async function loadShop() {
                 <h3 style="font-size:1em; margin: 5px 0;">Luxe Ball</h3>
                 <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['luxeball', 'luxuryball'])} 💰</p>
                 <input type="number" id="qty-luxeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('luxeball', document.getElementById('qty-luxeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                <button onclick="buyItem('luxuryball', document.getElementById('qty-luxeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
             </div>
         `;
     } catch (e) { 
@@ -319,6 +319,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
