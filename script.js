@@ -62,12 +62,22 @@ function createCard(p, mode = 'pokedex') {
     const price = calculatePrice(p);
     const img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
     
+    // On définit l'icône de la ball (par défaut pokeball si non définie)
+    const ballKey = p.capturedWith || 'pokeball';
+    // On transforme 'pokeball' en 'poke-ball.png' pour correspondre à l'URL de PokeAPI
+    const ballFileName = ballKey.replace('ball', '-ball') + '.png';
+    const ballImgUrl = `${BALL_URL}${ballFileName}`;
+    
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''}">
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; left:10px;">#${p.pokedexId}</span>
             <img src="${img}">
             <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
-            <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
+            
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
+                <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
+                ${isCaptured ? `<img src="${ballImgUrl}" style="width:16px; height:16px; margin:0;" title="${ballKey}">` : ''}
+            </div>
     `;
 
     if (mode === 'collection' && isCaptured) {
@@ -319,6 +329,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
