@@ -76,7 +76,7 @@ function createCard(p, mode = 'pokedex') {
             
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
-                ${isCaptured ? `<img src="${ballImgUrl}" style="width:16px; height:16px; margin:0;" title="${ballKey}">` : ''}
+                ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px; margin:0;" title="${ballKey}">` : ''}
             </div>
     `;
 
@@ -329,6 +329,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
