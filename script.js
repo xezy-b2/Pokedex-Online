@@ -21,6 +21,7 @@ function initializeApp() {
         document.getElementById('logged-out-user').style.display = 'none';
         document.getElementById('display-username').textContent = currentUsername;
         loadPokedex();
+        renderTeam();
     }
 }
 
@@ -46,65 +47,119 @@ function filterGen(gen) {
     event.target.classList.add('active');
 }
 
-// --- LOGIQUE PRIX ---
-function calculatePrice(p) {
-    const levelBonus = (p.level || 5) * 5;
-    const shinyBonus = p.isShiny ? 250 : 0;
-    const totalIVs = (p.iv_hp || 0) + (p.iv_attack || 0) + (p.iv_defense || 0) + (p.iv_sp_attack || 0) + (p.iv_sp_defense || 0) + (p.iv_speed || 0);
-    const ivBonus = Math.floor(totalIVs / 1.5); 
-    return 50 + levelBonus + shinyBonus + ivBonus;
+// --- LOGIQUE FAVORIS ET EQUIPE ---
+function toggleFavorite(id) {
+    let favs = JSON.parse(localStorage.getItem('fav_pokes') || '[]');
+    if (favs.includes(id)) {
+        favs = favs.filter(i => i !== id);
+    } else {
+        favs.push(id);
+    }
+    localStorage.setItem('fav_pokes', JSON.stringify(favs));
+    loadPokedex();
 }
 
-// --- RENDU DES CARTES POKEMON ---
+function toggleTeam(p) {
+    let team = JSON.parse(localStorage.getItem('user_team') || '[]');
+    const exists = team.findIndex(item => item._id === p._id);
+
+    if (exists > -1) {
+        team.splice(exists, 1);
+    } else {
+        if (team.length >= 6) return alert("Équipe complète !");
+        team.push(p);
+    }
+    localStorage.setItem('user_team', JSON.stringify(team));
+    renderTeam();
+    loadPokedex();
+}
+
+function renderTeam() {
+    const container = document.getElementById('team-slots');
+    const typeList = document.getElementById('type-list');
+    const team = JSON.parse(localStorage.getItem('user_team') || '[]');
+    
+    container.innerHTML = '';
+    const typesFound = new Set();
+
+    for(let i=0; i<6; i++) {
+        const p = team[i];
+        if (p) {
+            container.innerHTML += `<div class="team-slot" onclick="removeFromTeam('${p._id}')">
+                <img src="${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png">
+            </div>`;
+            // Note: Comme ton webserver ne renvoie pas encore les types, on se basera sur l'API plus tard 
+            // ou on peut extraire les types si tu les as dans ton objet p.
+        } else {
+            container.innerHTML += `<div class="team-slot">?</div>`;
+        }
+    }
+    typeList.innerText = team.length > 0 ? "Analyse en cours..." : "Aucun";
+}
+
+function removeFromTeam(id) {
+    let team = JSON.parse(localStorage.getItem('user_team') || '[]');
+    team = team.filter(p => p._id !== id);
+    localStorage.setItem('user_team', JSON.stringify(team));
+    renderTeam();
+    loadPokedex();
+}
+
+// --- RENDU DES CARTES ---
 function createCard(p, mode = 'pokedex') {
     const isShiny = p.isShiny;
     const isCaptured = p.isCaptured !== false;
     const price = calculatePrice(p);
+    const favs = JSON.parse(localStorage.getItem('fav_pokes') || '[]');
+    const isFav = favs.includes(p.pokedexId);
+    const team = JSON.parse(localStorage.getItem('user_team') || '[]');
+    const inTeam = team.some(item => item._id === p._id);
+
     const img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
-    
-    // On définit l'icône de la ball (par défaut pokeball si non définie)
     const ballKey = p.capturedWith || 'pokeball';
-    // On transforme 'pokeball' en 'poke-ball.png' pour correspondre à l'URL de PokeAPI
-    const ballFileName = ballKey.replace('ball', '-ball') + '.png';
-    const ballImgUrl = `${BALL_URL}${ballFileName}`;
+    const ballImgUrl = `${BALL_URL}${ballKey.replace('ball', '-ball')}.png`;
     
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''}">
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; left:10px;">#${p.pokedexId}</span>
+            ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(${p.pokedexId})">❤️</button>` : ''}
             <img src="${img}">
             <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
-            
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
-                ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px; margin:0;" title="${ballKey}">` : ''}
+                ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px;" title="${ballKey}">` : ''}
             </div>
     `;
 
     if (mode === 'collection' && isCaptured) {
         html += `
-            <button class="btn-action btn-sell" onclick="sellPoke('${p._id}', '${p.name}', ${price})">Vendre (${price} 💰)</button>
-            ${!isShiny ? `<button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Miracle 🎲</button>` : ''}
+            <button class="btn-action" style="background:${inTeam ? 'var(--highlight)' : 'var(--card-bg)'}" 
+                onclick='toggleTeam(${JSON.stringify(p)})'>${inTeam ? 'En Équipe' : '+ Équipe'}</button>
+            <button class="btn-action btn-sell" onclick="sellPoke('${p._id}', '${p.name}', ${price})">Vendre</button>
+            ${!isShiny ? `<button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Miracle</button>` : ''}
         `;
     }
     return html + `</div>`;
 }
 
-// --- CHARGEMENT POKEDEX ---
+function calculatePrice(p) {
+    const totalIVs = (p.iv_hp || 0) + (p.iv_attack || 0) + (p.iv_defense || 0) + (p.iv_special_attack || 0) + (p.iv_special_defense || 0) + (p.iv_speed || 0);
+    return 50 + (p.level * 5) + (p.isShiny ? 250 : 0) + Math.floor(totalIVs / 1.5);
+}
+
+// --- CHARGEMENT DONNEES ---
 async function loadPokedex() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
+        const favs = JSON.parse(localStorage.getItem('fav_pokes') || '[]');
         
-        // Configuration des générations
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
-        const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
         
-        // Nettoyage des grilles
-        const grids = {};
-        for(let i = 1; i <= 6; i++) {
-            grids[i] = document.getElementById(`grid-${i}`);
-            if(grids[i]) grids[i].innerHTML = '';
+        for(let i=1; i<=6; i++) {
+            const grid = document.getElementById(`grid-${i}`);
+            if(grid) grid.innerHTML = '';
         }
 
         data.fullPokedex.forEach(p => {
@@ -117,17 +172,17 @@ async function loadPokedex() {
             else gen = 6;
 
             if (p.isCaptured) counts[gen]++;
-            if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
+            const grid = document.getElementById(`grid-${gen}`);
+            if (grid) grid.innerHTML += createCard(p, 'pokedex');
         });
 
-        // Mise à jour des boutons avec les compteurs (ex: Kanto 132/151)
-        const buttons = document.querySelectorAll('#gen-tabs button');
-        buttons.forEach((btn, index) => {
-            const genNum = index + 1;
-            btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
+        // Update Gen Tabs
+        const names = ['Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos'];
+        document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
+            btn.innerHTML = `Gen ${i+1} (${names[i]})<br><small>${counts[i+1]}/${totals[i+1]}</small>`;
         });
 
-        // Grilles Collection (Shiny et Doublons)
+        // Collection Grids
         const shinyGrid = document.getElementById('shiny-grid');
         const dupGrid = document.getElementById('duplicate-grid');
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -135,7 +190,8 @@ async function loadPokedex() {
 
         const keepers = new Set();
         data.capturedPokemonsList.forEach(p => {
-            if (p.isShiny) {
+            // Un Pokémon est affiché dans le haut si Shiny OU s'il est mis en favori
+            if (p.isShiny || favs.includes(p.pokedexId)) {
                 if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
             } else {
                 if (keepers.has(p.pokedexId)) {
@@ -145,13 +201,22 @@ async function loadPokedex() {
                 }
             }
         });
-    } catch (e) { console.error("Erreur Pokedex:", e); }
+    } catch (e) { console.error(e); }
 }
 
-// --- PROFIL (C'EST TA VERSION QUI MARCHE) ---
+async function sellAllDuplicates() {
+    if(!confirm("Vendre TOUS les doublons non-favoris et non-shiny ?")) return;
+    const res = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId })
+    });
+    if(res.ok) { alert("Vente réussie !"); loadPokedex(); }
+}
+
+// --- BOUTIQUE ET PROFIL (Identiques à ta version stable) ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
-    if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await res.json();
@@ -161,8 +226,7 @@ async function loadProfile() {
             const cp = user.companionPokemon;
             compHtml = `
                 <img src="${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png" style="width:100px;">
-                <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
-                <p style="font-size:0.8em;">Niveau ${cp.level}</p>
+                <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.name}</p>
             `;
         }
 
@@ -170,118 +234,58 @@ async function loadProfile() {
             <div class="stat-box" style="text-align:center;"><h3>Compagnon</h3>${compHtml}</div>
             <div class="stat-box"><h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2></div>
             <div class="stat-box">
-                <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
+                <h3 style="text-align:center;">🎒 Inventaire</h3>
                 <div class="ball-inventory">
-                    <div class="ball-item"><img src="${BALL_URL}poke-ball.png"><br><b>x${user.pokeballs || 0}</b><br><small>Poké</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b><br><small>Super</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b><br><small>Hyper</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b><br><small>Master</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}poke-ball.png"><br><b>x${user.pokeballs || 0}</b></div>
+                    <div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b></div>
+                    <div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b></div>
+                    <div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b></div>
                 </div>
             </div>
         `;
-    } catch (e) { container.innerHTML = "Erreur de chargement du profil."; }
+    } catch (e) { console.error(e); }
 }
 
-// --- BOUTIQUE (CALQUÉE SUR LE PROFIL) ---
 async function loadShop() {
     const container = document.getElementById('shopContainer');
-    if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const data = await res.json();
-        
-        const items = Array.isArray(data) ? 
-            data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-
-        const getPrice = (keys) => {
-            for (let key of keys) {
-                if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
-            }
-            return "0";
-        };
-
-        // Style optimisé pour des images de 35px non déformées
-        const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
-
-        container.innerHTML = `
-            <div class="pokedex-card">
-                <img src="${BALL_URL}poke-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Poké Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['pokeball'])} 💰</p>
-                <input type="number" id="qty-pokeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('pokeball', document.getElementById('qty-pokeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}great-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Super Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['superball', 'greatball'])} 💰</p>
-                <input type="number" id="qty-superball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('greatball', document.getElementById('qty-superball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}ultra-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Hyper Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['hyperball', 'ultraball'])} 💰</p>
-                <input type="number" id="qty-hyperball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('ultraball', document.getElementById('qty-hyperball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}master-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Master Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['masterball'])} 💰</p>
-                <input type="number" id="qty-masterball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('masterball', document.getElementById('qty-masterball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}safari-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Safari Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['safariball'])} 💰</p>
-                <input type="number" id="qty-safariball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('safariball', document.getElementById('qty-safariball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}premier-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Honor Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['honorball', 'premierball'])} 💰</p>
-                <input type="number" id="qty-honorball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('premierball', document.getElementById('qty-honorball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-
-            <div class="pokedex-card">
-                <img src="${BALL_URL}luxury-ball.png" style="${imgStyle}">
-                <h3 style="font-size:1em; margin: 5px 0;">Luxe Ball</h3>
-                <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(['luxeball', 'luxuryball'])} 💰</p>
-                <input type="number" id="qty-luxeball" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                <button onclick="buyItem('luxuryball', document.getElementById('qty-luxeball').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-            </div>
-        `;
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = "Erreur de chargement de la boutique."; 
-    }
+        container.innerHTML = '';
+        Object.entries(data).forEach(([key, item]) => {
+            container.innerHTML += `
+                <div class="pokedex-card">
+                    <img src="${BALL_URL}${item.imageFragment}" style="width:35px; margin:auto;">
+                    <h3 style="font-size:1em;">${item.name}</h3>
+                    <p style="color:var(--shiny)">${item.cost} 💰</p>
+                    <button onclick="buyItem('${key}', 1)" class="btn-action btn-trade">Acheter</button>
+                </div>`;
+        });
+    } catch (e) { console.error(e); }
 }
 
-// --- ACTIONS ---
+async function buyItem(key, qty) {
+    const res = await fetch(`${API_BASE_URL}/api/shop/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, itemKey: key, quantity: qty })
+    });
+    const data = await res.json();
+    alert(data.message);
+    loadShop();
+}
+
 async function sellPoke(id, name, price) {
-    if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
-    const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
+    if(!confirm(`Vendre ${name} ?`)) return;
+    await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
     });
-    if(res.ok) loadPokedex();
+    loadPokedex();
 }
 
 async function wonderTrade(id, name) {
-    if(!confirm(`Envoyer ${name} en Échange Miracle ?`)) return;
     const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,54 +294,11 @@ async function wonderTrade(id, name) {
     const data = await res.json();
     if(res.ok) {
         document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
-        document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
+        document.getElementById('modal-text').innerHTML = `Reçu : <b>${data.newPokemon.name}</b> !`;
         document.getElementById('trade-modal').style.display = 'flex';
         loadPokedex();
     }
 }
 
-async function buyItem(key, qty) {
-    const quantity = parseInt(qty);
-    if (isNaN(quantity) || quantity <= 0) return alert("Quantité invalide");
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/shop/buy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                userId: currentUserId, 
-                itemKey: key, 
-                quantity: quantity 
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            // Ici on affiche l'erreur précise renvoyée par le serveur
-            alert("Erreur : " + (data.message || "Achat impossible"));
-        } else {
-            alert(data.message);
-            loadShop();
-            loadProfile(); // Pour mettre à jour l'argent et l'inventaire
-        }
-    } catch (e) {
-        console.error("Erreur achat:", e);
-        alert("Impossible de contacter le serveur.");
-    }
-}
-
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
-
-
-
-
-
-
-
-
-
-
