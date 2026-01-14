@@ -32,11 +32,20 @@
         .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord); }
         .pokedex-card img { width: 90px; height: 90px; margin: 0 auto; image-rendering: pixelated; }
         
+        /* Favoris et Shiny */
+        .fav-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; transition: 0.2s; filter: grayscale(1); }
+        .fav-btn.active { filter: grayscale(0); transform: scale(1.1); }
         .is-shiny { border-color: var(--shiny) !important; box-shadow: 0 0 10px rgba(241, 224, 90, 0.2); }
         .missing { opacity: 0.3; filter: grayscale(1); }
 
-        .btn-action { margin-top: 10px; padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; }
+        /* Team Builder Styles */
+        #team-builder-section { background: var(--header-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--discord); margin-bottom: 30px; }
+        .team-slot-empty { border: 2px dashed var(--border); border-radius: 15px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; color: var(--text-sec); font-size: 2em; }
+        .type-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 0.7em; margin: 2px; font-weight: bold; text-transform: uppercase; background: var(--discord); color: white; }
+
+        .btn-action { margin-top: 10px; padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; transition: 0.2s; }
         .btn-sell { background: rgba(218, 54, 51, 0.2); color: #ff7b72; }
+        .btn-sell:hover { background: var(--red-poke); color: white; }
         .btn-trade { background: rgba(88, 101, 242, 0.2); color: #7982f2; }
 
         .page-section { display: none; }
@@ -67,25 +76,38 @@
         <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
     </nav>
 
-<div id="pokedex-page" class="page-section active">
-    <div class="gen-nav" id="gen-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-        <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
-        <button onclick="filterGen(2)">Gen 2 (Johto)</button>
-        <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
-        <button onclick="filterGen(4)">Gen 4 (Sinnoh)</button>
-        <button onclick="filterGen(5)">Gen 5 (Unys)</button>
-        <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
+    <div id="pokedex-page" class="page-section active">
+        <div class="gen-nav" id="gen-tabs">
+            <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
+            <button onclick="filterGen(2)">Gen 2 (Johto)</button>
+            <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
+            <button onclick="filterGen(4)">Gen 4 (Sinnoh)</button>
+            <button onclick="filterGen(5)">Gen 5 (Unys)</button>
+            <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
+        </div>
+        
+        <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
+        <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
+        <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
+        <div id="gen-4" class="gen-content"><div class="pokedex-grid" id="grid-4"></div></div>
+        <div id="gen-5" class="gen-content"><div class="pokedex-grid" id="grid-5"></div></div>
+        <div id="gen-6" class="gen-content"><div class="pokedex-grid" id="grid-6"></div></div>
     </div>
-    
-    <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
-    <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
-    <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
-    <div id="gen-4" class="gen-content"><div class="pokedex-grid" id="grid-4"></div></div>
-    <div id="gen-5" class="gen-content"><div class="pokedex-grid" id="grid-5"></div></div>
-    <div id="gen-6" class="gen-content"><div class="pokedex-grid" id="grid-6"></div></div>
-</div>
+
     <div id="collection-page" class="page-section">
-        <h2 style="color: var(--shiny)">✨ Pokémon Chromatiques</h2>
+        <div id="team-builder-section">
+            <h2 style="color: var(--discord); margin-top: 0;">🛡️ Mon Équipe Stratégique</h2>
+            <div id="team-grid" class="pokedex-grid" style="grid-template-columns: repeat(6, 1fr);">
+                </div>
+            <div id="team-analysis" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                <strong>Types couverts :</strong> <span id="type-coverage-list">Aucun</span>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--shiny); margin: 0;">✨ Favoris & Chromatiques</h2>
+            <button onclick="sellAllDuplicates()" class="btn-action btn-sell" style="padding: 10px 20px;">💰 Vendre Doublons</button>
+        </div>
         <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
         
         <h2>📦 Mes Doublons & Échanges</h2>
@@ -114,6 +136,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-
-
-
