@@ -389,7 +389,7 @@ app.post('/api/shop/buy', async (req, res) => {
         let bonusMessage = '';
 
         // Logique de promotion: +1 ball spéciale par 10 Poké Balls achetées
-        if (itemKey === 'pokeball' && quantity >= 10) {
+        if (itemKey === 'pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball' && quantity >= 10) {
             const bonusCount = Math.floor(quantity / 10);
             for (let i = 0; i < bonusCount; i++) {
                 const bonusBall = getRandomBonusBall();
@@ -649,6 +649,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
