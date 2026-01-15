@@ -30,7 +30,7 @@
         
         .pokedex-card { background: var(--card-bg); border-radius: 15px; padding: 15px; border: 1px solid var(--border); text-align: center; position: relative; display: flex; flex-direction: column; transition: 0.3s; }
         .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord); }
-        .pokedex-card img.poke-sprite { width: 90px; height: 90px; margin: 0 auto; image-rendering: pixelated; transition: transform 0.3s; }
+        .pokedex-card img.poke-sprite { width: 90px; height: 90px; margin: 0 auto; image-rendering: pixelated; transition: 0.3s; }
 
         /* --- ANIMATIONS COMPAGNON --- */
         .is-companion img.poke-sprite {
@@ -110,6 +110,7 @@
                 <button onclick="filterGen(5)">Gen 5 (Unys)</button>
                 <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
             </div>
+            
             <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
             <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
             <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
@@ -119,9 +120,13 @@
         </div>
 
         <div id="collection-page" class="page-section">
-            <h2 style="color: var(--shiny);">✨ Favoris & Chromatiques</h2>
-            <div id="shiny-grid" class="pokedex-grid"></div>
-            <h2 style="margin-top: 30px;">📦 Mes Doublons</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--shiny); margin: 0;">✨ Favoris & Chromatiques</h2>
+                <button onclick="sellAllDuplicates()" class="btn-action btn-sell" style="padding: 10px 20px;">💰 Vendre Doublons</button>
+            </div>
+            <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
+            
+            <h2>📦 Mes Doublons & Échanges</h2>
             <div id="duplicate-grid" class="pokedex-grid"></div>
         </div>
 
