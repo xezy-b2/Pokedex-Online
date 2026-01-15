@@ -357,7 +357,7 @@ app.get('/api/shop', (req, res) => {
     res.json(SHOP_ITEMS);
 });
 
-// Route 5.4: Achat (POST)
+// --- Route 5.4: Achat (POST) - VERSION CORRIGÉE ---
 app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     const item = SHOP_ITEMS[itemKey];
@@ -370,51 +370,44 @@ app.post('/api/shop/buy', async (req, res) => {
 
     try {
         const user = await User.findOne({ userId });
-
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
-        }
+        if (!user) return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
 
         if (user.money < totalCost) {
-            return res.status(403).json({ success: false, message: `Fonds insuffisants ! Il vous manque ${totalCost - user.money} 💰.` });
+            return res.status(403).json({ success: false, message: `Fonds insuffisants !` });
         }
 
-        // Transaction
+        // 1. Déduction de l'argent et ajout des items achetés
         user.money -= totalCost;
-        
-        // Utiliser la clé de l'objet utilisateur (ex: 'pokeballs')
         const userItemKey = item.key; 
         user[userItemKey] = (user[userItemKey] || 0) + quantity;
         
+        // On marque le champ principal comme modifié (très important pour Mongoose)
+        user.markModified(userItemKey);
+
+        // 2. Gestion des Bonus
         let bonusMessage = '';
+        const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+        if (validPromoItems.includes(itemKey) && quantity >= 10) {
+            const bonusCount = Math.floor(quantity / 10);
+            for (let i = 0; i < bonusCount; i++) {
+                const bonusBall = getRandomBonusBall();
+                const bKey = bonusBall.key;
 
-// --- Bloc de Promotion Corrigé dans webserver.js ---
-// webserver.js -> Route /api/shop/buy
-// --- Bloc de Promotion Corrigé ---
-if (validPromoItems.includes(itemKey) && quantity >= 10) {
-    const bonusCount = Math.floor(quantity / 10);
-    
-    for (let i = 0; i < bonusCount; i++) {
-        const bonusBall = getRandomBonusBall();
-        const ballKey = bonusBall.key;
+                user[bKey] = (user[bKey] || 0) + 1;
+                user.markModified(bKey); // On force la détection pour chaque bonus
+                
+                bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
+            }
+        }
 
-        // On incrémente la valeur
-        user[ballKey] = (user[ballKey] || 0) + 1;
-        
-        // On force Mongoose à reconnaître la modification sur cette clé précise
-        user.markModified(ballKey);
-        
-        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
-    }
-    
-    // On sauvegarde une seule fois après la boucle
-    await user.save();
-}
+        // 3. UNE SEULE SAUVEGARDE À LA FIN
+        // C'est ici que la magie opère : on attend que tout soit fini pour sauver
+        await user.save();
+
         res.json({
             success: true,
-            message: `Achat réussi : ${quantity} ${item.name}(s) pour ${totalCost.toLocaleString()} 💰. ${bonusMessage}`,
+            message: `Achat réussi : ${quantity} ${item.name}(s).${bonusMessage}`,
             newMoney: user.money
         });
 
@@ -661,6 +654,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
