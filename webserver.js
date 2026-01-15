@@ -391,24 +391,16 @@ app.post('/api/shop/buy', async (req, res) => {
         // Logique de promotion: +1 ball spéciale par 10 Poké Balls achetées
 // On définit la liste des balls qui donnent droit à un bonus
 // webserver.js
-const eligibleBalls = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+// --- Correction dans webserver.js (Route 5.4) ---
+const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-if (eligibleBalls.includes(itemKey) && quantity >= 10) {
+if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
-    
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
         
-        // On met à jour l'objet "user" en mémoire pour l'affichage immédiat
+        // C'est ici que la magie opère : bonusBall.key doit être 'ellbaballs'
         user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
-        
-        // --- LA SOLUTION MIRACLE ---
-        // On utilise la même méthode que ta commande giveall pour forcer la DB
-        await User.updateOne(
-            { userId: user.userId },
-            { $inc: { [bonusBall.key]: 1 } }
-        );
-
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
 }
@@ -664,6 +656,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
