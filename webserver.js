@@ -390,24 +390,25 @@ app.post('/api/shop/buy', async (req, res) => {
 
 const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-// --- Bloc de Promotion Corrigé (webserver.js) ---
+// --- Bloc de Promotion Corrigé dans webserver.js ---
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
-            const bonusCount = Math.floor(quantity / 10);
-            for (let i = 0; i < bonusCount; i++) {
-                const bonusBall = getRandomBonusBall();
-                
-                // On ajoute +1
-                user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+    const bonusCount = Math.floor(quantity / 10);
+    for (let i = 0; i < bonusCount; i++) {
+        const bonusBall = getRandomBonusBall();
+        
+        // On incrémente la valeur
+        user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
 
-                // ON DIT À MONGOOSE QUELLE CLÉ A CHANGÉ
-                user.markModified(bonusBall.key); 
-                
-                bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
-            }
-        }
+        // CRUCIAL : On informe Mongoose que cette clé spécifique a été modifiée
+        // Cela force MongoDB à inclure ce champ dans l'update même s'il était à 0 ou null
+        user.markModified(bonusBall.key); 
+        
+        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
+    }
+}
 
-        // LE SAVE DOIT ÊTRE ICI (APRÈS LE BLOC IF)
-        await user.save();
+// Le save doit impérativement être APPRÈS la boucle
+await user.save();
 
         res.json({
             success: true,
@@ -658,6 +659,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
