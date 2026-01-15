@@ -388,32 +388,27 @@ app.post('/api/shop/buy', async (req, res) => {
         
         let bonusMessage = '';
 
-        // Logique de promotion: +1 ball spéciale par 10 Poké Balls achetées
-// On définit la liste des balls qui donnent droit à un bonus
-// webserver.js
-// --- Correction dans webserver.js (Route 5.4) ---
-// Remplace la ligne 280 par ceci :
 const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-// --- DANS webserver.js (Route /api/shop/buy) ---
-
-// --- Correction dans webserver.js ---
-// --- Bloc de Promotion Corrigé ---
+// --- Bloc de Promotion Corrigé (webserver.js) ---
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     for (let i = 0; i < bonusCount; i++) {
-        const bonusBall = getRandomBonusBall(); // Tirage au sort
-        const ballKey = bonusBall.key;          // Récupère la clé (ex: 'ellbaballs')
+        const bonusBall = getRandomBonusBall(); // On tire une ball au hasard
+        const key = bonusBall.key;              // On récupère sa clé (ex: 'ellbaballs')
         
-        // Ajoute +1 à la ball correspondante dans l'objet user
-        user[ballKey] = (user[ballKey] || 0) + 1;
+        // On incrémente la bonne ball dans l'objet user
+        user[key] = (user[key] || 0) + 1;
 
-        // INDISPENSABLE : On prévient Mongoose que ce champ a changé
-        user.markModified(ballKey);
+        // INDISPENSABLE : On dit à Mongoose que ce champ spécifique a changé
+        user.markModified(key);
         
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
 }
+
+// Une seule sauvegarde finale pour tout enregistrer en base de données
+await user.save();
 
 // Une seule sauvegarde finale pour tout enregistrer
 await user.save();
@@ -667,6 +662,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
