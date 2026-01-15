@@ -407,10 +407,6 @@ if (validPromoItems.includes(itemKey) && quantity >= 10) {
     }
 }
 
-// Une seule sauvegarde finale pour tout enregistrer en base de données
-await user.save();
-
-// Une seule sauvegarde finale pour tout enregistrer
 await user.save();
 
         res.json({
@@ -662,6 +658,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
