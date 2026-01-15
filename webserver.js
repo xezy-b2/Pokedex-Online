@@ -393,22 +393,30 @@ app.post('/api/shop/buy', async (req, res) => {
 // webserver.js
 // --- Correction dans webserver.js (Route 5.4) ---
 // Remplace la ligne 280 par ceci :
-const ballsEligibles = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-if (ballsEligibles.includes(itemKey) && quantity >= 10) {
+// --- DANS webserver.js (Route /api/shop/buy) ---
+
+if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     for (let i = 0; i < bonusCount; i++) {
-        const bonusBall = getRandomBonusBall();
+        const bonusBall = getRandomBonusBall(); // Cette fonction doit retourner la clé exacte
         
-        // On incrémente la valeur
-        user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+        // 1. On s'assure que la clé est la bonne (AVEC LE S)
+        const exactKey = "ellbaballs"; 
         
-        // FORCE MONGOOSE À VOIR LE CHANGEMENT
-        user.markModified(bonusBall.key); 
+        // 2. On incrémente
+        user[exactKey] = (user[exactKey] || 0) + 1;
+
+        // 3. IMPORTANT : On dit explicitement à Mongoose que cette valeur a changé
+        user.markModified(exactKey); 
         
-        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
+        bonusMessage += ` +1 Ellba Ball Bonus !`;
     }
 }
+
+// Enfin, on sauvegarde
+await user.save();
         
         await user.save();
 
@@ -661,6 +669,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
