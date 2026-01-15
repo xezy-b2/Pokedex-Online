@@ -389,28 +389,25 @@ app.post('/api/shop/buy', async (req, res) => {
         const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
         // --- Bloc de Promotion Ultra-Robuste ---
+// --- Bloc de Promotion Corrigé dans webserver.js ---
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
-    console.log(`[DEBUG] Attribution de ${bonusCount} bonus pour ${user.username}`);
-
+    
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
-        const bKey = bonusBall.key; // ex: 'ellbaballs'
+        const bKey = bonusBall.key; // Doit être 'ellbaballs'
 
-        // Utilisation de .get() et .set() pour forcer Mongoose à voir le changement
-        const currentAmount = user.get(bKey) || 0;
-        user.set(bKey, currentAmount + 1);
+        // MISE À JOUR ATOMIQUE : On incrémente directement en base
+        await User.updateOne(
+            { userId: userId },
+            { $inc: { [bKey]: 1 } }
+        );
         
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
-    
-    // On force la notification de modification sur TOUS les types de balls possibles
-    user.markModified('ellbaballs');
-    user.markModified('luxuryballs');
-    user.markModified('premierballs');
 }
 
-// On sauve APRES avoir tout modifié
+// On sauvegarde le reste (argent et balls achetées normalement)
 await user.save();
         
         res.json({
@@ -662,6 +659,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
