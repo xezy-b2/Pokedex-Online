@@ -400,18 +400,13 @@ const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'sa
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     for (let i = 0; i < bonusCount; i++) {
-        const bonusBall = getRandomBonusBall(); // Cette fonction doit retourner la clé exacte
+        const bonusBall = getRandomBonusBall(); // On tire une ball au sort
+        const ballKey = bonusBall.key;          // On récupère SA clé (ex: 'ellbaballs' ou 'masterballs')
         
-        // 1. On s'assure que la clé est la bonne (AVEC LE S)
-        const exactKey = "ellbaballs"; 
+        user[ballKey] = (user[ballKey] || 0) + 1; // On ajoute +1 à la bonne ball
+        user.markModified(ballKey);               // On prévient Mongoose pour la sauvegarde
         
-        // 2. On incrémente
-        user[exactKey] = (user[exactKey] || 0) + 1;
-
-        // 3. IMPORTANT : On dit explicitement à Mongoose que cette valeur a changé
-        user.markModified(exactKey); 
-        
-        bonusMessage += ` +1 Ellba Ball Bonus !`;
+        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
 }
 
@@ -669,6 +664,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
