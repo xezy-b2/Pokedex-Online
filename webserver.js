@@ -388,23 +388,31 @@ app.post('/api/shop/buy', async (req, res) => {
         let bonusMessage = '';
         const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-        if (validPromoItems.includes(itemKey) && quantity >= 10) {
-            const bonusCount = Math.floor(quantity / 10);
-            for (let i = 0; i < bonusCount; i++) {
-                const bonusBall = getRandomBonusBall();
-                const bKey = bonusBall.key;
+        // --- Bloc de Promotion Ultra-Robuste ---
+if (validPromoItems.includes(itemKey) && quantity >= 10) {
+    const bonusCount = Math.floor(quantity / 10);
+    console.log(`[DEBUG] Attribution de ${bonusCount} bonus pour ${user.username}`);
 
-                user[bKey] = (user[bKey] || 0) + 1;
-                user.markModified(bKey); // On force la détection pour chaque bonus
-                
-                bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
-            }
-        }
+    for (let i = 0; i < bonusCount; i++) {
+        const bonusBall = getRandomBonusBall();
+        const bKey = bonusBall.key; // ex: 'ellbaballs'
 
-        // 3. UNE SEULE SAUVEGARDE À LA FIN
-        // C'est ici que la magie opère : on attend que tout soit fini pour sauver
-        await user.save();
+        // Utilisation de .get() et .set() pour forcer Mongoose à voir le changement
+        const currentAmount = user.get(bKey) || 0;
+        user.set(bKey, currentAmount + 1);
+        
+        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
+    }
+    
+    // On force la notification de modification sur TOUS les types de balls possibles
+    user.markModified('ellbaballs');
+    user.markModified('luxuryballs');
+    user.markModified('premierballs');
+}
 
+// On sauve APRES avoir tout modifié
+await user.save();
+        
         res.json({
             success: true,
             message: `Achat réussi : ${quantity} ${item.name}(s).${bonusMessage}`,
@@ -654,6 +662,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
