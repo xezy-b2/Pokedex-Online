@@ -391,24 +391,23 @@ app.post('/api/shop/buy', async (req, res) => {
 const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
 // --- Bloc de Promotion Corrigé dans webserver.js ---
+// webserver.js -> Route /api/shop/buy
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
         
-        // On utilise la notation entre crochets pour accéder dynamiquement à la clé
-        const currentAmount = user[bonusBall.key] || 0;
-        user[bonusBall.key] = currentAmount + 1;
-
-        // On prévient Mongoose du changement
+        // CORRECTION : Accès dynamique sécurisé
+        user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+        
+        // IMPORTANT : Pour Mongoose, il faut marquer le champ comme modifié
         user.markModified(bonusBall.key);
         
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
+    // On sauvegarde APRES la boucle
+    await user.save();
 }
-
-// Le save doit impérativement être APPRÈS la boucle
-await user.save();
 
         res.json({
             success: true,
@@ -659,6 +658,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
