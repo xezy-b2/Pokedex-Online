@@ -396,12 +396,12 @@ if (validPromoItems.includes(itemKey) && quantity >= 10) {
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
         
-        // On incrémente la valeur
-        user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+        // On utilise la notation entre crochets pour accéder dynamiquement à la clé
+        const currentAmount = user[bonusBall.key] || 0;
+        user[bonusBall.key] = currentAmount + 1;
 
-        // CRUCIAL : On informe Mongoose que cette clé spécifique a été modifiée
-        // Cela force MongoDB à inclure ce champ dans l'update même s'il était à 0 ou null
-        user.markModified(bonusBall.key); 
+        // On prévient Mongoose du changement
+        user.markModified(bonusBall.key);
         
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
@@ -659,6 +659,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
