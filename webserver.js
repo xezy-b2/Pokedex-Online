@@ -392,15 +392,20 @@ app.post('/api/shop/buy', async (req, res) => {
 // On définit la liste des balls qui donnent droit à un bonus
 // webserver.js
 // --- Correction dans webserver.js (Route 5.4) ---
-const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+// Remplace la ligne 280 par ceci :
+const ballsEligibles = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-if (validPromoItems.includes(itemKey) && quantity >= 10) {
+if (ballsEligibles.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
         
-        // C'est ici que la magie opère : bonusBall.key doit être 'ellbaballs'
+        // On incrémente la valeur
         user[bonusBall.key] = (user[bonusBall.key] || 0) + 1;
+        
+        // FORCE MONGOOSE À VOIR LE CHANGEMENT
+        user.markModified(bonusBall.key); 
+        
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
 }
@@ -656,6 +661,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
