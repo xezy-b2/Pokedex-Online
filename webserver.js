@@ -357,7 +357,8 @@ app.get('/api/shop', (req, res) => {
     res.json(SHOP_ITEMS);
 });
 
-// --- Route 5.4: Achat (POST) - VERSION CORRIGÉE ---
+// Remplace ta route /api/shop/buy par celle-ci dans webserver.js
+
 app.post('/api/shop/buy', async (req, res) => {
     const { userId, itemKey, quantity } = req.body;
     const item = SHOP_ITEMS[itemKey];
@@ -376,44 +377,42 @@ app.post('/api/shop/buy', async (req, res) => {
             return res.status(403).json({ success: false, message: `Fonds insuffisants !` });
         }
 
-        // 1. Déduction de l'argent et ajout des items achetés
-        user.money -= totalCost;
-        const userItemKey = item.key; 
-        user[userItemKey] = (user[userItemKey] || 0) + quantity;
-        
-        // On marque le champ principal comme modifié (très important pour Mongoose)
-        user.markModified(userItemKey);
+        // 1. On prépare l'objet de mise à jour direct pour MongoDB
+        const updateFields = {
+            $inc: {
+                money: -totalCost,
+                [item.key]: quantity
+            }
+        };
 
-        // 2. Gestion des Bonus
+        // 2. Calcul des Bonus
         let bonusMessage = '';
         const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-// Remplace ton bloc de bonus par celui-ci dans webserver.js
-if (validPromoItems.includes(itemKey) && quantity >= 10) {
-    const bonusCount = Math.floor(quantity / 10);
-    
-    for (let i = 0; i < bonusCount; i++) {
-        const bonusBall = getRandomBonusBall();
-        const bKey = bonusBall.key; 
+        if (validPromoItems.includes(itemKey) && quantity >= 10) {
+            const bonusCount = Math.floor(quantity / 10);
+            for (let i = 0; i < bonusCount; i++) {
+                const bonusBall = getRandomBonusBall(); // Doit retourner key: 'ellbaballs'
+                const bKey = bonusBall.key;
 
-        // On utilise $inc pour forcer l'ajout en base de données directement
-        await User.findOneAndUpdate(
+                if (!updateFields.$inc[bKey]) updateFields.$inc[bKey] = 0;
+                updateFields.$inc[bKey] += 1;
+                
+                bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
+            }
+        }
+
+        // 3. MISE À JOUR ATOMIQUE (Force l'écriture en base)
+        const updatedUser = await User.findOneAndUpdate(
             { userId: userId },
-            { $inc: { [bKey]: 1 } },
+            updateFields,
             { new: true }
         );
-        
-        bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
-    }
-}
-// Note : Pas besoin de user.save() pour les bonus ici, le findOneAndUpdate le fait direct.
-// Mais garde le user.save() final pour l'argent et les balls normales.
-await user.save();
-        
+
         res.json({
             success: true,
             message: `Achat réussi : ${quantity} ${item.name}(s).${bonusMessage}`,
-            newMoney: user.money
+            newMoney: updatedUser.money
         });
 
     } catch (error) {
@@ -422,6 +421,15 @@ await user.save();
     }
 });
 
+// Et vérifie bien cette fonction juste en dessous :
+function getRandomBonusBall() {
+    const balls = [
+        { name: 'Ellba Ball', key: 'ellbaballs' }, // Vérifie bien le S
+        { name: 'Luxury Ball', key: 'luxuryballs' },
+        { name: 'Premier Ball', key: 'premierballs' }
+    ];
+    return balls[Math.floor(Math.random() * balls.length)];
+}
 // Route 5.5: Vendre un Pokémon (POST)
 app.post('/api/sell/pokemon', async (req, res) => {
     const { userId, pokemonIdToSell } = req.body;
@@ -659,6 +667,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
