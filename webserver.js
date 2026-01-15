@@ -388,26 +388,26 @@ app.post('/api/shop/buy', async (req, res) => {
         let bonusMessage = '';
         const validPromoItems = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
 
-        // --- Bloc de Promotion Ultra-Robuste ---
-// --- Bloc de Promotion Corrigé dans webserver.js ---
+// Remplace ton bloc de bonus par celui-ci dans webserver.js
 if (validPromoItems.includes(itemKey) && quantity >= 10) {
     const bonusCount = Math.floor(quantity / 10);
     
     for (let i = 0; i < bonusCount; i++) {
         const bonusBall = getRandomBonusBall();
-        const bKey = bonusBall.key; // Doit être 'ellbaballs'
+        const bKey = bonusBall.key; 
 
-        // MISE À JOUR ATOMIQUE : On incrémente directement en base
-        await User.updateOne(
+        // On utilise $inc pour forcer l'ajout en base de données directement
+        await User.findOneAndUpdate(
             { userId: userId },
-            { $inc: { [bKey]: 1 } }
+            { $inc: { [bKey]: 1 } },
+            { new: true }
         );
         
         bonusMessage += ` +1 ${bonusBall.name} Bonus !`;
     }
 }
-
-// On sauvegarde le reste (argent et balls achetées normalement)
+// Note : Pas besoin de user.save() pour les bonus ici, le findOneAndUpdate le fait direct.
+// Mais garde le user.save() final pour l'argent et les balls normales.
 await user.save();
         
         res.json({
@@ -659,6 +659,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
