@@ -122,7 +122,7 @@ const BONUS_BALLS = [
     { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
     { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
     { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
-    { key: 'ellbaballs', name: 'Ellba Ball'},
+    { key: 'elbaballs', name: 'Ellba Ball'},
 ];
 
 function getRandomBonusBall() {
@@ -424,7 +424,7 @@ app.post('/api/shop/buy', async (req, res) => {
 // Et vérifie bien cette fonction juste en dessous :
 function getRandomBonusBall() {
     const balls = [
-        { name: 'Ellba Ball', key: 'ellbaballs' }, // Vérifie bien le S
+        { name: 'Ellba Ball', key: 'elbaballs' }, // Vérifie bien le S
         { name: 'Luxury Ball', key: 'luxuryballs' },
         { name: 'Premier Ball', key: 'premierballs' }
     ];
