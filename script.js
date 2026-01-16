@@ -203,7 +203,7 @@ async function loadProfile() {
                     <div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor Ball</small></div>
                     <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
                     <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari Ball</small></div>
-                    <div class="ball-item"><img src="https://i.postimg.cc/Gpf5scDm/elbaball-(1).png"><br><b>x${user.ellbaballs || 0}</b><br><small>Ellba Ball</small></div>
+                    <div class="ball-item"><img src="https://i.postimg.cc/0jj11t7s/elbaball.png"><br><b>x${user.ellbaballs || 0}</b><br><small>Ellba Ball</small></div>
                 </div>
             </div>
         `;
