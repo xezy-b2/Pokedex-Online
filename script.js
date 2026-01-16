@@ -41,11 +41,9 @@ function showPage(id) {
 
 function filterGen(gen) {
     document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
-    const targetGen = document.getElementById(`gen-${gen}`);
-    if(targetGen) targetGen.classList.add('active');
-    
+    document.getElementById(`gen-${gen}`).classList.add('active');
     document.querySelectorAll('#gen-tabs button').forEach(b => b.classList.remove('active'));
-    if(event && event.target) event.target.classList.add('active');
+    event.target.classList.add('active');
 }
 
 // --- LOGIQUE PRIX ---
@@ -94,13 +92,12 @@ function createCard(p, mode = 'pokedex') {
 // --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
     try {
+        // Détecter le compagnon actuel via le profil
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        if (!profRes.ok) throw new Error("Profil introuvable");
         const userProfile = await profRes.json();
         const companionId = userProfile.companionPokemon ? userProfile.companionPokemon._id : null;
 
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
-        if (!res.ok) throw new Error("Pokedex introuvable");
         const data = await res.json();
         
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
@@ -129,12 +126,14 @@ async function loadPokedex() {
             if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
+        // Mise à jour onglets
         const buttons = document.querySelectorAll('#gen-tabs button');
         buttons.forEach((btn, index) => {
             const genNum = index + 1;
             btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
         });
 
+        // Collection
         const shinyGrid = document.getElementById('shiny-grid');
         const dupGrid = document.getElementById('duplicate-grid');
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -178,10 +177,6 @@ async function loadProfile() {
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        if (!res.ok) {
-            container.innerHTML = "Erreur : Impossible de charger le profil.";
-            return;
-        }
         const user = await res.json();
         
         let compHtml = '<p>Aucun compagnon</p>';
@@ -210,17 +205,13 @@ async function loadProfile() {
                     <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
                     <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div>
                     <div class="ball-item">
-                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3); width:32px;">
+                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3);">
                         <br><b>x${user.ellbaballs || 0}</b>
                         <br><small style="font-size:0.8em;">Ellba Ball</small>
-                    </div>
                 </div>
             </div>
         `;
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = "Erreur de connexion au serveur."; 
-    }
+    } catch (e) { container.innerHTML = "Erreur profil."; }
 }
 
 async function loadShop() {
@@ -228,93 +219,72 @@ async function loadShop() {
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
-        
-        if (!res.ok) {
-            container.innerHTML = `<p style="color:red; text-align:center;">Boutique indisponible (Erreur ${res.status}).<br>Vérifiez que la route /api/shop existe sur le backend.</p>`;
-            return;
-        }
-
         const data = await res.json();
         const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-        
-        const getPrice = (key) => {
-            return (items[key] && items[key].cost) ? items[key].cost.toLocaleString() : "---";
+        const getPrice = (keys) => {
+            for (let key of keys) if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
+            return "0";
         };
 
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
-        const itemsList = [
-            {key: 'pokeball', name: 'Poké Ball'},
-            {key: 'greatball', name: 'Super Ball'},
-            {key: 'ultraball', name: 'Hyper Ball'},
-            {key: 'masterball', name: 'Master Ball'},
-            {key: 'safariball', name: 'Safari Ball'},
-            {key: 'premierball', name: 'Honor Ball'},
-            {key: 'luxuryball', name: 'Luxe Ball'}
-        ];
+        const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+        const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
+        const apiKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         
         let shopHtml = '';
-        itemsList.forEach(item => {
-            const ballImg = item.key.replace('ball', '-ball') + '.png';
+        itemKeys.forEach((key, i) => {
+            const ballImg = key.replace('ball', '-ball') + '.png';
             shopHtml += `
                 <div class="pokedex-card">
                     <img src="${BALL_URL}${ballImg}" style="${imgStyle}">
-                    <h3 style="font-size:1em; margin: 5px 0;">${item.name}</h3>
-                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice(item.key)} 💰</p>
-                    <input type="number" id="qty-${item.key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                    <button onclick="buyItem('${item.key}', document.getElementById('qty-${item.key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                    <h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3>
+                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p>
+                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
                 </div>
             `;
         });
         container.innerHTML = shopHtml;
-    } catch (e) { 
-        console.error("Erreur shop:", e);
-        container.innerHTML = "Erreur lors du chargement de la boutique.";
-    }
+    } catch (e) { console.error(e); }
 }
 
 // --- ACTIONS ---
 async function sellPoke(id, name, price) {
     if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
-        });
-        if(res.ok) loadPokedex();
-    } catch (e) { console.error(e); }
+    const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
+    });
+    if(res.ok) loadPokedex();
 }
 
 async function sellAllDuplicates() {
     if(!confirm("Vendre tous tes doublons non-shiny ?")) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId })
-        });
-        const data = await res.json();
-        alert(data.message);
-        if(res.ok) loadPokedex();
-    } catch (e) { console.error(e); }
+    const res = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId })
+    });
+    const data = await res.json();
+    alert(data.message);
+    if(res.ok) loadPokedex();
 }
 
 async function wonderTrade(id, name) {
     if(!confirm(`Envoyer ${name} en Échange Miracle ?`)) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
-        });
-        const data = await res.json();
-        if(res.ok) {
-            document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
-            document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
-            document.getElementById('trade-modal').style.display = 'flex';
-            loadPokedex();
-        }
-    } catch (e) { console.error(e); }
+    const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
+    });
+    const data = await res.json();
+    if(res.ok) {
+        document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
+        document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
+        document.getElementById('trade-modal').style.display = 'flex';
+        loadPokedex();
+    }
 }
 
 async function buyItem(key, qty) {
@@ -332,9 +302,11 @@ async function buyItem(key, qty) {
     } catch (e) { console.error(e); }
 }
 
-function logout() { 
-    localStorage.clear(); 
-    location.reload(); 
-}
-
+function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+
+
+
+
+
