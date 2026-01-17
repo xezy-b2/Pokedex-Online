@@ -205,9 +205,9 @@ async function loadProfile() {
                     <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
                     <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div>
                     <div class="ball-item">
-                    <img src="${BALL_URL}luxury-ball.png" style="filter: hue-rotate(150deg) saturate(1.5);"> 
-                    <br><b>x${user.ellbaballs || 0}</b><br><small>Ellba Ball</small>
-                    </div>
+                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3);">
+                        <br><b>x${user.ellbaballs || 0}</b>
+                        <br><small style="font-size:0.8em;">Ellba Ball</small>
                 </div>
             </div>
         `;
