@@ -191,24 +191,26 @@ async function loadProfile() {
             `;
         }
 
-// À l'intérieur de loadProfile()
-container.innerHTML = `
-    <div class="stat-box">
-        <h2 style="margin-top:0; color:var(--shiny);">💰 Fortune : ${user.money.toLocaleString()} P$</h2>
-        <div class="ball-inventory">
-            <div class="ball-item"><img src="${BALL_URL}pokeball.png"><br><b>x${user.pokeballs || 0}</b><br><small>Poké Ball</small></div>
-            <div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b><br><small>Super Ball</small></div>
-            <div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b><br><small>Hyper Ball</small></div>
-            <div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b><br><small>Master Ball</small></div>
-            <div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor Ball</small></div>
-            <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
-            <div class="ball-item">
-                <img src="${BALL_URL}luxury-ball.png" style="filter: hue-rotate(150deg) saturate(1.5);">
-                <br><b>x${user.ellbaballs || 0}</b><br><small>Ellba Ball</small>
+        container.innerHTML = `
+            <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
+            <div class="stat-box" style="text-align:center;"><h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2></div>
+            <div class="stat-box">
+                <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
+                <div class="ball-inventory">
+                    <div class="ball-item"><img src="${BALL_URL}poke-ball.png"><br><b>x${user.pokeballs || 0}</b><br><small>Poké Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b><br><small>Super Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b><br><small>Hyper Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b><br><small>Master Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
+                    <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div>
+                    <div class="ball-item">
+                    <img src="${BALL_URL}luxury-ball.png" style="filter: hue-rotate(150deg) saturate(1.5);"> 
+                    <br><b>x${user.ellbaballs || 0}</b><br><small>Ellba Ball</small>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-`;
+        `;
     } catch (e) { container.innerHTML = "Erreur profil."; }
 }
 
@@ -295,29 +297,10 @@ async function buyItem(key, qty) {
             body: JSON.stringify({ userId: currentUserId, itemKey: key, quantity: quantity })
         });
         const data = await res.json();
-// À l'intérieur de buyItem() après la ligne : const data = await res.json();
-if (!res.ok) return alert("Erreur : " + (data.message || "Achat impossible"));
-
-if (data.bonus) {
-    const modalImg = document.getElementById('modal-img');
-    
-    // Gestion visuelle de la Ellba Ball
-    if (data.bonus.key === 'ellbaballs') {
-        modalImg.src = `${BALL_URL}luxury-ball.png`;
-        modalImg.style.filter = "hue-rotate(150deg) saturate(1.5)";
-    } else {
-        modalImg.src = `${BALL_URL}${data.bonus.key.replace('balls', '-ball')}.png`;
-        modalImg.style.filter = "none";
-    }
-    
-    document.getElementById('modal-text').innerHTML = `Félicitations ! Bonus reçu : <b>${data.bonus.name}</b> !`;
-    document.getElementById('trade-modal').style.display = 'flex';
-} else {
-    alert("Achat effectué avec succès !");
+        if (!res.ok) alert("Erreur : " + (data.message || "Achat impossible"));
+        else { alert(data.message); loadShop(); loadProfile(); }
+    } catch (e) { console.error(e); }
 }
-
-// C'est cette ligne qui rajoute la balle au compteur visuel immédiatement
-loadProfile();
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
