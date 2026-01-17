@@ -1,3 +1,4 @@
+
 // webserver.js
 
 const express = require('express');
@@ -122,9 +123,13 @@ const BONUS_BALLS = [
     { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
     { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
     { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
-    { key: 'ellbaballs', name: 'Ellba Ball'}
+    { key: 'ellbaballs', name: 'Ellba Ball'},
 ];
 
+function getRandomBonusBall() {
+    const randomIndex = Math.floor(Math.random() * BONUS_BALLS.length);
+    return BONUS_BALLS[randomIndex];
+}
 
 // --- SECRETS & URLS ---
 const mongoUri = process.env.MONGO_URI; 
@@ -388,7 +393,7 @@ app.post('/api/shop/buy', async (req, res) => {
         if (validPromoItems.includes(itemKey) && quantity >= 10) {
             const bonusCount = Math.floor(quantity / 10);
             for (let i = 0; i < bonusCount; i++) {
-                const bonusBall = getRandomBonusBall();
+                const bonusBall = getRandomBonusBall(); // Doit retourner key: 'ellbaballs'
                 const bKey = bonusBall.key;
 
                 if (!updateFields.$inc[bKey]) updateFields.$inc[bKey] = 0;
@@ -417,13 +422,15 @@ app.post('/api/shop/buy', async (req, res) => {
     }
 });
 
+// Et vérifie bien cette fonction juste en dessous :
 function getRandomBonusBall() {
-    // On pioche dynamiquement dans la liste définie en haut du fichier
-    const randomIndex = Math.floor(Math.random() * BONUS_BALLS.length);
-    return BONUS_BALLS[randomIndex];
+    const balls = [
+        { name: 'Ellba Ball', key: 'ellbaballs' }, // Vérifie bien le S
+        { name: 'Luxury Ball', key: 'luxuryballs' },
+        { name: 'Premier Ball', key: 'premierballs' }
+    ];
+    return balls[Math.floor(Math.random() * balls.length)];
 }
-
-
 // Route 5.5: Vendre un Pokémon (POST)
 app.post('/api/sell/pokemon', async (req, res) => {
     const { userId, pokemonIdToSell } = req.body;
