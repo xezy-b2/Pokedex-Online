@@ -425,9 +425,10 @@ app.post('/api/shop/buy', async (req, res) => {
 // Et vérifie bien cette fonction juste en dessous :
 function getRandomBonusBall() {
     const balls = [
-        { name: 'Ellba Ball', key: 'ellbaballs' }, // Vérifie bien le S
-        { name: 'Luxury Ball', key: 'luxuryballs' },
-        { name: 'Premier Ball', key: 'premierballs' }
+    { key: 'greatballs', name: 'Super Ball' }, { key: 'ultraballs', name: 'Hyper Ball' }, 
+    { key: 'masterballs', name: 'Master Ball' }, { key: 'safariballs', name: 'Safari Ball' }, 
+    { key: 'premierballs', name: 'Honor Ball' }, { key: 'luxuryballs', name: 'Luxe Ball' },
+    { key: 'ellbaballs', name: 'Ellba Ball'},
     ];
     return balls[Math.floor(Math.random() * balls.length)];
 }
@@ -668,3 +669,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
