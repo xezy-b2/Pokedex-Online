@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
     safariballs: { type: Number, default: 0 },  
     premierballs: { type: Number, default: 0 }, 
     luxuryballs: { type: Number, default: 0 },  
+    ellbaballs: { type: Number, default: 1 },
     companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null } 
 });
 
