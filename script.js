@@ -88,11 +88,14 @@ async function loadProfile() {
     if (!container) return;
 
     try {
-        // Correction de l'URL pour correspondre à tes routes habituelles
-        const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        // Changement vers /api/profile/ pour correspondre à tes autres appels
+        const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         
+        // Si le serveur renvoie une erreur (ex: 404), on ne tente pas de lire le JSON
         if (!res.ok) {
-            throw new Error(`Erreur HTTP: ${res.status}`);
+            console.error(`Erreur serveur: ${res.status}`);
+            container.innerHTML = "<p>Erreur : Impossible de contacter le serveur.</p>";
+            return;
         }
 
         const user = await res.json();
@@ -148,28 +151,11 @@ async function loadProfile() {
             </div>
         `;
 
-        // 3. Timer temps réel
-        if (isOff) {
-            const timer = setInterval(() => {
-                const btn = document.getElementById('dailyBtn');
-                if (!btn) { clearInterval(timer); return; }
-
-                const updatedTime = getCooldownTime(user.lastDaily);
-                if (!updatedTime) {
-                    btn.disabled = false;
-                    btn.style.background = 'var(--highlight)';
-                    btn.style.cursor = 'pointer';
-                    btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
-                    clearInterval(timer);
-                } else {
-                    btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
-                }
-            }, 1000);
-        }
+        if (isOff) setupDailyTimer(user.lastDaily);
 
     } catch (e) {
-        console.error("Erreur de chargement du profil:", e);
-        container.innerHTML = `<p style="color:red; text-align:center;">Erreur : Impossible de charger les données du profil.</p>`;
+        console.error("Erreur Profil:", e);
+        container.innerHTML = "Erreur de chargement des données.";
     }
 }
 
@@ -306,3 +292,4 @@ function logout() {
 }
 
 window.onload = initializeApp;
+
