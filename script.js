@@ -174,26 +174,45 @@ async function setCompanion(pokemonId) {
 
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
-    if(!container) return;
+    if (!container) return;
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        // Note: Assure-toi que la route est bien /api/user/ ou /api/profile/ selon ton webserver.js
+        const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
         const user = await res.json();
-        
+
+        // 1. Logique du Compagnon
         let compHtml = '<p>Aucun compagnon</p>';
-        if(user.companionPokemon) {
+        if (user.companionPokemon) {
             const cp = user.companionPokemon;
             compHtml = `
                 <div class="is-companion">
-                    <img src="${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png" class="poke-sprite" style="width:120px;">
+                    <img src="${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png" class="poke-sprite" style="width:120px; image-rendering: pixelated;">
                     <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
                     <p style="font-size:0.8em;">Niveau ${cp.level}</p>
                 </div>
             `;
         }
 
+        // 2. Logique du bouton Daily (Cadeau quotidien)
+        const cooldownText = getCooldownTime(user.lastDaily);
+        const isOff = cooldownText !== null;
+
         container.innerHTML = `
-            <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
-            <div class="stat-box" style="text-align:center;"><h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2></div>
+            <div class="stat-box" style="text-align:center;">
+                <h3>Compagnon Actuel</h3>
+                ${compHtml}
+            </div>
+
+            <div class="stat-box" style="text-align:center;">
+                <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
+                <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
+                    ${isOff ? 'disabled' : ''} 
+                    style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">
+                    ${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}
+                </button>
+            </div>
+
             <div class="stat-box">
                 <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
                 <div class="ball-inventory">
@@ -208,10 +227,34 @@ async function loadProfile() {
                         <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3);">
                         <br><b>x${user.ellbaballs || 0}</b>
                         <br><small style="font-size:0.8em;">Ellba Ball</small>
+                    </div>
                 </div>
             </div>
         `;
-    } catch (e) { container.innerHTML = "Erreur profil."; }
+
+        // 3. Lancement du timer si le bouton est en cooldown
+        if (isOff) {
+            const timer = setInterval(() => {
+                const btn = document.getElementById('dailyBtn');
+                if (!btn) { clearInterval(timer); return; }
+
+                const updatedTime = getCooldownTime(user.lastDaily);
+                if (!updatedTime) {
+                    btn.disabled = false;
+                    btn.style.background = 'var(--highlight)';
+                    btn.style.cursor = 'pointer';
+                    btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
+                    clearInterval(timer);
+                } else {
+                    btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
+                }
+            }, 1000);
+        }
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = "<p style='color:red; text-align:center;'>Erreur lors du chargement du profil.</p>";
+    }
 }
 
 async function loadShop() {
@@ -302,5 +345,46 @@ async function buyItem(key, qty) {
     } catch (e) { console.error(e); }
 }
 
+// Calcule le temps restant au format HH:MM:SS
+function getCooldownTime(lastDailyDate) {
+    if (!lastDailyDate) return null;
+    const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const lastDaily = new Date(lastDailyDate);
+    const timeLeft = GIFT_COOLDOWN_MS - (now - lastDaily);
+    
+    if (timeLeft <= 0) return null;
+
+    const hours = Math.floor(timeLeft / 3600000);
+    const minutes = Math.floor((timeLeft % 3600000) / 60000);
+    const seconds = Math.floor((timeLeft % 60000) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+// Appelle l'API pour récupérer le cadeau
+async function claimDaily() {
+    const btn = document.getElementById('dailyBtn');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/daily/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(`🎁 ${data.message}\n${data.rewards}`);
+            loadProfile(); // Rafraîchit tout le profil
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert("Erreur lors de la récupération.");
+    }
+}
+
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
