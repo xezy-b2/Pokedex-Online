@@ -92,7 +92,6 @@ function createCard(p, mode = 'pokedex') {
 // --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
     try {
-        // Détecter le compagnon actuel via le profil
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         const companionId = userProfile.companionPokemon ? userProfile.companionPokemon._id : null;
@@ -126,14 +125,12 @@ async function loadPokedex() {
             if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
-        // Mise à jour onglets
         const buttons = document.querySelectorAll('#gen-tabs button');
         buttons.forEach((btn, index) => {
             const genNum = index + 1;
             btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
         });
 
-        // Collection
         const shinyGrid = document.getElementById('shiny-grid');
         const dupGrid = document.getElementById('duplicate-grid');
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -172,11 +169,46 @@ async function setCompanion(pokemonId) {
     } catch (e) { console.error("Erreur setCompanion:", e); }
 }
 
+// --- LOGIQUE DAILY ---
+function getCooldownTime(lastDailyDate) {
+    if (!lastDailyDate) return null;
+    const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const lastDaily = new Date(lastDailyDate);
+    const timeLeft = GIFT_COOLDOWN_MS - (now - lastDaily);
+    if (timeLeft <= 0) return null;
+    const hours = Math.floor(timeLeft / 3600000);
+    const minutes = Math.floor((timeLeft % 3600000) / 60000);
+    const seconds = Math.floor((timeLeft % 60000) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+async function claimDaily() {
+    const btn = document.getElementById('dailyBtn');
+    if (btn) btn.disabled = true;
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/daily/claim`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`🎁 ${data.message}\n${data.rewards}`);
+            loadProfile(); 
+        } else {
+            alert(data.message);
+        }
+    } catch (e) { alert("Erreur lors de la récupération."); }
+}
+
+// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
         let compHtml = '<p>Aucun compagnon</p>';
@@ -191,9 +223,19 @@ async function loadProfile() {
             `;
         }
 
+        const cooldownText = getCooldownTime(user.lastDaily);
+        const isOff = cooldownText !== null;
+
         container.innerHTML = `
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
-            <div class="stat-box" style="text-align:center;"><h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2></div>
+            <div class="stat-box" style="text-align:center;">
+                <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
+                <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
+                    ${isOff ? 'disabled' : ''} 
+                    style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">
+                    ${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}
+                </button>
+            </div>
             <div class="stat-box">
                 <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
                 <div class="ball-inventory">
@@ -205,12 +247,23 @@ async function loadProfile() {
                     <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
                     <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div>
                     <div class="ball-item">
-                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3);">
-                        <br><b>x${user.ellbaballs || 0}</b>
-                        <br><small style="font-size:0.8em;">Ellba Ball</small>
+                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3); width:35px;">
+                        <br><b>x${user.ellbaballs || 0}</b><br><small style="font-size:0.8em;">Ellba Ball</small>
+                    </div>
                 </div>
             </div>
         `;
+
+        if (isOff) {
+            const timer = setInterval(() => {
+                const updatedTime = getCooldownTime(user.lastDaily);
+                const dailyBtn = document.getElementById('dailyBtn');
+                if (!updatedTime || !dailyBtn) {
+                    if(dailyBtn) { dailyBtn.disabled = false; dailyBtn.style.background = 'var(--highlight)'; dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; }
+                    clearInterval(timer);
+                } else { dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; }
+            }, 1000);
+        }
     } catch (e) { container.innerHTML = "Erreur profil."; }
 }
 
@@ -229,7 +282,6 @@ async function loadShop() {
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
         const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
-        const apiKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         
         let shopHtml = '';
         itemKeys.forEach((key, i) => {
