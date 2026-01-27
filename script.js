@@ -177,11 +177,17 @@ async function loadProfile() {
     if (!container) return;
 
     try {
-        // Note: Assure-toi que la route est bien /api/user/ ou /api/profile/ selon ton webserver.js
+        // Vérifie que l'URL est correcte : /api/user/${currentUserId}
         const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        
+        // Si la réponse n'est pas OK (ex: 404), on arrête pour éviter l'erreur JSON
+        if (!res.ok) {
+            throw new Error(`Erreur serveur: ${res.status}`);
+        }
+
         const user = await res.json();
 
-        // 1. Logique du Compagnon
+        // --- Logique du Compagnon ---
         let compHtml = '<p>Aucun compagnon</p>';
         if (user.companionPokemon) {
             const cp = user.companionPokemon;
@@ -194,7 +200,7 @@ async function loadProfile() {
             `;
         }
 
-        // 2. Logique du bouton Daily (Cadeau quotidien)
+        // --- Logique du bouton Daily ---
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
 
@@ -203,7 +209,6 @@ async function loadProfile() {
                 <h3>Compagnon Actuel</h3>
                 ${compHtml}
             </div>
-
             <div class="stat-box" style="text-align:center;">
                 <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
                 <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
@@ -212,7 +217,6 @@ async function loadProfile() {
                     ${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}
                 </button>
             </div>
-
             <div class="stat-box">
                 <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
                 <div class="ball-inventory">
@@ -232,31 +236,15 @@ async function loadProfile() {
             </div>
         `;
 
-        // 3. Lancement du timer si le bouton est en cooldown
         if (isOff) {
-            const timer = setInterval(() => {
-                const btn = document.getElementById('dailyBtn');
-                if (!btn) { clearInterval(timer); return; }
-
-                const updatedTime = getCooldownTime(user.lastDaily);
-                if (!updatedTime) {
-                    btn.disabled = false;
-                    btn.style.background = 'var(--highlight)';
-                    btn.style.cursor = 'pointer';
-                    btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
-                    clearInterval(timer);
-                } else {
-                    btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
-                }
-            }, 1000);
+            setupDailyTimer(user.lastDaily);
         }
 
     } catch (e) {
-        console.error(e);
-        container.innerHTML = "<p style='color:red; text-align:center;'>Erreur lors du chargement du profil.</p>";
+        console.error("Erreur Profil:", e);
+        container.innerHTML = `<p style="color:red; text-align:center;">Impossible de charger le profil (Vérifiez la connexion au serveur).</p>`;
     }
 }
-
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     if(!container) return;
@@ -345,6 +333,24 @@ async function buyItem(key, qty) {
     } catch (e) { console.error(e); }
 }
 
+function setupDailyTimer(lastDailyDate) {
+    const timer = setInterval(() => {
+        const btn = document.getElementById('dailyBtn');
+        if (!btn) { clearInterval(timer); return; }
+
+        const updatedTime = getCooldownTime(lastDailyDate);
+        if (!updatedTime) {
+            btn.disabled = false;
+            btn.style.background = 'var(--highlight)';
+            btn.style.cursor = 'pointer';
+            btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
+            clearInterval(timer);
+        } else {
+            btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
+        }
+    }, 1000);
+}
+
 // Calcule le temps restant au format HH:MM:SS
 function getCooldownTime(lastDailyDate) {
     if (!lastDailyDate) return null;
@@ -387,4 +393,5 @@ async function claimDaily() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
