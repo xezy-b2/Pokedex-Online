@@ -663,10 +663,47 @@ app.post('/api/sell/duplicates', async (req, res) => {
     }
 });
 
+app.post('/api/daily/claim', async (req, res) => {
+    const { userId } = req.body;
+    const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
+
+        const now = Date.now();
+        if (user.lastDaily && (now - user.lastDaily.getTime()) < GIFT_COOLDOWN_MS) {
+            return res.status(403).json({ success: false, message: "Trop tôt !" });
+        }
+
+        // --- Logique identique à ton pokedaily.js ---
+        const rewardMoney = Math.floor(Math.random() * (1000 - 10 + 1)) + 10;
+        user.money = (user.money || 0) + rewardMoney;
+
+        const COMMON_BALLS = ['pokeballs', 'greatballs', 'ultraballs', 'safariballs', 'premierballs'];
+        const randomBall = COMMON_BALLS[Math.floor(Math.random() * COMMON_BALLS.length)];
+        const amount = Math.random() < 0.1 ? 2 : 1; // 10% de chance d'en avoir 2
+        
+        user[randomBall] = (user[randomBall] || 0) + amount;
+
+        user.lastDaily = new Date(now);
+        user.dailyNotified = false; // Reset pour le bot Discord
+        await user.save();
+
+        res.json({ 
+            success: true, 
+            message: "Cadeau récupéré !", 
+            rewards: `${rewardMoney} 💰 et ${amount}x ${randomBall}` 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Erreur serveur." });
+    }
+});
 
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
