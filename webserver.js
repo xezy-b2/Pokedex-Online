@@ -667,43 +667,82 @@ app.post('/api/daily/claim', async (req, res) => {
     const { userId } = req.body;
     const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+    // --- Configuration des récompenses (pour correspondre au bot) ---
+    const MIN_MONEY_REWARD = 10;
+    const MAX_MONEY_REWARD = 1000;
+    const COMMON_BALLS = [
+        { key: 'pokeballs', name: 'Poké Ball' },
+        { key: 'greatballs', name: 'Super Ball' },
+        { key: 'ultraballs', name: 'Hyper Ball' },
+        { key: 'safariballs', name: 'Safari Ball' },
+        { key: 'premierballs', name: 'Honor Ball' }
+    ];
+    const RARE_BALL = [
+        { key: 'masterballs', name: 'Master Ball' },
+        { key: 'ellbaballs', name: 'Ellba Ball' }
+    ];
+
     try {
-        const user = await User.findOne({ userId });
+        // Utilisation de discordId ou userId selon ton schéma de base de données
+        const user = await User.findOne({ discordId: userId }) || await User.findOne({ userId: userId });
+        
         if (!user) return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
 
         const now = Date.now();
         if (user.lastDaily && (now - user.lastDaily.getTime()) < GIFT_COOLDOWN_MS) {
-            return res.status(403).json({ success: false, message: "Trop tôt !" });
+            return res.status(403).json({ success: false, message: "Trop tôt ! Revenez plus tard." });
         }
 
-        // --- Logique identique à ton pokedaily.js ---
-        const rewardMoney = Math.floor(Math.random() * (1000 - 10 + 1)) + 10;
+        // --- 2. Calcul des Récompenses ---
+        const rewardMoney = Math.floor(Math.random() * (MAX_MONEY_REWARD - MIN_MONEY_REWARD + 1)) + MIN_MONEY_REWARD;
         user.money = (user.money || 0) + rewardMoney;
 
-        const COMMON_BALLS = ['pokeballs', 'greatballs', 'ultraballs', 'safariballs', 'premierballs'];
-        const randomBall = COMMON_BALLS[Math.floor(Math.random() * COMMON_BALLS.length)];
-        const amount = Math.random() < 0.1 ? 2 : 1; // 10% de chance d'en avoir 2
-        
-        user[randomBall] = (user[randomBall] || 0) + amount;
+        let selectedBalls = [];
+        const isLucky = Math.random() < 0.05; // 1% de chance
 
+        if (isLucky) {
+            // Une balle rare
+            const randomRare = RARE_BALL[Math.floor(Math.random() * RARE_BALL.length)];
+            selectedBalls.push(randomRare);
+            // Une balle commune en bonus
+            selectedBalls.push(COMMON_BALLS[Math.floor(Math.random() * COMMON_BALLS.length)]);
+        } else {
+            // Deux balles communes différentes
+            const shuffled = [...COMMON_BALLS].sort(() => 0.5 - Math.random());
+            selectedBalls = shuffled.slice(0, 2);
+        }
+
+        // Application des gains à l'utilisateur
+        let rewardTextParts = [`${rewardMoney} 💰`];
+        
+        selectedBalls.forEach(ball => {
+            // Quantité : 1 pour les rares, 1 ou 2 pour les communes
+            const amount = (ball.key === 'masterballs' || ball.key === 'ellbaballs') ? 1 : Math.floor(Math.random() * 2) + 1;
+            user[ball.key] = (user[ball.key] || 0) + amount;
+            rewardTextParts.push(`${amount}x ${ball.name}`);
+        });
+
+        // Sauvegarde
         user.lastDaily = new Date(now);
-        user.dailyNotified = false; // Reset pour le bot Discord
+        user.dailyNotified = false; 
         await user.save();
 
         res.json({ 
             success: true, 
             message: "Cadeau récupéré !", 
-            rewards: `${rewardMoney} 💰 et ${amount}x ${randomBall}` 
+            rewards: rewardTextParts.join(" et ")
         });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: "Erreur serveur." });
+        console.error('Erreur Daily Claim:', error);
+        res.status(500).json({ success: false, message: "Erreur lors de la récupération du cadeau." });
     }
 });
-
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
