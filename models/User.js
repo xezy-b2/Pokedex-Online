@@ -6,12 +6,15 @@ const pokemonSchema = new mongoose.Schema({
     name: { type: String, required: true },
     pokedexId: { type: Number, required: true },
     level: { type: Number, default: 5 },
+    xp: { type: Number, default: 0 },
+    capturedWith: { type: String, default: 'pokeball' },
     ivs: {
         hp: Number, attack: Number, defense: Number, 
         spAttack: Number, spDefense: Number, speed: Number
     },
     caughtAt: { type: Date, default: Date.now },
-    isShiny: { type: Boolean, default: false }
+    isShiny: { type: Boolean, default: false },
+    form: { type: String, default: null }
 });
 
 const userSchema = new mongoose.Schema({
@@ -26,8 +29,10 @@ const userSchema = new mongoose.Schema({
     masterballs: { type: Number, default: 0 },  
     safariballs: { type: Number, default: 0 },  
     premierballs: { type: Number, default: 0 }, 
-    luxuryballs: { type: Number, default: 0 },  
+    luxuryballs: { type: Number, default: 0 },
     ellbaballs: { type: Number, default: 1 },
+    lastDaily: { type: Date, default: null }, 
+    dailyNotified: { type: Boolean, default: false },
     companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null } 
 });
 
