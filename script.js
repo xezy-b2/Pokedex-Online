@@ -28,166 +28,76 @@ function initializeApp() {
 function showPage(id) {
     document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
     const target = document.getElementById(`${id}-page`);
-    if(target) target.classList.add('active');
+    if (target) target.classList.add('active');
+
+    document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
+    const navBtn = document.getElementById(`nav-${id}`);
+    if (navBtn) navBtn.classList.add('active');
+
+    if (id === 'collection') loadCollection();
+    if (id === 'profile') loadProfile();
+    if (id === 'shop') loadShop();
+}
+
+// --- LOGIQUE DAILY (CADEAU) ---
+
+function getCooldownTime(lastDailyDate) {
+    if (!lastDailyDate) return null;
+    const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const lastDaily = new Date(lastDailyDate);
+    const timeLeft = GIFT_COOLDOWN_MS - (now - lastDaily);
     
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    const btn = document.getElementById(`nav-${id}`);
-    if(btn) btn.classList.add('active');
+    if (timeLeft <= 0) return null;
 
-    if(id === 'shop') loadShop();
-    if(id === 'profile') loadProfile();
-    if(id === 'pokedex' || id === 'collection') loadPokedex();
+    const hours = Math.floor(timeLeft / 3600000);
+    const minutes = Math.floor((timeLeft % 3600000) / 60000);
+    const seconds = Math.floor((timeLeft % 60000) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-function filterGen(gen) {
-    document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(`gen-${gen}`).classList.add('active');
-    document.querySelectorAll('#gen-tabs button').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-}
+async function claimDaily() {
+    const btn = document.getElementById('dailyBtn');
+    if (btn) btn.disabled = true;
 
-// --- LOGIQUE PRIX ---
-function calculatePrice(p) {
-    const levelBonus = (p.level || 5) * 5;
-    const shinyBonus = p.isShiny ? 250 : 0;
-    const totalIVs = (p.iv_hp || 0) + (p.iv_attack || 0) + (p.iv_defense || 0) + (p.iv_sp_attack || 0) + (p.iv_sp_defense || 0) + (p.iv_speed || 0);
-    const ivBonus = Math.floor(totalIVs / 1.5); 
-    return 50 + levelBonus + shinyBonus + ivBonus;
-}
-
-// --- RENDU DES CARTES ---
-function createCard(p, mode = 'pokedex') {
-    const isShiny = p.isShiny;
-    const isCaptured = p.isCaptured !== false;
-    const isCompanion = p.isCompanion === true;
-    const price = calculatePrice(p);
-    const img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
-    
-    const ballKey = p.capturedWith || 'pokeball';
-    const ballFileName = ballKey.replace('ball', '-ball') + '.png';
-    const ballImgUrl = `${BALL_URL}${ballFileName}`;
-    
-    let html = `
-        <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''} ${isCompanion ? 'is-companion' : ''}">
-            ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
-            <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
-            <img src="${img}" class="poke-sprite">
-            <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
-            
-            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
-                <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
-                ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px; margin:0;" title="${ballKey}">` : ''}
-            </div>
-    `;
-
-    if (mode === 'collection' && isCaptured) {
-        html += `
-            <button class="btn-action btn-sell" onclick="sellPoke('${p._id}', '${p.name}', ${price})">Vendre (${price} 💰)</button>
-            ${!isShiny ? `<button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Miracle 🎲</button>` : ''}
-        `;
-    }
-    return html + `</div>`;
-}
-
-// --- CHARGEMENT DES DONNÉES ---
-async function loadPokedex() {
     try {
-        // Détecter le compagnon actuel via le profil
-        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        const userProfile = await profRes.json();
-        const companionId = userProfile.companionPokemon ? userProfile.companionPokemon._id : null;
-
-        const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
-        const data = await res.json();
-        
-        const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-        const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
-        const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
-        
-        const grids = {};
-        for(let i = 1; i <= 6; i++) {
-            grids[i] = document.getElementById(`grid-${i}`);
-            if(grids[i]) grids[i].innerHTML = '';
-        }
-
-        data.fullPokedex.forEach(p => {
-            let gen = 1;
-            if (p.pokedexId <= 151) gen = 1;
-            else if (p.pokedexId <= 251) gen = 2;
-            else if (p.pokedexId <= 386) gen = 3;
-            else if (p.pokedexId <= 493) gen = 4;
-            else if (p.pokedexId <= 649) gen = 5;
-            else gen = 6;
-
-            if (p.isCaptured) {
-                counts[gen]++;
-                p.isCompanion = (p._id === companionId);
-            }
-            if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
-        });
-
-        // Mise à jour onglets
-        const buttons = document.querySelectorAll('#gen-tabs button');
-        buttons.forEach((btn, index) => {
-            const genNum = index + 1;
-            btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
-        });
-
-        // Collection
-        const shinyGrid = document.getElementById('shiny-grid');
-        const dupGrid = document.getElementById('duplicate-grid');
-        if(shinyGrid) shinyGrid.innerHTML = '';
-        if(dupGrid) dupGrid.innerHTML = '';
-
-        const keepers = new Set();
-        data.capturedPokemonsList.forEach(p => {
-            p.isCompanion = (p._id === companionId);
-            if (p.isShiny) {
-                if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
-            } else {
-                if (keepers.has(p.pokedexId)) {
-                    if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
-                } else {
-                    keepers.add(p.pokedexId);
-                }
-            }
-        });
-    } catch (e) { console.error("Erreur Pokedex:", e); }
-}
-
-async function setCompanion(pokemonId) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
+        const res = await fetch(`${API_BASE_URL}/api/daily/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId, pokemonId: pokemonId })
+            body: JSON.stringify({ userId: currentUserId })
         });
-        if(res.ok) {
-            loadPokedex();
-            if(document.getElementById('profile-page').classList.contains('active')) loadProfile();
+        const data = await res.json();
+        
+        if (data.success) {
+            alert(`🎁 ${data.message}\nRécompenses : ${data.rewards}`);
+            loadProfile(); 
         } else {
-            const data = await res.json();
             alert(data.message);
+            if (btn) btn.disabled = false;
         }
-    } catch (e) { console.error("Erreur setCompanion:", e); }
+    } catch (e) {
+        console.error("Erreur Daily:", e);
+        alert("Erreur lors de la récupération du cadeau.");
+    }
 }
+
+// --- PROFIL ---
 
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if (!container) return;
 
     try {
-        // Vérifie que l'URL est correcte : /api/user/${currentUserId}
+        // Correction de l'URL pour correspondre à tes routes habituelles
         const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
         
-        // Si la réponse n'est pas OK (ex: 404), on arrête pour éviter l'erreur JSON
         if (!res.ok) {
-            throw new Error(`Erreur serveur: ${res.status}`);
+            throw new Error(`Erreur HTTP: ${res.status}`);
         }
 
         const user = await res.json();
 
-        // --- Logique du Compagnon ---
+        // 1. Logique du Compagnon
         let compHtml = '<p>Aucun compagnon</p>';
         if (user.companionPokemon) {
             const cp = user.companionPokemon;
@@ -200,7 +110,7 @@ async function loadProfile() {
             `;
         }
 
-        // --- Logique du bouton Daily ---
+        // 2. Logique du bouton Daily
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
 
@@ -209,6 +119,7 @@ async function loadProfile() {
                 <h3>Compagnon Actuel</h3>
                 ${compHtml}
             </div>
+
             <div class="stat-box" style="text-align:center;">
                 <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
                 <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
@@ -217,6 +128,7 @@ async function loadProfile() {
                     ${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}
                 </button>
             </div>
+
             <div class="stat-box">
                 <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
                 <div class="ball-inventory">
@@ -236,70 +148,97 @@ async function loadProfile() {
             </div>
         `;
 
+        // 3. Timer temps réel
         if (isOff) {
-            setupDailyTimer(user.lastDaily);
+            const timer = setInterval(() => {
+                const btn = document.getElementById('dailyBtn');
+                if (!btn) { clearInterval(timer); return; }
+
+                const updatedTime = getCooldownTime(user.lastDaily);
+                if (!updatedTime) {
+                    btn.disabled = false;
+                    btn.style.background = 'var(--highlight)';
+                    btn.style.cursor = 'pointer';
+                    btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
+                    clearInterval(timer);
+                } else {
+                    btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
+                }
+            }, 1000);
         }
 
     } catch (e) {
-        console.error("Erreur Profil:", e);
-        container.innerHTML = `<p style="color:red; text-align:center;">Impossible de charger le profil (Vérifiez la connexion au serveur).</p>`;
+        console.error("Erreur de chargement du profil:", e);
+        container.innerHTML = `<p style="color:red; text-align:center;">Erreur : Impossible de charger les données du profil.</p>`;
     }
 }
-async function loadShop() {
-    const container = document.getElementById('shopContainer');
-    if(!container) return;
+
+// --- AUTRES FONCTIONS (MAGASIN, POKEDEX, etc.) ---
+
+async function loadPokedex() {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/shop`);
-        const data = await res.json();
-        const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-        const getPrice = (keys) => {
-            for (let key of keys) if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
-            return "0";
-        };
+        const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        const user = await res.json();
+        for(let g=1; g<=6; g++) {
+            renderGrid(document.getElementById(`grid-${g}`), g, user);
+        }
+    } catch(e) { console.error(e); }
+}
 
-        const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
-        const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
-        const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
-        const apiKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
+function renderGrid(container, gen, user) {
+    if(!container) return;
+    container.innerHTML = '';
+    const bounds = { 1:[1,151], 2:[152,251], 3:[252,386], 4:[387,493], 5:[494,649], 6:[650,721] };
+    const [start, end] = bounds[gen];
+
+    for(let i=start; i<=end; i++) {
+        const hasIt = user.pokemons.some(p => p.pokedexId === i);
+        const card = document.createElement('div');
+        card.className = `pokedex-card ${hasIt ? '' : 'missing'}`;
+        card.innerHTML = `<img src="${POKEAPI_URL}${i}.png" class="poke-sprite"><p>#${i}</p>`;
+        container.appendChild(card);
+    }
+}
+
+async function loadCollection() {
+    const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+    const user = await res.json();
+    
+    const shinyGrid = document.getElementById('shiny-grid');
+    const dupGrid = document.getElementById('duplicate-grid');
+    shinyGrid.innerHTML = ''; dupGrid.innerHTML = '';
+
+    const sorted = [...user.pokemons].sort((a,b) => b.level - a.level);
+    const seen = {};
+
+    sorted.forEach(p => {
+        const isComp = user.companionPokemon && user.companionPokemon._id === p._id;
+        const card = document.createElement('div');
+        card.className = `pokedex-card ${p.isShiny ? 'is-shiny' : ''} ${isComp ? 'is-companion' : ''}`;
         
-        let shopHtml = '';
-        itemKeys.forEach((key, i) => {
-            const ballImg = key.replace('ball', '-ball') + '.png';
-            shopHtml += `
-                <div class="pokedex-card">
-                    <img src="${BALL_URL}${ballImg}" style="${imgStyle}">
-                    <h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3>
-                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
-                </div>
-            `;
-        });
-        container.innerHTML = shopHtml;
-    } catch (e) { console.error(e); }
+        card.innerHTML = `
+            <button class="companion-btn ${isComp ? 'active' : ''}" onclick="setCompanion('${p._id}')">❤</button>
+            <img src="${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png" class="poke-sprite">
+            <p><b>${p.name}</b></p>
+            <p>Niv. ${p.level}</p>
+            <button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Échange Miracle</button>
+        `;
+
+        if(p.isShiny || p.isFavorite) shinyGrid.appendChild(card);
+        else {
+            if(seen[p.pokedexId]) dupGrid.appendChild(card);
+            else { seen[p.pokedexId] = true; shinyGrid.appendChild(card); }
+        }
+    });
 }
 
-// --- ACTIONS ---
-async function sellPoke(id, name, price) {
-    if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
-    const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
+async function setCompanion(id) {
+    await fetch(`${API_BASE_URL}/api/companion/set`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
+        body: JSON.stringify({ userId: currentUserId, pokemonId: id })
     });
-    if(res.ok) loadPokedex();
-}
-
-async function sellAllDuplicates() {
-    if(!confirm("Vendre tous tes doublons non-shiny ?")) return;
-    const res = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId })
-    });
-    const data = await res.json();
-    alert(data.message);
-    if(res.ok) loadPokedex();
+    loadCollection();
 }
 
 async function wonderTrade(id, name) {
@@ -314,8 +253,26 @@ async function wonderTrade(id, name) {
         document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
         document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
         document.getElementById('trade-modal').style.display = 'flex';
-        loadPokedex();
+        loadCollection();
     }
+}
+
+async function loadShop() {
+    const items = [
+        { key: 'pokeballs', name: 'Poké Ball', price: 200, img: 'poke-ball.png' },
+        { key: 'greatballs', name: 'Super Ball', price: 600, img: 'great-ball.png' },
+        { key: 'ultraballs', name: 'Hyper Ball', price: 1200, img: 'ultra-ball.png' }
+    ];
+    const container = document.getElementById('shopContainer');
+    container.innerHTML = items.map(it => `
+        <div class="pokedex-card">
+            <img src="${BALL_URL}${it.img}" style="width:50px;">
+            <h3>${it.name}</h3>
+            <p>${it.price} 💰</p>
+            <input type="number" id="qty-${it.key}" value="1" min="1" style="width:50px; margin-bottom:10px; background:#161b22; color:white; border:1px solid #30363d; border-radius:5px; text-align:center;">
+            <button class="btn-action btn-trade" onclick="buyItem('${it.key}', document.getElementById('qty-${it.key}').value)">Acheter</button>
+        </div>
+    `).join('');
 }
 
 async function buyItem(key, qty) {
@@ -329,69 +286,23 @@ async function buyItem(key, qty) {
         });
         const data = await res.json();
         if (!res.ok) alert("Erreur : " + (data.message || "Achat impossible"));
-        else { alert(data.message); loadShop(); loadProfile(); }
+        else {
+            alert(`Achat réussi : ${quantity} ${key} !`);
+            loadShop();
+        }
     } catch (e) { console.error(e); }
 }
 
-function setupDailyTimer(lastDailyDate) {
-    const timer = setInterval(() => {
-        const btn = document.getElementById('dailyBtn');
-        if (!btn) { clearInterval(timer); return; }
-
-        const updatedTime = getCooldownTime(lastDailyDate);
-        if (!updatedTime) {
-            btn.disabled = false;
-            btn.style.background = 'var(--highlight)';
-            btn.style.cursor = 'pointer';
-            btn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU';
-            clearInterval(timer);
-        } else {
-            btn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`;
-        }
-    }, 1000);
+function filterGen(g) {
+    document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`gen-${g}`).classList.add('active');
+    document.querySelectorAll('.gen-nav button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
 }
 
-// Calcule le temps restant au format HH:MM:SS
-function getCooldownTime(lastDailyDate) {
-    if (!lastDailyDate) return null;
-    const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    const now = new Date();
-    const lastDaily = new Date(lastDailyDate);
-    const timeLeft = GIFT_COOLDOWN_MS - (now - lastDaily);
-    
-    if (timeLeft <= 0) return null;
-
-    const hours = Math.floor(timeLeft / 3600000);
-    const minutes = Math.floor((timeLeft % 3600000) / 60000);
-    const seconds = Math.floor((timeLeft % 60000) / 1000);
-    return `${hours}h ${minutes}m ${seconds}s`;
+function logout() {
+    localStorage.clear();
+    window.location.reload();
 }
 
-// Appelle l'API pour récupérer le cadeau
-async function claimDaily() {
-    const btn = document.getElementById('dailyBtn');
-    if (btn) btn.disabled = true;
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/daily/claim`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            alert(`🎁 ${data.message}\n${data.rewards}`);
-            loadProfile(); // Rafraîchit tout le profil
-        } else {
-            alert(data.message);
-        }
-    } catch (e) {
-        alert("Erreur lors de la récupération.");
-    }
-}
-
-function logout() { localStorage.clear(); location.reload(); }
-document.addEventListener('DOMContentLoaded', initializeApp);
-
-
+window.onload = initializeApp;
