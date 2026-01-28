@@ -124,88 +124,120 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DONNÉES ---
 async function loadPokedex() {
-    if (!currentUserId) return;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        console.log("Tentative de mise à jour du compagnon...");
         
-        // Sécurité : évite l'erreur "Unexpected token <" si l'utilisateur n'existe pas (404)
-        if (!res.ok) {
-            console.error(`Erreur ${res.status}: Impossible de charger le profil.`);
-            return;
-        }
+        // 1. Récupération du profil
+        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const userProfile = await profRes.json();
+        
+        // --- BLOC COMPAGNON (LE CŒUR DU PROBLÈME) ---
+        const comp = userProfile.companionPokemon;
+        const companionId = comp ? comp._id : null;
 
-        const user = await res.json();
+        if (comp) {
+            const compImg = document.getElementById('companion-img');
+            const compName = document.getElementById('companion-name');
 
-        // --- GESTION DU COMPAGNON (FIX MÉGA) ---
-        if (user.companion) {
-            const comp = user.companion;
-            const isShiny = comp.isShiny;
-            const isMega = comp.isMega || (comp.name && comp.name.toLowerCase().includes('mega'));
-            
-            let compImgUrl = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+            if (compImg) {
+                // Image par défaut (PokeAPI fixe)
+                let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-            if (isMega) {
-                // Nettoyage pour Showdown
-                let nameClean = comp.name.toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-                    .replace('mega-', '').replace('mega ', '').trim();
+                // LOGIQUE MÉGA FORCEE
+                // On vérifie si le flag isMega est vrai OU si le nom contient "Méga"
+                if (comp.isMega === true || comp.name.toLowerCase().includes('méga')) {
+                    const translations = { 
+                        "ectoplasma": "gengar", "dracaufeu": "charizard", 
+                        "tortank": "blastoise", "florizarre": "venusaur",
+                        "lucario": "lucario", "alakazam": "alakazam",
+                        "mewtwo": "mewtwo", "rayquaza": "rayquaza"
+                    };
 
-                // Traductions FR -> EN pour Showdown
-                const translations = {
-                    "ectoplasma": "gengar", "dracaufeu": "charizard", "tortank": "blastoise", 
-                    "florizarre": "venusaur", "leviator": "gyarados", "alakazam": "alakazam",
-                    "lucario": "lucario", "mewtwo": "mewtwo", "rayquaza": "rayquaza",
-                    "cizayox": "scizor", "tyranocif": "tyranitar", "gardevoir": "gardevoir"
+                    let baseName = comp.name.toLowerCase()
+                        .replace(/[éèêë]/g, 'e')
+                        .replace('méga-', '')
+                        .replace('mega-', '')
+                        .trim();
+                    
+                    const englishName = translations[baseName] || baseName;
+                    // On construit l'URL du GIF animé
+                    spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
+                }
+
+                console.log("Nouvelle URL image compagnon :", spriteUrl);
+                
+                // INJECTION DANS LE HTML (L'étape qui manquait !)
+                compImg.src = spriteUrl; 
+                
+                // Si Showdown ne répond pas, on remet l'image de base
+                compImg.onerror = function() {
+                    console.warn("Image Showdown introuvable, repli sur PokeAPI");
+                    this.onerror = null;
+                    this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
                 };
-
-                const finalName = translations[nameClean] || nameClean;
-                compImgUrl = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${finalName}-mega.gif`;
             }
-
-            document.getElementById('companion-img').src = compImgUrl;
-            document.getElementById('companion-name').textContent = comp.name;
+            if (compName) compName.innerText = comp.name.toUpperCase();
         }
 
-        // Mise à jour ressources
-        document.getElementById('user-money').textContent = user.money || 0;
-        document.getElementById('count-pokeballs').textContent = user.pokeballs || 0;
-        document.getElementById('count-superballs').textContent = user.superballs || 0;
-        document.getElementById('count-hyperballs').textContent = user.hyperballs || 0;
-        document.getElementById('count-masterballs').textContent = user.masterballs || 0;
-        document.getElementById('count-ellbaballs').textContent = user.ellbaballs || 0;
+        // --- 2. RÉCUPÉRATION DU RESTE DES DONNÉES ---
+        const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+        const data = await res.json();
+        
+        const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
+        const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
+        
+        // Reset des grilles par génération
+        for(let i = 1; i <= 6; i++) {
+            const grid = document.getElementById(`grid-${i}`);
+            if(grid) grid.innerHTML = '';
+        }
 
-        const pokedexGrid = document.getElementById('pokedex-grid');
-        const megaGrid = document.getElementById('mega-grid');
-        const duplicateGrid = document.getElementById('duplicate-grid');
+        // Remplissage Pokédex
+        data.fullPokedex.forEach(p => {
+            let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
+            if (p.isCaptured) {
+                counts[gen]++;
+                p.isCompanion = (p._id === companionId);
+            }
+            const grid = document.getElementById(`grid-${gen}`);
+            if (grid) grid.innerHTML += createCard(p, 'pokedex');
+        });
 
-        pokedexGrid.innerHTML = '';
-        megaGrid.innerHTML = '';
-        duplicateGrid.innerHTML = '';
+        // Mise à jour des onglets
+        document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
+            const g = i + 1;
+            btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
+        });
 
-        if (user.pokemonCollection && user.pokemonCollection.length > 0) {
-            const counts = {};
-            user.pokemonCollection.forEach(p => {
-                if (p.isMega) {
-                    megaGrid.appendChild(createCard(p, false));
+        // Grilles de collection
+        const sGrid = document.getElementById('shiny-grid');
+        const mGrid = document.getElementById('mega-grid'); 
+        const dGrid = document.getElementById('duplicate-grid');
+        if(sGrid) sGrid.innerHTML = ''; if(mGrid) mGrid.innerHTML = ''; if(dGrid) dGrid.innerHTML = '';
+
+        const keepers = new Set();
+        data.capturedPokemonsList.forEach(p => {
+            p.isCompanion = (p._id === companionId);
+            if (p.isMega === true) {
+                if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
+            } else if (p.isShiny) {
+                if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
+            } else {
+                if (keepers.has(p.pokedexId)) {
+                    if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
                 } else {
-                    pokedexGrid.appendChild(createCard(p, false));
+                    keepers.add(p.pokedexId);
                 }
+            }
+        });
 
-                const key = `${p.pokedexId}-${p.isShiny}-${p.isMega}`;
-                counts[key] = (counts[key] || 0) + 1;
-                if (counts[key] > 1) {
-                    duplicateGrid.appendChild(createCard(p, true));
-                }
-            });
-        } else {
-            pokedexGrid.innerHTML = '<p>Aucun Pokémon pour le moment.</p>';
-        }
-    } catch (err) {
-        console.error('Erreur loadPokedex:', err);
+    } catch (e) { 
+        console.error("Erreur critique loadPokedex :", e); 
     }
 }
+
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -414,9 +446,6 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
-
 
 
 
