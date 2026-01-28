@@ -48,13 +48,6 @@
         .page-section { display: none; animation: fadeIn 0.3s ease; }
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Correction pour l'image du compagnon */
-        #companion-img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-        }
     </style>
 </head>
 <body>
@@ -73,7 +66,7 @@
             </div>
 
             <div id="logged-in-user" style="display: none; align-items: center; gap: 15px;">
-                <img id="companion-img" src="" alt="Compagnon">
+                <img id="companion-img" src="" alt="Compagnon" style="width: 80px; height: 80px; object-fit: contain;">
                 <div style="display: flex; flex-direction: column;">
                     <span id="display-username" style="font-weight: bold; font-size: 1.1em;"></span>
                     <span id="companion-name" style="color: var(--highlight); font-size: 0.9em; font-weight: bold;"></span>
@@ -111,7 +104,7 @@
             <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
 
             <h2 style="margin-top: 60px; color: #a333c8; display: flex; align-items: center; gap: 10px;">🌀 Mes Pokémon Méga</h2>
-            <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
+               <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
             
             <h2>📦 Mes Doublons & Échanges</h2>
             <div id="duplicate-grid" class="pokedex-grid"></div>
