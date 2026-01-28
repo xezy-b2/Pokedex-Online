@@ -124,10 +124,9 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DES DONNÉES ---
-// --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
     try {
+        // 1. Récupérer le profil pour avoir le compagnon actuel
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         
@@ -142,7 +141,7 @@ async function loadPokedex() {
             // Image par défaut (PokeAPI)
             let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-            // SI C'EST UN MÉGA : On utilise l'URL Showdown (comme dans ta commande Discord)
+            // SI C'EST UN MÉGA : On force l'URL Showdown (comme sur Discord)
             if (comp.isMega === true) {
                 const translations = { 
                     "ectoplasma": "gengar", 
@@ -151,17 +150,24 @@ async function loadPokedex() {
                     "florizarre": "venusaur",
                     "lucario": "lucario",
                     "alakazam": "alakazam",
-                    "mewtwo": "mewtwo"
+                    "mewtwo": "mewtwo",
+                    "rayquaza": "rayquaza"
                 };
-                let baseName = comp.name.toLowerCase().replace('méga-', '').replace('mega-', '').trim();
-                const englishName = translations[baseName] || baseName;
 
+                // Nettoyage du nom pour Showdown (minuscules, pas de "méga-", pas d'accents)
+                let baseName = comp.name.toLowerCase()
+                    .replace(/[éèêë]/g, 'e')
+                    .replace('méga-', '')
+                    .replace('mega-', '')
+                    .trim();
+                
+                const englishName = translations[baseName] || baseName;
                 spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
             }
 
             if (compImg) {
                 compImg.src = spriteUrl;
-                // Si le GIF Showdown ne charge pas (404), on remet l'image PokeAPI
+                // Si le GIF Showdown échoue, on revient à l'image fixe
                 compImg.onerror = function() {
                     this.onerror = null;
                     this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
@@ -170,7 +176,7 @@ async function loadPokedex() {
             if (compName) compName.innerText = comp.name.toUpperCase();
         }
 
-        // --- CHARGEMENT DES GRILLES DU POKEDEX ---
+        // 2. Récupérer les données de la collection
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
@@ -184,6 +190,7 @@ async function loadPokedex() {
             if(grids[i]) grids[i].innerHTML = '';
         }
 
+        // 3. Remplissage des grilles par génération
         data.fullPokedex.forEach(p => {
             let gen = 1;
             if (p.pokedexId <= 151) gen = 1;
@@ -200,13 +207,14 @@ async function loadPokedex() {
             if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
+        // Mise à jour des textes des onglets
         const buttons = document.querySelectorAll('#gen-tabs button');
         buttons.forEach((btn, index) => {
             const genNum = index + 1;
             btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
         });
 
-        // --- GESTION DES GRILLES DE COLLECTION ---
+        // 4. Gestion des sections Collection (Shiny, Méga, Doublons)
         const shinyGrid = document.getElementById('shiny-grid');
         const megaGrid = document.getElementById('mega-grid'); 
         const dupGrid = document.getElementById('duplicate-grid');
@@ -219,7 +227,7 @@ async function loadPokedex() {
         data.capturedPokemonsList.forEach(p => {
             p.isCompanion = (p._id === companionId);
             
-            // PRIORITÉ 1 : Méga-Évolutions (pour ne pas qu'ils finissent en doublons)
+            // PRIORITÉ 1 : Méga-Évolutions
             if (p.isMega === true) {
                 if(megaGrid) megaGrid.innerHTML += createCard(p, 'collection');
             } 
@@ -227,18 +235,20 @@ async function loadPokedex() {
             else if (p.isShiny) {
                 if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
             } 
-            // PRIORITÉ 3 : Doublons et reste
+            // PRIORITÉ 3 : Doublons
             else {
                 if (keepers.has(p.pokedexId)) {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
+                    // On ne l'affiche pas dans les doublons car c'est le premier exemplaire
                 }
             }
         });
-    } catch (e) { console.error("Erreur Pokedex:", e); }
+    } catch (e) { 
+        console.error("Erreur lors du chargement du Pokedex:", e); 
+    }
 }
-
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -443,6 +453,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
