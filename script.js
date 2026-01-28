@@ -124,49 +124,43 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
+// --- CHARGEMENT DONNÉES ---
 async function loadPokedex() {
     if (!currentUserId) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
         
-        // --- SÉCURITÉ : Vérifie si le serveur répond bien du JSON ---
+        // Sécurité : évite l'erreur "Unexpected token <" si l'utilisateur n'existe pas (404)
         if (!res.ok) {
-            console.error(`Erreur serveur (${res.status}): L'utilisateur n'existe probablement pas ou la route est incorrecte.`);
+            console.error(`Erreur ${res.status}: Impossible de charger le profil.`);
             return;
         }
 
         const user = await res.json();
 
-        // --- 1. GESTION DU COMPAGNON (FIX MÉGA) ---
+        // --- GESTION DU COMPAGNON (FIX MÉGA) ---
         if (user.companion) {
             const comp = user.companion;
             const isShiny = comp.isShiny;
-            // On considère que c'est un méga si le flag est vrai OU si "mega" est dans le nom
             const isMega = comp.isMega || (comp.name && comp.name.toLowerCase().includes('mega'));
             
-            // Image par défaut (PokeAPI)
             let compImgUrl = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-            // Si c'est un Méga, on construit l'URL pour Showdown
             if (isMega) {
-                // Nettoyage du nom pour Showdown (on enlève les accents et le mot "mega")
+                // Nettoyage pour Showdown
                 let nameClean = comp.name.toLowerCase()
                     .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-                    .replace('mega-', '')
-                    .replace('mega ', '')
-                    .trim();
+                    .replace('mega-', '').replace('mega ', '').trim();
 
-                // Traductions obligatoires pour Showdown (FR -> EN)
+                // Traductions FR -> EN pour Showdown
                 const translations = {
                     "ectoplasma": "gengar", "dracaufeu": "charizard", "tortank": "blastoise", 
                     "florizarre": "venusaur", "leviator": "gyarados", "alakazam": "alakazam",
                     "lucario": "lucario", "mewtwo": "mewtwo", "rayquaza": "rayquaza",
-                    "cizayox": "scizor", "tyranocif": "tyranitar", "gardevoir": "gardevoir",
-                    "demeteros": "landorus", "fulguris": "thundurus", "boreas": "tornadus"
+                    "cizayox": "scizor", "tyranocif": "tyranitar", "gardevoir": "gardevoir"
                 };
 
                 const finalName = translations[nameClean] || nameClean;
-                // Utilisation du sprite animé .gif de Showdown
                 compImgUrl = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${finalName}-mega.gif`;
             }
 
@@ -174,57 +168,44 @@ async function loadPokedex() {
             document.getElementById('companion-name').textContent = comp.name;
         }
 
-        // --- 2. MISE À JOUR DES RESSOURCES ---
-        const fields = {
-            'user-money': user.money,
-            'count-pokeballs': user.pokeballs,
-            'count-superballs': user.superballs,
-            'count-hyperballs': user.hyperballs,
-            'count-masterballs': user.masterballs,
-            'count-ellbaballs': user.ellbaballs
-        };
+        // Mise à jour ressources
+        document.getElementById('user-money').textContent = user.money || 0;
+        document.getElementById('count-pokeballs').textContent = user.pokeballs || 0;
+        document.getElementById('count-superballs').textContent = user.superballs || 0;
+        document.getElementById('count-hyperballs').textContent = user.hyperballs || 0;
+        document.getElementById('count-masterballs').textContent = user.masterballs || 0;
+        document.getElementById('count-ellbaballs').textContent = user.ellbaballs || 0;
 
-        for (const [id, value] of Object.entries(fields)) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value || 0;
-        }
-
-        // --- 3. AFFICHAGE DES GRILLES (POKÉDEX, MÉGAS, DOUBLONS) ---
         const pokedexGrid = document.getElementById('pokedex-grid');
         const megaGrid = document.getElementById('mega-grid');
         const duplicateGrid = document.getElementById('duplicate-grid');
 
-        if (pokedexGrid) pokedexGrid.innerHTML = '';
-        if (megaGrid) megaGrid.innerHTML = '';
-        if (duplicateGrid) duplicateGrid.innerHTML = '';
+        pokedexGrid.innerHTML = '';
+        megaGrid.innerHTML = '';
+        duplicateGrid.innerHTML = '';
 
         if (user.pokemonCollection && user.pokemonCollection.length > 0) {
             const counts = {};
-
             user.pokemonCollection.forEach(p => {
-                // Affichage dans Pokedex Normal ou Méga
                 if (p.isMega) {
-                    if (megaGrid) megaGrid.appendChild(createCard(p, false));
+                    megaGrid.appendChild(createCard(p, false));
                 } else {
-                    if (pokedexGrid) pokedexGrid.appendChild(createCard(p, false));
+                    pokedexGrid.appendChild(createCard(p, false));
                 }
 
-                // Gestion des doublons
                 const key = `${p.pokedexId}-${p.isShiny}-${p.isMega}`;
                 counts[key] = (counts[key] || 0) + 1;
-                if (counts[key] > 1 && duplicateGrid) {
+                if (counts[key] > 1) {
                     duplicateGrid.appendChild(createCard(p, true));
                 }
             });
-        } else if (pokedexGrid) {
+        } else {
             pokedexGrid.innerHTML = '<p>Aucun Pokémon pour le moment.</p>';
         }
-
     } catch (err) {
-        console.error('Erreur loadPokedex critique:', err);
+        console.error('Erreur loadPokedex:', err);
     }
 }
-
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -433,6 +414,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
