@@ -63,16 +63,31 @@ function createCard(p, mode = 'pokedex') {
     const isCompanion = p.isCompanion === true;
     const price = calculatePrice(p);
     
-    // LOGIQUE IMAGE
+    // --- LOGIQUE IMAGE ---
+    // Image par défaut (PokeAPI)
     let img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
     
+    // Si c'est un Méga, on construit l'URL Showdown comme dans ta commande Discord
     if (isMega) {
-        // On enlève "MÉGA-" ou "MEGA-" pour l'URL Showdown
-        // ex: "MÉGA-ECTOPLASMA" -> "gengar" (nom anglais attendu par Showdown)
-        // Note: Si ton p.name est "MÉGA-ECTOPLASMA", il faudra peut-être mapper vers le nom anglais.
-        // Mais si p.name est "gengar", ce code fonctionne :
-        const cleanName = p.name.toLowerCase().replace('méga-', '').replace('mega-', '').trim();
-        img = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${cleanName}-mega.gif`;
+        // On récupère le nom de base en minuscule et sans "Méga-"
+        let baseName = p.name.toLowerCase()
+            .replace('méga-', '')
+            .replace('mega-', '')
+            .trim();
+            
+        // Mapping des noms français vers anglais pour Showdown (essentiel pour éviter les 404)
+        const translations = {
+            "ectoplasma": "gengar",
+            "dracaufeu": "charizard",
+            "tortank": "blastoise",
+            "florizarre": "venusaur",
+            "mewtwo": "mewtwo",
+            "lucario": "lucario",
+            "alakazam": "alakazam"
+        };
+        
+        const englishName = translations[baseName] || baseName;
+        img = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
     }
     
     const ballKey = p.capturedWith || 'pokeball';
@@ -82,11 +97,16 @@ function createCard(p, mode = 'pokedex') {
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
+            
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
             
             ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
             
-            <img src="${img}" class="poke-sprite" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
+            <img src="${img}" 
+                 class="poke-sprite" 
+                 onerror="this.onerror=null; this.src='${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" 
+                 style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
+            
             <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
@@ -384,6 +404,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
