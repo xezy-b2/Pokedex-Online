@@ -14,6 +14,7 @@ const pokemonSchema = new mongoose.Schema({
     },
     caughtAt: { type: Date, default: Date.now },
     isShiny: { type: Boolean, default: false },
+    isMega: { type: Boolean, default: false },
     form: { type: String, default: null }
 });
 
