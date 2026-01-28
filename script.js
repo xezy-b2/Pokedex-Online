@@ -126,26 +126,26 @@ function createCard(p, mode = 'pokedex') {
 
 async function loadPokedex() {
     try {
-        console.log("Démarrage du chargement du Pokédex...");
-
-        // 1. Récupérer le profil
+        console.log("Tentative de mise à jour du compagnon...");
+        
+        // 1. Récupération du profil
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         
-        // --- MISE À JOUR DU COMPAGNON (ZONE EN HAUT DU SITE) ---
+        // --- BLOC COMPAGNON (LE CŒUR DU PROBLÈME) ---
         const comp = userProfile.companionPokemon;
         const companionId = comp ? comp._id : null;
 
         if (comp) {
-            console.log("Compagnon détecté :", comp.name, "Mega:", comp.isMega);
             const compImg = document.getElementById('companion-img');
             const compName = document.getElementById('companion-name');
 
             if (compImg) {
-                // Image par défaut (PokeAPI)
+                // Image par défaut (PokeAPI fixe)
                 let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-                // Logique Méga
+                // LOGIQUE MÉGA FORCEE
+                // On vérifie si le flag isMega est vrai OU si le nom contient "Méga"
                 if (comp.isMega === true || comp.name.toLowerCase().includes('méga')) {
                     const translations = { 
                         "ectoplasma": "gengar", "dracaufeu": "charizard", 
@@ -161,17 +161,18 @@ async function loadPokedex() {
                         .trim();
                     
                     const englishName = translations[baseName] || baseName;
+                    // On construit l'URL du GIF animé
                     spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
                 }
 
-                console.log("Tentative de chargement de l'image :", spriteUrl);
+                console.log("Nouvelle URL image compagnon :", spriteUrl);
                 
-                // FORCE LE CHANGEMENT
+                // INJECTION DANS LE HTML (L'étape qui manquait !)
                 compImg.src = spriteUrl; 
                 
-                // Fallback si 404
+                // Si Showdown ne répond pas, on remet l'image de base
                 compImg.onerror = function() {
-                    console.error("Erreur de chargement sur Showdown, retour PokeAPI");
+                    console.warn("Image Showdown introuvable, repli sur PokeAPI");
                     this.onerror = null;
                     this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
                 };
@@ -179,7 +180,7 @@ async function loadPokedex() {
             if (compName) compName.innerText = comp.name.toUpperCase();
         }
 
-        // 2. Reste de la fonction (Grilles)
+        // --- 2. RÉCUPÉRATION DU RESTE DES DONNÉES ---
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
@@ -187,11 +188,13 @@ async function loadPokedex() {
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
         
+        // Reset des grilles par génération
         for(let i = 1; i <= 6; i++) {
             const grid = document.getElementById(`grid-${i}`);
             if(grid) grid.innerHTML = '';
         }
 
+        // Remplissage Pokédex
         data.fullPokedex.forEach(p => {
             let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
             if (p.isCaptured) {
@@ -202,10 +205,13 @@ async function loadPokedex() {
             if (grid) grid.innerHTML += createCard(p, 'pokedex');
         });
 
+        // Mise à jour des onglets
         document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
-            btn.innerHTML = `Gen ${i+1} (${genNames[i+1]}) <br><small>${counts[i+1]}/${totals[i+1]}</small>`;
+            const g = i + 1;
+            btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
+        // Grilles de collection
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
@@ -226,7 +232,10 @@ async function loadPokedex() {
                 }
             }
         });
-    } catch (e) { console.error("ERREUR CRITIQUE:", e); }
+
+    } catch (e) { 
+        console.error("Erreur critique loadPokedex :", e); 
+    }
 }
 
 async function setCompanion(pokemonId) {
@@ -433,6 +442,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
