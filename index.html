@@ -49,12 +49,11 @@
         .page-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Style spécifique pour l'image du compagnon en haut */
+        /* Correction pour l'image du compagnon */
         #companion-img {
             width: 80px;
             height: 80px;
             object-fit: contain;
-            border-radius: 10px;
         }
     </style>
 </head>
@@ -112,7 +111,7 @@
             <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
 
             <h2 style="margin-top: 60px; color: #a333c8; display: flex; align-items: center; gap: 10px;">🌀 Mes Pokémon Méga</h2>
-               <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
+            <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
             
             <h2>📦 Mes Doublons & Échanges</h2>
             <div id="duplicate-grid" class="pokedex-grid"></div>
