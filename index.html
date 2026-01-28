@@ -18,6 +18,14 @@
         
         header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
         
+        /* Conteneur compagnon dans le header */
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        #companion-img {
+            width: 70px; height: 70px; object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+            animation: floating 3s ease-in-out infinite;
+        }
+
         nav { display: none; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         nav button { background: var(--card-bg); color: var(--text-sec); border: 1px solid var(--border); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         nav button.active { background: var(--discord); color: white; }
@@ -32,15 +40,9 @@
         .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord); }
         .pokedex-card img.poke-sprite { width: 90px; height: 90px; margin: 0 auto; image-rendering: pixelated; transition: 0.3s; }
 
-        /* --- ANIMATIONS COMPAGNON --- */
-        .is-companion img.poke-sprite {
-            animation: floating 3s ease-in-out infinite;
-            filter: drop-shadow(0 5px 15px rgba(88, 101, 242, 0.4));
-        }
-
         @keyframes floating {
             0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
             100% { transform: translateY(0px); }
         }
 
@@ -51,10 +53,7 @@
             filter: grayscale(1) opacity(0.5); 
         }
         .companion-btn:hover { filter: grayscale(0) opacity(1); transform: scale(1.2); }
-        .companion-btn.active { 
-            filter: grayscale(0) opacity(1); 
-            animation: heartBeat 1.5s infinite; 
-        }
+        .companion-btn.active { filter: grayscale(0) opacity(1); animation: heartBeat 1.5s infinite; }
 
         @keyframes heartBeat {
             0% { transform: scale(1); }
@@ -64,8 +63,6 @@
             60% { transform: scale(1); }
         }
 
-        .fav-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; transition: 0.2s; filter: grayscale(1); }
-        .fav-btn.active { filter: grayscale(0); transform: scale(1.1); }
         .is-shiny { border-color: var(--shiny) !important; box-shadow: 0 0 10px rgba(241, 224, 90, 0.2); }
         .missing { opacity: 0.3; filter: grayscale(1); }
 
@@ -73,20 +70,6 @@
         .btn-sell { background: rgba(218, 54, 51, 0.2); color: #ff7b72; }
         .btn-sell:hover { background: var(--red-poke); color: white; }
         .btn-trade { background: rgba(88, 101, 242, 0.2); color: #7982f2; }
-
-        /* STYLE BOUTON DAILY */
-        #dailyBtn {
-            transition: transform 0.2s, filter 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        #dailyBtn:hover:not(:disabled) {
-            transform: scale(1.05);
-            filter: brightness(1.1);
-        }
-        #dailyBtn:disabled {
-            filter: grayscale(0.5);
-            opacity: 0.7;
-        }
 
         .page-section { display: none; }
         .page-section.active { display: block; }
@@ -97,49 +80,16 @@
         .ball-inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center; }
         .ball-item img { width: 35px; }
 
-        /* Badge Méga */
-.mega-badge {
-    background: linear-gradient(45deg, #ff00ff, #8e44ad);
-    color: white !important;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 800;
-    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
-}
-
-/* Carte Méga-Évolution */
-.pokemon-card.is-mega {
-    border: 2px solid #ff00ff !important;
-    background: linear-gradient(145deg, #161b22, #2d1b2d) !important;
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
-}
-
-/* Animation de brillance pour les Méga */
-.is-mega img {
-    filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.6));
-}
-
-        /* Style pour l'image du compagnon en haut */
-#companion-img {
-    width: 80px; /* Ou 100px selon ta préférence */
-    height: 80px;
-    object-fit: contain; /* Très important pour ne pas écraser le Pokémon */
-    image-rendering: auto; /* Pour que le GIF soit fluide */
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-}
-
-/* Optionnel : Un petit effet brillant quand c'est un Méga */
-#companion-img[src*="showdown"] {
-    filter: drop-shadow(0 0 10px #ff00ff);
-    transform: scale(1.1);
-}
+        .is-mega { border: 2px solid #ff00ff !important; box-shadow: 0 0 15px rgba(255, 0, 255, 0.2); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Pokédex Online</h1>
+            <div class="header-left">
+                <img id="companion-img" src="" style="display:none;">
+                <h1>Pokédex Online</h1>
+            </div>
             <div id="auth-zone">
                 <div id="logged-out-user"><a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" style="color:white; text-decoration:none; background:var(--discord); padding:10px 20px; border-radius:10px; font-weight:bold;">Connexion Discord</a></div>
                 <div id="logged-in-user" style="display:none;"><span id="display-username" style="color:var(--shiny); font-weight:800; margin-right:15px;"></span><button onclick="logout()" style="background:var(--red-poke); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">Quitter</button></div>
@@ -155,12 +105,12 @@
 
         <div id="pokedex-page" class="page-section active">
             <div class="gen-nav" id="gen-tabs">
-                <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
-                <button onclick="filterGen(2)">Gen 2 (Johto)</button>
-                <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
-                <button onclick="filterGen(4)">Gen 4 (Sinnoh)</button>
-                <button onclick="filterGen(5)">Gen 5 (Unys)</button>
-                <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
+                <button class="active" onclick="filterGen(1)">Gen 1</button>
+                <button onclick="filterGen(2)">Gen 2</button>
+                <button onclick="filterGen(3)">Gen 3</button>
+                <button onclick="filterGen(4)">Gen 4</button>
+                <button onclick="filterGen(5)">Gen 5</button>
+                <button onclick="filterGen(6)">Gen 6</button>
             </div>
             
             <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
@@ -172,21 +122,19 @@
         </div>
 
         <div id="collection-page" class="page-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: var(--shiny); margin: 0;">✨ Favoris & Chromatiques</h2>
-            </div>
+            <h2 style="color: var(--shiny);">✨ Favoris & Chromatiques</h2>
             <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
 
             <h2>🧬 Ma Collection Méga</h2>
-               <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
+            <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
             
-            <h2>📦 Mes Doublons & Échanges</h2>
+            <h2>📦 Mes Doublons</h2>
             <div id="duplicate-grid" class="pokedex-grid"></div>
         </div>
 
-<div id="profile-page" class="page-section">
-    <div id="profileContainer"></div>
-</div>
+        <div id="profile-page" class="page-section">
+            <div id="profileContainer"></div>
+        </div>
 
         <div id="shop-page" class="page-section">
             <h2>Marché Pokémon</h2>
@@ -197,19 +145,11 @@
     <div id="trade-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
         <div style="background:var(--header-bg); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--shiny); max-width:400px; width:90%;">
             <h2 style="color:var(--shiny)">Échange Miracle Réussi !</h2>
-            <img id="modal-img" src="" style="width:150px; image-rendering: pixelated;">
-            <p id="modal-text" style="font-size:1.2em;"></p>
+            <img id="modal-img" src="" style="width:150px;">
+            <p id="modal-text"></p>
             <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; width:100%; font-weight:bold; margin-top:15px;">Génial !</button>
         </div>
     </div>
     <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
