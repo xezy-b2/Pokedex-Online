@@ -96,6 +96,29 @@
         .stat-box { background: var(--header-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
         .ball-inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center; }
         .ball-item img { width: 35px; }
+
+        /* Badge Méga */
+.mega-badge {
+    background: linear-gradient(45deg, #ff00ff, #8e44ad);
+    color: white !important;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+/* Carte Méga-Évolution */
+.pokemon-card.is-mega {
+    border: 2px solid #ff00ff !important;
+    background: linear-gradient(145deg, #161b22, #2d1b2d) !important;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+}
+
+/* Animation de brillance pour les Méga */
+.is-mega img {
+    filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.6));
+}
     </style>
 </head>
 <body>
@@ -164,3 +187,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
