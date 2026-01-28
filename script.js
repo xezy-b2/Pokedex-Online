@@ -132,52 +132,51 @@ async function loadPokedex() {
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         
-        // --- BLOC COMPAGNON (LE CŒUR DU PROBLÈME) ---
+        // --- BLOC COMPAGNON ---
         const comp = userProfile.companionPokemon;
         const companionId = comp ? comp._id : null;
 
-        if (comp) {
-            const compImg = document.getElementById('companion-img');
-            const compName = document.getElementById('companion-name');
+        const compImg = document.getElementById('companion-img');
+        const compName = document.getElementById('companion-name');
 
-            if (compImg) {
-                // Image par défaut (PokeAPI fixe)
-                let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+        if (comp && compImg) {
+            // Image par défaut (PokeAPI)
+            let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-                // LOGIQUE MÉGA FORCEE
-                // On vérifie si le flag isMega est vrai OU si le nom contient "Méga"
-                if (comp.isMega === true || comp.name.toLowerCase().includes('méga')) {
-                    const translations = { 
-                        "ectoplasma": "gengar", "dracaufeu": "charizard", 
-                        "tortank": "blastoise", "florizarre": "venusaur",
-                        "lucario": "lucario", "alakazam": "alakazam",
-                        "mewtwo": "mewtwo", "rayquaza": "rayquaza"
-                    };
-
-                    let baseName = comp.name.toLowerCase()
-                        .replace(/[éèêë]/g, 'e')
-                        .replace('méga-', '')
-                        .replace('mega-', '')
-                        .trim();
-                    
-                    const englishName = translations[baseName] || baseName;
-                    // On construit l'URL du GIF animé
-                    spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
-                }
-
-                console.log("Nouvelle URL image compagnon :", spriteUrl);
-                
-                // INJECTION DANS LE HTML (L'étape qui manquait !)
-                compImg.src = spriteUrl; 
-                
-                // Si Showdown ne répond pas, on remet l'image de base
-                compImg.onerror = function() {
-                    console.warn("Image Showdown introuvable, repli sur PokeAPI");
-                    this.onerror = null;
-                    this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+            // LOGIQUE MÉGA
+            if (comp.isMega === true || comp.name.toLowerCase().includes('méga')) {
+                const translations = { 
+                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
+                    "tortank": "blastoise", "florizarre": "venusaur",
+                    "lucario": "lucario", "alakazam": "alakazam",
+                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
                 };
+
+                let baseName = comp.name.toLowerCase()
+                    .replace(/[éèêë]/g, 'e')
+                    .replace('méga-', '')
+                    .replace('mega-', '')
+                    .trim();
+                
+                const englishName = translations[baseName] || baseName;
+                spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
             }
+
+            console.log("Nouvelle URL image compagnon :", spriteUrl);
+            
+            // Mise à jour de l'élément image
+            compImg.src = spriteUrl; 
+            compImg.style.display = 'block'; // On affiche l'image
+            
+            compImg.onerror = function() {
+                console.warn("Image Showdown introuvable, repli sur PokeAPI");
+                this.onerror = null;
+                this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+            };
+
             if (compName) compName.innerText = comp.name.toUpperCase();
+        } else if (compImg) {
+            compImg.style.display = 'none'; // Cache l'image si pas de compagnon
         }
 
         // --- 2. RÉCUPÉRATION DU RESTE DES DONNÉES ---
@@ -188,13 +187,11 @@ async function loadPokedex() {
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
         
-        // Reset des grilles par génération
         for(let i = 1; i <= 6; i++) {
             const grid = document.getElementById(`grid-${i}`);
             if(grid) grid.innerHTML = '';
         }
 
-        // Remplissage Pokédex
         data.fullPokedex.forEach(p => {
             let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
             if (p.isCaptured) {
@@ -205,13 +202,11 @@ async function loadPokedex() {
             if (grid) grid.innerHTML += createCard(p, 'pokedex');
         });
 
-        // Mise à jour des onglets
         document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
             const g = i + 1;
             btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
-        // Grilles de collection
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
@@ -237,7 +232,6 @@ async function loadPokedex() {
         console.error("Erreur critique loadPokedex :", e); 
     }
 }
-
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -446,6 +440,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
