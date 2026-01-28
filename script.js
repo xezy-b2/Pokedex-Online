@@ -125,12 +125,52 @@ function createCard(p, mode = 'pokedex') {
 }
 
 // --- CHARGEMENT DES DONNÉES ---
+// --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
     try {
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
-        const companionId = userProfile.companionPokemon ? userProfile.companionPokemon._id : null;
+        
+        // --- GESTION DE L'AFFICHAGE DU COMPAGNON EN HAUT DU SITE ---
+        const comp = userProfile.companionPokemon;
+        const companionId = comp ? comp._id : null;
 
+        if (comp) {
+            const compImg = document.getElementById('companion-img');
+            const compName = document.getElementById('companion-name');
+
+            // Image par défaut (PokeAPI)
+            let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+
+            // SI C'EST UN MÉGA : On utilise l'URL Showdown (comme dans ta commande Discord)
+            if (comp.isMega === true) {
+                const translations = { 
+                    "ectoplasma": "gengar", 
+                    "dracaufeu": "charizard", 
+                    "tortank": "blastoise", 
+                    "florizarre": "venusaur",
+                    "lucario": "lucario",
+                    "alakazam": "alakazam",
+                    "mewtwo": "mewtwo"
+                };
+                let baseName = comp.name.toLowerCase().replace('méga-', '').replace('mega-', '').trim();
+                const englishName = translations[baseName] || baseName;
+
+                spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
+            }
+
+            if (compImg) {
+                compImg.src = spriteUrl;
+                // Si le GIF Showdown ne charge pas (404), on remet l'image PokeAPI
+                compImg.onerror = function() {
+                    this.onerror = null;
+                    this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
+                };
+            }
+            if (compName) compName.innerText = comp.name.toUpperCase();
+        }
+
+        // --- CHARGEMENT DES GRILLES DU POKEDEX ---
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
@@ -168,7 +208,7 @@ async function loadPokedex() {
 
         // --- GESTION DES GRILLES DE COLLECTION ---
         const shinyGrid = document.getElementById('shiny-grid');
-        const megaGrid = document.getElementById('mega-grid'); // Nouvelle grille
+        const megaGrid = document.getElementById('mega-grid'); 
         const dupGrid = document.getElementById('duplicate-grid');
         
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -179,7 +219,7 @@ async function loadPokedex() {
         data.capturedPokemonsList.forEach(p => {
             p.isCompanion = (p._id === companionId);
             
-            // PRIORITÉ 1 : Méga-Évolutions
+            // PRIORITÉ 1 : Méga-Évolutions (pour ne pas qu'ils finissent en doublons)
             if (p.isMega === true) {
                 if(megaGrid) megaGrid.innerHTML += createCard(p, 'collection');
             } 
@@ -193,7 +233,6 @@ async function loadPokedex() {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
-                    // On ne l'affiche pas dans les doublons car c'est le premier exemplaire (déjà dans le pokedex)
                 }
             }
         });
@@ -208,6 +247,7 @@ async function setCompanion(pokemonId) {
             body: JSON.stringify({ userId: currentUserId, pokemonId: pokemonId })
         });
         if(res.ok) {
+            // Recharger les données mettra à jour l'image en haut grâce au nouveau code dans loadPokedex
             loadPokedex();
             if(document.getElementById('profile-page').classList.contains('active')) loadProfile();
         } else {
@@ -216,7 +256,6 @@ async function setCompanion(pokemonId) {
         }
     } catch (e) { console.error("Erreur setCompanion:", e); }
 }
-
 // --- LOGIQUE DAILY ---
 function getCooldownTime(lastDailyDate) {
     if (!lastDailyDate) return null;
@@ -404,6 +443,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
