@@ -143,17 +143,27 @@ async function loadPokedex() {
             btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
         });
 
+        // --- GESTION DES GRILLES DE COLLECTION ---
         const shinyGrid = document.getElementById('shiny-grid');
+        const megaGrid = document.getElementById('mega-grid'); // Nouvelle grille
         const dupGrid = document.getElementById('duplicate-grid');
+        
         if(shinyGrid) shinyGrid.innerHTML = '';
+        if(megaGrid) megaGrid.innerHTML = ''; // Reset de la grille Méga
         if(dupGrid) dupGrid.innerHTML = '';
 
         const keepers = new Set();
         data.capturedPokemonsList.forEach(p => {
             p.isCompanion = (p._id === companionId);
-            if (p.isShiny) {
+            
+            if (p.isMega) {
+                // Si c'est un Méga, on l'ajoute à la grille Méga
+                if(megaGrid) megaGrid.innerHTML += createCard(p, 'collection');
+            } else if (p.isShiny) {
+                // Si c'est un Shiny (non méga), grille Shiny
                 if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
             } else {
+                // Gestion des doublons normaux
                 if (keepers.has(p.pokedexId)) {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
@@ -368,4 +378,5 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
