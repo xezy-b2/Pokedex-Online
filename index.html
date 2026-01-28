@@ -16,168 +16,94 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--background); color: var(--text-main); margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        header { display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--header-bg); border-radius: 15px; margin-bottom: 30px; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         
-        nav { display: none; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        nav button { background: var(--card-bg); color: var(--text-sec); border: 1px solid var(--border); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        nav button.active { background: var(--discord); color: white; }
+        nav { display: flex; gap: 10px; margin-bottom: 30px; background: var(--header-bg); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+        nav button { background: transparent; border: none; color: var(--text-sec); padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.2s; }
+        nav button.active { background: var(--highlight); color: white; }
+        nav button:hover:not(.active) { background: rgba(255,255,255,0.05); color: var(--text-main); }
 
-        .gen-nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .gen-nav button { background: rgba(255,255,255,0.05); color: var(--text-sec); border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
-        .gen-nav button.active { background: var(--highlight); color: white; }
-
-        .pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
         
-        .pokedex-card { background: var(--card-bg); border-radius: 15px; padding: 15px; border: 1px solid var(--border); text-align: center; position: relative; display: flex; flex-direction: column; transition: 0.3s; }
-        .pokedex-card:hover { transform: translateY(-5px); border-color: var(--discord); }
-        .pokedex-card img.poke-sprite { width: 90px; height: 90px; margin: 0 auto; image-rendering: pixelated; transition: 0.3s; }
+        .pokemon-card { background: var(--card-bg); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid var(--border); transition: 0.3s; position: relative; overflow: hidden; }
+        .pokemon-card:hover { transform: translateY(-5px); border-color: var(--highlight); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .pokemon-card img { width: 100px; height: 100px; margin-bottom: 10px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
+        .pokemon-card.not-captured { opacity: 0.3; filter: grayscale(1); }
+        .pokemon-card .name { font-weight: 800; font-size: 0.9em; margin-bottom: 5px; display: block; color: var(--text-main); }
+        .pokemon-card .id { font-size: 0.75em; color: var(--text-sec); font-weight: 600; }
 
-        /* --- ANIMATIONS COMPAGNON --- */
-        .is-companion img.poke-sprite {
-            animation: floating 3s ease-in-out infinite;
-            filter: drop-shadow(0 5px 15px rgba(88, 101, 242, 0.4));
-        }
+        .shiny-effect { border-color: var(--shiny) !important; background: linear-gradient(145deg, #21262d 0%, #2d2616 100%); }
+        .shiny-effect::before { content: '✨'; position: absolute; top: 8px; right: 8px; font-size: 1.2em; }
+        
+        .mega-effect { border-color: #a333c8 !important; background: linear-gradient(145deg, #21262d 0%, #2b1a3d 100%); }
+        .mega-badge { position: absolute; top: 8px; left: 8px; background: #a333c8; color: white; font-size: 0.6em; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
 
-        @keyframes floating {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
+        .companion-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-sec); padding: 6px; border-radius: 50%; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        .companion-btn.active { color: #ff4d4d; border-color: #ff4d4d; background: rgba(255, 77, 77, 0.1); }
 
-        .companion-btn { 
-            position: absolute; top: 8px; left: 8px; 
-            background: none; border: none; font-size: 1.2em; 
-            cursor: pointer; z-index: 5; transition: 0.2s; 
-            filter: grayscale(1) opacity(0.5); 
-        }
-        .companion-btn:hover { filter: grayscale(0) opacity(1); transform: scale(1.2); }
-        .companion-btn.active { 
-            filter: grayscale(0) opacity(1); 
-            animation: heartBeat 1.5s infinite; 
-        }
+        #gen-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        #gen-tabs button { background: var(--header-bg); border: 1px solid var(--border); color: var(--text-sec); padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 0.85em; }
+        #gen-tabs button.active { border-color: var(--highlight); color: var(--highlight); background: rgba(35, 134, 54, 0.1); }
 
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            15% { transform: scale(1.3); }
-            30% { transform: scale(1); }
-            45% { transform: scale(1.15); }
-            60% { transform: scale(1); }
-        }
-
-        .fav-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; transition: 0.2s; filter: grayscale(1); }
-        .fav-btn.active { filter: grayscale(0); transform: scale(1.1); }
-        .is-shiny { border-color: var(--shiny) !important; box-shadow: 0 0 10px rgba(241, 224, 90, 0.2); }
-        .missing { opacity: 0.3; filter: grayscale(1); }
-
-        .btn-action { margin-top: 10px; padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; transition: 0.2s; }
-        .btn-sell { background: rgba(218, 54, 51, 0.2); color: #ff7b72; }
-        .btn-sell:hover { background: var(--red-poke); color: white; }
-        .btn-trade { background: rgba(88, 101, 242, 0.2); color: #7982f2; }
-
-        /* STYLE BOUTON DAILY */
-        #dailyBtn {
-            transition: transform 0.2s, filter 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        #dailyBtn:hover:not(:disabled) {
-            transform: scale(1.05);
-            filter: brightness(1.1);
-        }
-        #dailyBtn:disabled {
-            filter: grayscale(0.5);
-            opacity: 0.7;
-        }
-
-        .page-section { display: none; }
+        .page-section { display: none; animation: fadeIn 0.3s ease; }
         .page-section.active { display: block; }
-        .gen-content { display: none; }
-        .gen-content.active { display: block; }
-
-        .stat-box { background: var(--header-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
-        .ball-inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center; }
-        .ball-item img { width: 35px; }
-
-        /* Badge Méga */
-.mega-badge {
-    background: linear-gradient(45deg, #ff00ff, #8e44ad);
-    color: white !important;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 800;
-    box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
-}
-
-/* Carte Méga-Évolution */
-.pokemon-card.is-mega {
-    border: 2px solid #ff00ff !important;
-    background: linear-gradient(145deg, #161b22, #2d1b2d) !important;
-    box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
-}
-
-/* Animation de brillance pour les Méga */
-.is-mega img {
-    filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.6));
-}
-
-        /* Style pour l'image du compagnon en haut */
-#companion-img {
-    width: 80px; /* Ou 100px selon ta préférence */
-    height: 80px;
-    object-fit: contain; /* Très important pour ne pas écraser le Pokémon */
-    image-rendering: auto; /* Pour que le GIF soit fluide */
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-}
-
-/* Optionnel : Un petit effet brillant quand c'est un Méga */
-#companion-img[src*="showdown"] {
-    filter: drop-shadow(0 0 10px #ff00ff);
-    transform: scale(1.1);
-}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+
     <div class="container">
         <header>
-            <h1>Pokédex Online</h1>
-            <div id="auth-zone">
-                <div id="logged-out-user"><a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" style="color:white; text-decoration:none; background:var(--discord); padding:10px 20px; border-radius:10px; font-weight:bold;">Connexion Discord</a></div>
-                <div id="logged-in-user" style="display:none;"><span id="display-username" style="color:var(--shiny); font-weight:800; margin-right:15px;"></span><button onclick="logout()" style="background:var(--red-poke); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">Quitter</button></div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: var(--highlight); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5em;">P</div>
+                <h1 style="margin: 0; font-size: 1.5em; letter-spacing: -0.5px;">Pokédex <span style="color: var(--highlight)">Online</span></h1>
+            </div>
+
+            <div id="logged-out-user">
+                <button onclick="window.location.href='/auth/discord'" style="background: var(--discord); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                    Se connecter avec Discord
+                </button>
+            </div>
+
+            <div id="logged-in-user" style="display: none; align-items: center; gap: 15px;">
+                <img id="companion-img" src="" alt="Compagnon"> // L'ID A ÉTÉ CORRIGÉ ICI (Espace supprimé)
+                <div style="display: flex; flex-direction: column;">
+                    <span id="display-username" style="font-weight: bold; font-size: 1.1em;"></span>
+                    <span id="companion-name" style="color: var(--highlight); font-size: 0.9em; font-weight: bold;"></span>
+                </div>
+                <div style="margin-left: 20px; display: flex; gap: 15px; background: rgba(0,0,0,0.2); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--border);">
+                    <span id="user-money" style="color: #ffd700; font-weight: 800; font-size: 1.1em;">0 💰</span>
+                </div>
             </div>
         </header>
 
-        <nav id="main-nav">
-            <button id="nav-pokedex" class="active" onclick="showPage('pokedex')">Encyclopédie</button>
-            <button id="nav-collection" onclick="showPage('collection')">Ma Collection</button>
-            <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
-            <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
+        <nav id="main-nav" style="display: none;">
+            <button onclick="showPage('pokedex')" id="btn-pokedex" class="active">Ma Collection</button>
+            <button onclick="showPage('shop')" id="btn-shop">Boutique</button>
+            <button onclick="showPage('profile')" id="btn-profile">Mon Profil</button>
         </nav>
 
         <div id="pokedex-page" class="page-section active">
-            <div class="gen-nav" id="gen-tabs">
-                <button class="active" onclick="filterGen(1)">Gen 1 (Kanto)</button>
-                <button onclick="filterGen(2)">Gen 2 (Johto)</button>
-                <button onclick="filterGen(3)">Gen 3 (Hoenn)</button>
-                <button onclick="filterGen(4)">Gen 4 (Sinnoh)</button>
-                <button onclick="filterGen(5)">Gen 5 (Unys)</button>
-                <button onclick="filterGen(6)">Gen 6 (Kalos)</button>
+            <div id="gen-tabs">
+                <button onclick="showGen(1)" class="active">Gen 1</button>
+                <button onclick="showGen(2)">Gen 2</button>
+                <button onclick="showGen(3)">Gen 3</button>
+                <button onclick="showGen(4)">Gen 4</button>
+                <button onclick="showGen(5)">Gen 5</button>
+                <button onclick="showGen(6)">Gen 6</button>
             </div>
-            
-            <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
-            <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
-            <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
-            <div id="gen-4" class="gen-content"><div class="pokedex-grid" id="grid-4"></div></div>
-            <div id="gen-5" class="gen-content"><div class="pokedex-grid" id="grid-5"></div></div>
-            <div id="gen-6" class="gen-content"><div class="pokedex-grid" id="grid-6"></div></div>
-        </div>
 
-        <div id="collection-page" class="page-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: var(--shiny); margin: 0;">✨ Favoris & Chromatiques</h2>
-            </div>
+            <div id="grid-1" class="gen-grid pokedex-grid"></div>
+            <div id="grid-2" class="gen-grid pokedex-grid" style="display:none;"></div>
+            <div id="grid-3" class="gen-grid pokedex-grid" style="display:none;"></div>
+            <div id="grid-4" class="gen-grid pokedex-grid" style="display:none;"></div>
+            <div id="grid-5" class="gen-grid pokedex-grid" style="display:none;"></div>
+            <div id="grid-6" class="gen-grid pokedex-grid" style="display:none;"></div>
+
+            <h2 style="margin-top: 60px; color: var(--shiny); display: flex; align-items: center; gap: 10px;">✨ Mes Pokémon Chromatiques</h2>
             <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
 
-            <h2>🧬 Ma Collection Méga</h2>
+            <h2 style="margin-top: 60px; color: #a333c8; display: flex; align-items: center; gap: 10px;">🌀 Mes Pokémon Méga</h2>
                <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
             
             <h2>📦 Mes Doublons & Échanges</h2>
@@ -199,12 +125,10 @@
             <h2 style="color:var(--shiny)">Échange Miracle Réussi !</h2>
             <img id="modal-img" src="" style="width:150px; image-rendering: pixelated;">
             <p id="modal-text" style="font-size:1.2em;"></p>
-            <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; width:100%; font-weight:bold; margin-top:15px;">Génial !</button>
+            <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:12px 30px; border-radius:10px; cursor:pointer; font-weight:bold;">Super !</button>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-
-
-
