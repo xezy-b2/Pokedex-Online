@@ -300,9 +300,13 @@ async function loadProfile() {
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
+            
+            // CORRECTION ICI : On vérifie si cp.customSprite existe, sinon on utilise l'URL PokéAPI
+            const spriteSrc = cp.customSprite ? cp.customSprite : `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
+            
             compHtml = `
                 <div class="is-companion">
-                    <img src="${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png" class="poke-sprite" style="width:120px;">
+                    <img src="${spriteSrc}" class="poke-sprite" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));">
                     <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
                     <p style="font-size:0.8em;">Niveau ${cp.level}</p>
                 </div>
@@ -442,6 +446,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
