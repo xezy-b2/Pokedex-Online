@@ -142,30 +142,33 @@ async function loadPokedex() {
         });
 
         // --- GESTION DES GRILLES DE COLLECTION ---
-        const shinyGrid = document.getElementById('shiny-grid');
-        const megaGrid = document.getElementById('mega-grid'); // Nouvelle grille
+const shinyGrid = document.getElementById('shiny-grid');
+        const megaGrid = document.getElementById('mega-grid'); // Assure-toi que cet ID existe dans index.html
         const dupGrid = document.getElementById('duplicate-grid');
         
         if(shinyGrid) shinyGrid.innerHTML = '';
-        if(megaGrid) megaGrid.innerHTML = ''; // Reset de la grille Méga
+        if(megaGrid) megaGrid.innerHTML = '';
         if(dupGrid) dupGrid.innerHTML = '';
 
         const keepers = new Set();
         data.capturedPokemonsList.forEach(p => {
             p.isCompanion = (p._id === companionId);
             
+            // 1. Priorité aux Méga
             if (p.isMega) {
-                // Si c'est un Méga, on l'ajoute à la grille Méga
                 if(megaGrid) megaGrid.innerHTML += createCard(p, 'collection');
-            } else if (p.isShiny) {
-                // Si c'est un Shiny (non méga), grille Shiny
+            } 
+            // 2. Ensuite aux Shiny
+            else if (p.isShiny) {
                 if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
-            } else {
-                // Gestion des doublons normaux
+            } 
+            // 3. Enfin le reste (Pokédex ou Doublons)
+            else {
                 if (keepers.has(p.pokedexId)) {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
+                    // Optionnel : si tu veux afficher le premier exemplaire quelque part
                 }
             }
         });
@@ -376,6 +379,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
