@@ -119,6 +119,21 @@
 .is-mega img {
     filter: drop-shadow(0 0 8px rgba(255, 0, 255, 0.6));
 }
+
+        /* Style pour l'image du compagnon en haut */
+#companion-img {
+    width: 80px; /* Ou 100px selon ta préférence */
+    height: 80px;
+    object-fit: contain; /* Très important pour ne pas écraser le Pokémon */
+    image-rendering: auto; /* Pour que le GIF soit fluide */
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+}
+
+/* Optionnel : Un petit effet brillant quand c'est un Méga */
+#companion-img[src*="showdown"] {
+    filter: drop-shadow(0 0 10px #ff00ff);
+    transform: scale(1.1);
+}
     </style>
 </head>
 <body>
@@ -190,5 +205,6 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
