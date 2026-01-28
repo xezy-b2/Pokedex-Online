@@ -126,11 +126,11 @@ function createCard(p, mode = 'pokedex') {
 
 async function loadPokedex() {
     try {
-        // 1. Récupérer le profil pour avoir le compagnon actuel
+        // 1. Récupération du profil utilisateur (pour le compagnon et l'argent)
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         
-        // --- GESTION DE L'AFFICHAGE DU COMPAGNON EN HAUT DU SITE ---
+        // --- MISE À JOUR DU COMPAGNON (ZONE EN HAUT DU SITE) ---
         const comp = userProfile.companionPokemon;
         const companionId = comp ? comp._id : null;
 
@@ -141,7 +141,7 @@ async function loadPokedex() {
             // Image par défaut (PokeAPI)
             let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
-            // SI C'EST UN MÉGA : On force l'URL Showdown (comme sur Discord)
+            // Si c'est un Méga : on utilise le sprite animé Showdown
             if (comp.isMega === true) {
                 const translations = { 
                     "ectoplasma": "gengar", 
@@ -154,7 +154,7 @@ async function loadPokedex() {
                     "rayquaza": "rayquaza"
                 };
 
-                // Nettoyage du nom pour Showdown (minuscules, pas de "méga-", pas d'accents)
+                // Nettoyage du nom (pas d'accents, pas de "méga", minuscule)
                 let baseName = comp.name.toLowerCase()
                     .replace(/[éèêë]/g, 'e')
                     .replace('méga-', '')
@@ -166,8 +166,9 @@ async function loadPokedex() {
             }
 
             if (compImg) {
-                compImg.src = spriteUrl;
-                // Si le GIF Showdown échoue, on revient à l'image fixe
+                compImg.src = spriteUrl; // CETTE LIGNE EST INDISPENSABLE
+                
+                // Fallback : si l'image Showdown bug, on remet l'image PokeAPI
                 compImg.onerror = function() {
                     this.onerror = null;
                     this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
@@ -176,7 +177,7 @@ async function loadPokedex() {
             if (compName) compName.innerText = comp.name.toUpperCase();
         }
 
-        // 2. Récupérer les données de la collection
+        // 2. Récupération du reste du Pokédex
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
@@ -190,7 +191,7 @@ async function loadPokedex() {
             if(grids[i]) grids[i].innerHTML = '';
         }
 
-        // 3. Remplissage des grilles par génération
+        // 3. Affichage du Pokédex Principal (Gen 1 à 6)
         data.fullPokedex.forEach(p => {
             let gen = 1;
             if (p.pokedexId <= 151) gen = 1;
@@ -207,14 +208,14 @@ async function loadPokedex() {
             if (grids[gen]) grids[gen].innerHTML += createCard(p, 'pokedex');
         });
 
-        // Mise à jour des textes des onglets
+        // Mise à jour des textes des onglets (ex: Gen 1 (Kanto) 140/151)
         const buttons = document.querySelectorAll('#gen-tabs button');
         buttons.forEach((btn, index) => {
             const genNum = index + 1;
             btn.innerHTML = `Gen ${genNum} (${genNames[genNum]}) <br><small>${counts[genNum]}/${totals[genNum]}</small>`;
         });
 
-        // 4. Gestion des sections Collection (Shiny, Méga, Doublons)
+        // 4. Affichage des sections Spéciales (Shiny, Méga, Doublons)
         const shinyGrid = document.getElementById('shiny-grid');
         const megaGrid = document.getElementById('mega-grid'); 
         const dupGrid = document.getElementById('duplicate-grid');
@@ -241,14 +242,15 @@ async function loadPokedex() {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
-                    // On ne l'affiche pas dans les doublons car c'est le premier exemplaire
                 }
             }
         });
+
     } catch (e) { 
         console.error("Erreur lors du chargement du Pokedex:", e); 
     }
 }
+
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -453,6 +455,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
