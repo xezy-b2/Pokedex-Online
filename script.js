@@ -128,35 +128,45 @@ async function loadPokedex() {
     if (!currentUserId) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        
+        // --- SÉCURITÉ : Vérifie si le serveur répond bien du JSON ---
+        if (!res.ok) {
+            console.error(`Erreur serveur (${res.status}): L'utilisateur n'existe probablement pas ou la route est incorrecte.`);
+            return;
+        }
+
         const user = await res.json();
 
-        // --- 1. GESTION DU COMPAGNON (CORRIGÉ POUR MÉGA) ---
+        // --- 1. GESTION DU COMPAGNON (FIX MÉGA) ---
         if (user.companion) {
             const comp = user.companion;
             const isShiny = comp.isShiny;
-            // On vérifie si c'est un méga via le flag ou le nom
+            // On considère que c'est un méga si le flag est vrai OU si "mega" est dans le nom
             const isMega = comp.isMega || (comp.name && comp.name.toLowerCase().includes('mega'));
             
+            // Image par défaut (PokeAPI)
             let compImgUrl = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
 
+            // Si c'est un Méga, on construit l'URL pour Showdown
             if (isMega) {
-                // Nettoyage du nom pour Showdown (suppression accents et "mega")
+                // Nettoyage du nom pour Showdown (on enlève les accents et le mot "mega")
                 let nameClean = comp.name.toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
                     .replace('mega-', '')
                     .replace('mega ', '')
                     .trim();
 
-                // Dictionnaire de traduction FR -> EN pour Showdown
+                // Traductions obligatoires pour Showdown (FR -> EN)
                 const translations = {
                     "ectoplasma": "gengar", "dracaufeu": "charizard", "tortank": "blastoise", 
                     "florizarre": "venusaur", "leviator": "gyarados", "alakazam": "alakazam",
                     "lucario": "lucario", "mewtwo": "mewtwo", "rayquaza": "rayquaza",
-                    "cizayox": "scizor", "tyranocif": "tyranitar", "gardevoir": "gardevoir"
+                    "cizayox": "scizor", "tyranocif": "tyranitar", "gardevoir": "gardevoir",
+                    "demeteros": "landorus", "fulguris": "thundurus", "boreas": "tornadus"
                 };
 
                 const finalName = translations[nameClean] || nameClean;
-                // Utilisation du sprite animé de Showdown pour les Mégas
+                // Utilisation du sprite animé .gif de Showdown
                 compImgUrl = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${finalName}-mega.gif`;
             }
 
@@ -164,55 +174,57 @@ async function loadPokedex() {
             document.getElementById('companion-name').textContent = comp.name;
         }
 
-        // --- 2. MISE À JOUR DES RESSOURCES (MONNAIE / BALLS) ---
-        document.getElementById('user-money').textContent = user.money || 0;
-        document.getElementById('count-pokeballs').textContent = user.pokeballs || 0;
-        document.getElementById('count-superballs').textContent = user.superballs || 0;
-        document.getElementById('count-hyperballs').textContent = user.hyperballs || 0;
-        document.getElementById('count-masterballs').textContent = user.masterballs || 0;
-        document.getElementById('count-ellbaballs').textContent = user.ellbaballs || 0;
+        // --- 2. MISE À JOUR DES RESSOURCES ---
+        const fields = {
+            'user-money': user.money,
+            'count-pokeballs': user.pokeballs,
+            'count-superballs': user.superballs,
+            'count-hyperballs': user.hyperballs,
+            'count-masterballs': user.masterballs,
+            'count-ellbaballs': user.ellbaballs
+        };
+
+        for (const [id, value] of Object.entries(fields)) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value || 0;
+        }
 
         // --- 3. AFFICHAGE DES GRILLES (POKÉDEX, MÉGAS, DOUBLONS) ---
         const pokedexGrid = document.getElementById('pokedex-grid');
         const megaGrid = document.getElementById('mega-grid');
         const duplicateGrid = document.getElementById('duplicate-grid');
 
-        pokedexGrid.innerHTML = '';
-        megaGrid.innerHTML = '';
-        duplicateGrid.innerHTML = '';
+        if (pokedexGrid) pokedexGrid.innerHTML = '';
+        if (megaGrid) megaGrid.innerHTML = '';
+        if (duplicateGrid) duplicateGrid.innerHTML = '';
 
         if (user.pokemonCollection && user.pokemonCollection.length > 0) {
-            // Séparation des Pokémon par catégorie
-            const normalPokemon = user.pokemonCollection.filter(p => !p.isMega);
-            const megaPokemon = user.pokemonCollection.filter(p => p.isMega);
-
-            // Grille normale
-            normalPokemon.forEach(p => {
-                pokedexGrid.appendChild(createCard(p, false));
-            });
-
-            // Grille Méga
-            megaPokemon.forEach(p => {
-                megaGrid.appendChild(createCard(p, false));
-            });
-
-            // Grille Doublons
             const counts = {};
+
             user.pokemonCollection.forEach(p => {
+                // Affichage dans Pokedex Normal ou Méga
+                if (p.isMega) {
+                    if (megaGrid) megaGrid.appendChild(createCard(p, false));
+                } else {
+                    if (pokedexGrid) pokedexGrid.appendChild(createCard(p, false));
+                }
+
+                // Gestion des doublons
                 const key = `${p.pokedexId}-${p.isShiny}-${p.isMega}`;
                 counts[key] = (counts[key] || 0) + 1;
-                if (counts[key] > 1) {
+                if (counts[key] > 1 && duplicateGrid) {
                     duplicateGrid.appendChild(createCard(p, true));
                 }
             });
-        } else {
+        } else if (pokedexGrid) {
             pokedexGrid.innerHTML = '<p>Aucun Pokémon pour le moment.</p>';
         }
 
     } catch (err) {
-        console.error('Erreur loadPokedex:', err);
+        console.error('Erreur loadPokedex critique:', err);
     }
 }
+
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -421,6 +433,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
