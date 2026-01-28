@@ -58,16 +58,17 @@ function calculatePrice(p) {
 // --- RENDU DES CARTES ---
 function createCard(p, mode = 'pokedex') {
     const isShiny = p.isShiny;
-    const isMega = p.isMega === true; // Détection du flag Méga
+    const isMega = p.isMega === true; // On vérifie le flag méga
     const isCaptured = p.isCaptured !== false;
     const isCompanion = p.isCompanion === true;
     const price = calculatePrice(p);
     
-    // LOGIQUE IMAGE : Si Méga, on utilise le sprite animé de Showdown
+    // IMAGE : Si Méga, on va sur Showdown, sinon PokeAPI classique
     let img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
+    
     if (isMega) {
-        // Nettoyage du nom pour l'URL Showdown (ex: "Méga-Ectoplasma" -> "gengar")
-        const cleanName = p.name.toLowerCase().replace('méga-', '').replace(' ', '');
+        // On nettoie le nom pour l'URL (ex: "mega-gengar" -> "gengar")
+        const cleanName = p.name.toLowerCase().replace('méga-', '').replace('mega-', '').trim();
         img = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${cleanName}-mega.gif`;
     }
     
@@ -75,14 +76,11 @@ function createCard(p, mode = 'pokedex') {
     const ballFileName = ballKey.replace('ball', '-ball') + '.png';
     const ballImgUrl = `${BALL_URL}${ballFileName}`;
     
-    // On ajoute la classe 'is-mega' si besoin
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
-            
-            ${isMega ? `<span class="mega-badge-text">MÉGA</span>` : ''}
-            
+            ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold;">MÉGA</span>` : ''}
             <img src="${img}" class="poke-sprite" style="${isMega ? 'width:80px; height:80px; object-fit:contain;' : ''}">
             <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             
@@ -378,5 +376,6 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
