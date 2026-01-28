@@ -58,16 +58,19 @@ function calculatePrice(p) {
 // --- RENDU DES CARTES ---
 function createCard(p, mode = 'pokedex') {
     const isShiny = p.isShiny;
-    const isMega = p.isMega === true; // On vérifie le flag méga
+    const isMega = p.isMega === true;
     const isCaptured = p.isCaptured !== false;
     const isCompanion = p.isCompanion === true;
     const price = calculatePrice(p);
     
-    // IMAGE : Si Méga, on va sur Showdown, sinon PokeAPI classique
+    // LOGIQUE IMAGE
     let img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
     
     if (isMega) {
-        // On nettoie le nom pour l'URL (ex: "mega-gengar" -> "gengar")
+        // On enlève "MÉGA-" ou "MEGA-" pour l'URL Showdown
+        // ex: "MÉGA-ECTOPLASMA" -> "gengar" (nom anglais attendu par Showdown)
+        // Note: Si ton p.name est "MÉGA-ECTOPLASMA", il faudra peut-être mapper vers le nom anglais.
+        // Mais si p.name est "gengar", ce code fonctionne :
         const cleanName = p.name.toLowerCase().replace('méga-', '').replace('mega-', '').trim();
         img = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${cleanName}-mega.gif`;
     }
@@ -80,8 +83,10 @@ function createCard(p, mode = 'pokedex') {
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
-            ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold;">MÉGA</span>` : ''}
-            <img src="${img}" class="poke-sprite" style="${isMega ? 'width:80px; height:80px; object-fit:contain;' : ''}">
+            
+            ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
+            
+            <img src="${img}" class="poke-sprite" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
             <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
@@ -142,8 +147,8 @@ async function loadPokedex() {
         });
 
         // --- GESTION DES GRILLES DE COLLECTION ---
-const shinyGrid = document.getElementById('shiny-grid');
-        const megaGrid = document.getElementById('mega-grid'); // Assure-toi que cet ID existe dans index.html
+        const shinyGrid = document.getElementById('shiny-grid');
+        const megaGrid = document.getElementById('mega-grid'); // Nouvelle grille
         const dupGrid = document.getElementById('duplicate-grid');
         
         if(shinyGrid) shinyGrid.innerHTML = '';
@@ -154,21 +159,21 @@ const shinyGrid = document.getElementById('shiny-grid');
         data.capturedPokemonsList.forEach(p => {
             p.isCompanion = (p._id === companionId);
             
-            // 1. Priorité aux Méga
-            if (p.isMega) {
+            // PRIORITÉ 1 : Méga-Évolutions
+            if (p.isMega === true) {
                 if(megaGrid) megaGrid.innerHTML += createCard(p, 'collection');
             } 
-            // 2. Ensuite aux Shiny
+            // PRIORITÉ 2 : Chromatiques (Shiny)
             else if (p.isShiny) {
                 if(shinyGrid) shinyGrid.innerHTML += createCard(p, 'collection');
             } 
-            // 3. Enfin le reste (Pokédex ou Doublons)
+            // PRIORITÉ 3 : Doublons et reste
             else {
                 if (keepers.has(p.pokedexId)) {
                     if(dupGrid) dupGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
-                    // Optionnel : si tu veux afficher le premier exemplaire quelque part
+                    // On ne l'affiche pas dans les doublons car c'est le premier exemplaire (déjà dans le pokedex)
                 }
             }
         });
@@ -379,6 +384,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
