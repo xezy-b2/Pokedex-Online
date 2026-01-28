@@ -295,12 +295,33 @@ async function loadProfile() {
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
             
-            // CORRECTION ICI : On vérifie si cp.customSprite existe, sinon on utilise l'URL PokéAPI
-            const spriteSrc = cp.customSprite ? cp.customSprite : `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
+            // --- LOGIQUE D'IMAGE DYNAMIQUE ---
+            let spriteSrc = `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
+
+            if (cp.isMega === true || cp.name.toLowerCase().includes('méga')) {
+                const translations = { 
+                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
+                    "tortank": "blastoise", "florizarre": "venusaur",
+                    "lucario": "lucario", "alakazam": "alakazam",
+                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
+                };
+
+                let baseName = cp.name.toLowerCase()
+                    .replace(/[éèêë]/g, 'e')
+                    .replace('méga-', '')
+                    .replace('mega-', '')
+                    .trim();
+                
+                const englishName = translations[baseName] || baseName;
+                spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
+            }
             
             compHtml = `
                 <div class="is-companion">
-                    <img src="${spriteSrc}" class="poke-sprite" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));">
+                    <img src="${spriteSrc}" 
+                         class="poke-sprite" 
+                         onerror="this.onerror=null; this.src='${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png';"
+                         style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));">
                     <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
                     <p style="font-size:0.8em;">Niveau ${cp.level}</p>
                 </div>
@@ -350,7 +371,6 @@ async function loadProfile() {
         }
     } catch (e) { container.innerHTML = "Erreur profil."; }
 }
-
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     if(!container) return;
@@ -440,6 +460,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
