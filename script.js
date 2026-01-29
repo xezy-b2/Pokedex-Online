@@ -373,39 +373,64 @@ async function loadProfile() {
 }
 async function loadShop() {
     const container = document.getElementById('shopContainer');
-    const shopMoneySpan = document.getElementById('shop-money');
+    const shopMoneySpan = document.getElementById('shop-money'); // L'ID que nous avons ajouté dans le HTML
     if(!container) return;
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/shop`);
-        const data = await res.json();
-        const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-        const getPrice = (keys) => {
-            for (let key of keys) if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
-            return "0";
-        };
-// Mettre à jour l'affichage de l'argent dans la boutique
+        // 1. RÉCUPÉRATION DE L'ARGENT DE L'UTILISATEUR
+        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const user = await profRes.json();
+        
+        // Mise à jour du texte "Portefeuille" dans la boutique
         if (shopMoneySpan) {
             shopMoneySpan.innerText = user.money.toLocaleString();
         }
+
+        // 2. RÉCUPÉRATION DES PRIX DE LA BOUTIQUE
+        const res = await fetch(`${API_BASE_URL}/api/shop`);
+        const data = await res.json();
+        
+        // Transformation des données pour accès facile par clé
+        const items = Array.isArray(data) 
+            ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) 
+            : data;
+
+        const getPrice = (keys) => {
+            for (let key of keys) {
+                // On vérifie si la clé existe et si elle a un coût
+                if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
+            }
+            return "0";
+        };
+
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
         const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
         
         let shopHtml = '';
         itemKeys.forEach((key, i) => {
+            // Petite correction pour le nom des fichiers images
             const ballImg = key.replace('ball', '-ball') + '.png';
+            
             shopHtml += `
                 <div class="pokedex-card">
                     <img src="${BALL_URL}${ballImg}" style="${imgStyle}">
                     <h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3>
                     <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button>
+                    <input type="number" id="qty-${key}" value="1" min="1" 
+                           style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
+                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" 
+                            class="btn-action btn-trade" style="width:100%">Acheter</button>
                 </div>
             `;
         });
+        
         container.innerHTML = shopHtml;
-    } catch (e) { console.error(e); }
+
+    } catch (e) { 
+        console.error("Erreur lors du chargement de la boutique :", e);
+        container.innerHTML = "<p style='text-align:center;'>Erreur de chargement des articles.</p>";
+    }
 }
 
 // --- ACTIONS ---
@@ -464,6 +489,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
