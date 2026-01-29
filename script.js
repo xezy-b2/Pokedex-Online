@@ -311,18 +311,6 @@ async function loadProfile() {
                     .replace('méga-', '')
                     .replace('mega-', '')
                     .trim();
-
-// Correction spécifique pour les formes X et Y
-if (baseName === "dracaufeu" || baseName === "mewtwo") {
-    // Si ton bot enregistre "Méga-Dracaufeu X", on adapte le nom pour Showdown
-    if (comp.name.toLowerCase().includes('x')) englishName += "-megax";
-    else if (comp.name.toLowerCase().includes('y')) englishName += "-megay";
-    else englishName += "-mega"; // Par défaut
-} else {
-    englishName += "-mega";
-}
-
-spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}.gif`;
                 
                 const englishName = translations[baseName] || baseName;
                 spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
@@ -501,6 +489,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
