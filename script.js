@@ -281,38 +281,44 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
-// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
-        // --- LOGIQUE DES BADGES ---
+        // --- CALCUL DES STATS POUR LES BADGES ---
+        // On calcule les stats à partir du tableau 'pokemons' fourni par ton modèle User.js
+        const totalUnique = new Set(user.pokemons.map(p => p.pokedexId)).size;
+        const totalShiny = user.pokemons.filter(p => p.isShiny).length;
+        const totalMega = user.pokemons.filter(p => p.isMega).length;
+
+        // --- LOGIQUE DES BADGES (Utilisation du dossier /badges de ton lien GitHub) ---
         const badges = [
             { 
                 name: "Scout", 
                 desc: "Capturer 50 Pokémon différents", 
-                unlocked: user.pokemons >= 50, 
+                unlocked: totalUnique >= 50, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
             },
             { 
                 name: "Collectionneur", 
                 desc: "Capturer 150 Pokémon différents", 
-                unlocked: user.pokemons >= 150, 
+                unlocked: totalUnique >= 150, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
             },
             { 
                 name: "Maître Pokédex", 
                 desc: "Capturer 400 Pokémon différents", 
-                unlocked: user.pokemons >= 400, 
+                unlocked: totalUnique >= 400, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
             },
             { 
                 name: "Shiny Hunter", 
                 desc: "Posséder au moins 5 Pokémon Shinies", 
-                unlocked: (user.shinyCount || 0) >= 5, 
+                unlocked: totalShiny >= 5, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
             },
             { 
@@ -324,24 +330,19 @@ async function loadProfile() {
             { 
                 name: "Maître Méga", 
                 desc: "Posséder au moins une Méga-Évolution", 
-                unlocked: (user.megaCount || 0) >= 1, 
+                unlocked: totalMega >= 1, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
-            },
-            { 
-                name: "Accro au Miracle", 
-                desc: "Avoir fait au moins 20 échanges miracle", 
-                unlocked: (user.tradesCount || 0) >= 20, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/5.png" 
             }
         ];
 
         let badgesHtml = `
-            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px; padding:10px; background:rgba(0,0,0,0.1); border-radius:10px;">
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px; padding:15px; background:rgba(0,0,0,0.2); border-radius:12px; border: 1px solid rgba(255,255,255,0.1);">
                 ${badges.map(b => `
                     <img src="${b.icon}" 
                          title="${b.name}: ${b.desc}" 
-                         style="width:40px; height:40px; object-fit:contain; ${b.unlocked ? '' : 'filter:grayscale(1) opacity(0.3);'}"
-                         class="${b.unlocked ? 'unlocked' : 'locked'}">
+                         style="width:45px; height:45px; object-fit:contain; transition: all 0.3s; ${b.unlocked ? 'filter: drop-shadow(0 0 5px gold);' : 'filter:grayscale(1) opacity(0.2);'}"
+                         onmouseover="this.style.transform='scale(1.2)'" 
+                         onmouseout="this.style.transform='scale(1)'">
                 `).join('')}
             </div>
         `;
@@ -349,7 +350,19 @@ async function loadProfile() {
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            const spriteSrc = getPokemonSprite(cp);
+            let spriteSrc = `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
+
+            if (cp.isMega === true || cp.name.toLowerCase().includes('méga')) {
+                const translations = { 
+                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
+                    "tortank": "blastoise", "florizarre": "venusaur",
+                    "lucario": "lucario", "alakazam": "alakazam",
+                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
+                };
+                let baseName = cp.name.toLowerCase().replace(/[éèêë]/g, 'e').replace('méga-', '').replace('mega-', '').trim();
+                const englishName = translations[baseName] || baseName;
+                spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
+            }
             
             compHtml = `
                 <div class="is-companion">
@@ -368,7 +381,7 @@ async function loadProfile() {
 
         container.innerHTML = `
             <div class="stat-box" style="text-align:center;">
-                <h3>🏆 Badges d'Exploits</h3>
+                <h3 style="color:var(--highlight);">🏆 Badges d'Exploits</h3>
                 ${badgesHtml}
             </div>
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
@@ -508,6 +521,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
