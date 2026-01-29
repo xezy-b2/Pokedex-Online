@@ -373,6 +373,7 @@ async function loadProfile() {
 }
 async function loadShop() {
     const container = document.getElementById('shopContainer');
+    const shopMoneySpan = document.getElementById('shop-money');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
@@ -463,6 +464,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
