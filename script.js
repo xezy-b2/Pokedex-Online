@@ -5,7 +5,7 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 
-// --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y et Mewtwo X/Y) ---
+// --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y, Mewtwo X/Y et tous les Mégas Gen 1-6) ---
 function getPokemonSprite(p) {
     const isShiny = p.isShiny;
     const isMega = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
@@ -13,7 +13,7 @@ function getPokemonSprite(p) {
     if (isMega) {
         let nameLower = p.name.toLowerCase();
         
-        // Détection des formes X et Y
+        // Détection des formes X et Y (Dracaufeu / Mewtwo)
         let suffix = "";
         if (nameLower.includes(' x')) suffix = "x";
         if (nameLower.includes(' y')) suffix = "y";
@@ -27,15 +27,32 @@ function getPokemonSprite(p) {
             .replace(' y', '')
             .trim();
 
+        // Dictionnaire complet des Mégas Gen 1 à 6
         const translations = { 
-            "ectoplasma": "gengar", 
-            "dracaufeu": "charizard", 
-            "tortank": "blastoise", 
-            "florizarre": "venusaur",
-            "lucario": "lucario", 
-            "alakazam": "alakazam",
-            "mewtwo": "mewtwo", 
-            "rayquaza": "rayquaza"
+            // Gen 1
+            "florizarre": "venusaur", "dracaufeu": "charizard", "tortank": "blastoise",
+            "dardargnan": "beedrill", "roucarnage": "pidgeot", "alakazam": "alakazam",
+            "flagadoss": "slowbro", "ectoplasma": "gengar", "kangourex": "kangaskhan",
+            "scarabrute": "pinsir", "leviator": "gyarados", "ptera": "aerodactyl",
+            "mewtwo": "mewtwo",
+            // Gen 2
+            "pharamp": "ampharos", "steelix": "steelix", "cizayox": "scizor",
+            "scarhino": "heracross", "demolosse": "houndoom", "tyranocif": "tyranitar",
+            // Gen 3
+            "jungleko": "sceptile", "brasegali": "blaziken", "laggron": "swampert",
+            "gardevoir": "gardevoir", "tenefix": "sableye", "mysdibule": "mawhile",
+            "galeking": "aggron", "charmina": "medicham", "elecsprint": "manectric",
+            "sharpedo": "sharpedo", "camerupt": "camerupt", "altaria": "altaria",
+            "branette": "banette", "absol": "absol", "oniglali": "glalie",
+            "drattak": "salamence", "metalosse": "metagross", "latias": "latias",
+            "latios": "latios", "rayquaza": "rayquaza",
+            // Gen 4
+            "lockpin": "lopunny", "carchacrok": "garchomp", "lucario": "lucario",
+            "blizzaroi": "abomasnow", "gallame": "gallade",
+            // Gen 5
+            "nanmeouie": "audino",
+            // Gen 6
+            "diancie": "diancie"
         };
 
         const englishName = translations[baseName] || baseName;
@@ -83,9 +100,10 @@ function showPage(id) {
 
 function filterGen(gen) {
     document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(`gen-${gen}`).classList.add('active');
+    const targetGen = document.getElementById(`gen-${gen}`);
+    if(targetGen) targetGen.classList.add('active');
     document.querySelectorAll('#gen-tabs button').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    if(event && event.target) event.target.classList.add('active');
 }
 
 // --- LOGIQUE PRIX ---
@@ -223,7 +241,7 @@ async function setCompanion(pokemonId) {
         });
         if(res.ok) {
             loadPokedex();
-            if(document.getElementById('profile-page').classList.contains('active')) loadProfile();
+            if(document.getElementById('profile-page') && document.getElementById('profile-page').classList.contains('active')) loadProfile();
         } else {
             const data = await res.json();
             alert(data.message);
@@ -258,8 +276,8 @@ async function claimDaily() {
         if (data.success) {
             alert(`🎁 ${data.message}\n${data.rewards}`);
             loadProfile(); 
-        } else { alert(data.message); }
-    } catch (e) { alert("Erreur lors de la récupération."); }
+        } else { alert(data.message); if(btn) btn.disabled = false; }
+    } catch (e) { alert("Erreur lors de la récupération."); if(btn) btn.disabled = false; }
 }
 
 // --- PROFIL ---
