@@ -281,7 +281,6 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
-// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
@@ -290,34 +289,29 @@ async function loadProfile() {
         const user = await res.json();
         
         // --- LOGIQUE DES BADGES (URLs basées sur le dossier /badges de PokeAPI) ---
-        const totalUnique = new Set(user.pokemons.map(p => p.pokedexId)).size;
-        const totalShiny = user.pokemons.filter(p => p.isShiny).length;
-        const totalMega = user.pokemons.filter(p => p.isMega).length;
-
-        // --- LOGIQUE DES BADGES (Utilisation du dossier /badges de ton lien GitHub) ---
         const badges = [
             { 
                 name: "Scout", 
                 desc: "Capturer 50 Pokémon différents", 
-                unlocked: totalUnique >= 50, 
+                unlocked: user.pokedexCount >= 50, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
             },
             { 
                 name: "Collectionneur", 
                 desc: "Capturer 150 Pokémon différents", 
-                unlocked: totalUnique >= 150, 
+                unlocked: user.pokedexCount >= 150, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
             },
             { 
                 name: "Maître Pokédex", 
                 desc: "Capturer 400 Pokémon différents", 
-                unlocked: totalUnique >= 400, 
+                unlocked: user.pokedexCount >= 400, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
             },
             { 
                 name: "Shiny Hunter", 
                 desc: "Posséder au moins 5 Pokémon Shinies", 
-                unlocked: totalShiny >= 5, 
+                unlocked: (user.shinyCount || 0) >= 5, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
             },
             { 
@@ -329,8 +323,14 @@ async function loadProfile() {
             { 
                 name: "Maître Méga", 
                 desc: "Posséder au moins une Méga-Évolution", 
-                unlocked: totalMega >= 1, 
+                unlocked: (user.megaCount || 0) >= 1, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
+            },
+            { 
+                name: "Accro au Miracle", 
+                desc: "Avoir fait au moins 20 échanges miracle", 
+                unlocked: (user.tradesCount || 0) >= 20, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/5.png" 
             }
         ];
 
@@ -508,6 +508,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
