@@ -138,11 +138,14 @@
             <div id="profileContainer"></div>
         </div>
 
-        <div id="shop-page" class="page-section">
-            <h2>Marché Pokémon</h2>  <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
-            <div id="shopContainer" class="pokedex-grid"></div>
-        </div>
+<div id="shop-page" class="page-section">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2 id="shop-wallet" style="color: var(--shiny); background: var(--header-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); display: inline-block;">
+            💰 Portefeuille : <span id="shop-money">0</span> 💰
+        </h2>
     </div>
+    <div id="shopContainer" class="pokedex-grid"></div>
+</div>
 
     <div id="trade-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
         <div style="background:var(--header-bg); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--shiny); max-width:400px; width:90%;">
@@ -156,4 +159,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
