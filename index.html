@@ -78,6 +78,34 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
+
+        .badges-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.badge-icon {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    transition: transform 0.2s;
+    cursor: help;
+}
+
+.badge-icon:hover {
+    transform: scale(1.2);
+}
+
+.badge-icon.locked {
+    filter: grayscale(1) opacity(0.3);
+}
     </style>
 </head>
 <body>
@@ -159,5 +187,6 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
