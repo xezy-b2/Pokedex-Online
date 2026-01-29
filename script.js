@@ -295,43 +295,43 @@ async function loadProfile() {
                 name: "Scout", 
                 desc: "Capturer 50 Pokémon différents", 
                 unlocked: user.pokedexCount >= 50, 
-                icon: "https://www.pokepedia.fr/images/7/7b/Badge_Roche_LGPE.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
             },
             { 
                 name: "Collectionneur", 
                 desc: "Capturer 150 Pokémon différents", 
                 unlocked: user.pokedexCount >= 150, 
-                icon: "https://www.pokepedia.fr/images/d/dd/Badge_Prisme_LGPE.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
             },
             { 
                 name: "Maître Pokédex", 
                 desc: "Capturer 400 Pokémon différents", 
                 unlocked: user.pokedexCount >= 400, 
-                icon: "https://www.pokepedia.fr/images/2/26/Badge_Terre_LGPE.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
             },
             { 
                 name: "Shiny Hunter", 
                 desc: "Posséder au moins 5 Pokémon Shinies", 
                 unlocked: (user.shinyCount || 0) >= 5, 
-                icon: "https://www.pokepedia.fr/images/d/d4/Badge_Plaine_DP.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
             },
             { 
                 name: "Millionnaire", 
                 desc: "Avoir plus de 100 000 💰", 
                 unlocked: user.money >= 100000, 
-                icon: "https://www.pokepedia.fr/images/8/85/Badge_Mine_DP.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" 
             },
             { 
                 name: "Maître Méga", 
                 desc: "Posséder au moins une Méga-Évolution", 
                 unlocked: (user.megaCount || 0) >= 1, 
-                icon: "https://www.pokepedia.fr/images/c/c2/Poids_Ic%C3%B4ne_Badge_M%C3%A9ga-Anneau_ROSS.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
             },
             { 
                 name: "Accro au Miracle", 
                 desc: "Avoir fait au moins 20 échanges miracle", 
                 unlocked: (user.tradesCount || 0) >= 20, 
-                icon: "https://www.pokepedia.fr/images/1/12/Badge_Zéphir_OAC.png" 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/5.png" 
             }
         ];
 
@@ -508,4 +508,5 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
