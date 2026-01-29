@@ -294,19 +294,19 @@ async function loadProfile() {
             { 
                 name: "Scout", 
                 desc: "Capturer 50 Pokémon différents", 
-                unlocked: user.pokedexCount >= 50, 
+                unlocked: user.pokemons >= 50, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
             },
             { 
                 name: "Collectionneur", 
                 desc: "Capturer 150 Pokémon différents", 
-                unlocked: user.pokedexCount >= 150, 
+                unlocked: user.pokemons >= 150, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
             },
             { 
                 name: "Maître Pokédex", 
                 desc: "Capturer 400 Pokémon différents", 
-                unlocked: user.pokedexCount >= 400, 
+                unlocked: user.pokemons >= 400, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
             },
             { 
@@ -508,5 +508,6 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
