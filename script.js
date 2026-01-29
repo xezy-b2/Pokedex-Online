@@ -281,6 +281,7 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
+// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
@@ -288,6 +289,63 @@ async function loadProfile() {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await res.json();
         
+        // --- LOGIQUE DES BADGES ---
+        const badges = [
+            { 
+                name: "Scout", 
+                desc: "Capturer 50 Pokémon différents", 
+                unlocked: user.pokedexCount >= 50, 
+                icon: "https://www.pokepedia.fr/images/7/7b/Badge_Roche_LGPE.png" 
+            },
+            { 
+                name: "Collectionneur", 
+                desc: "Capturer 150 Pokémon différents", 
+                unlocked: user.pokedexCount >= 150, 
+                icon: "https://www.pokepedia.fr/images/d/dd/Badge_Prisme_LGPE.png" 
+            },
+            { 
+                name: "Maître Pokédex", 
+                desc: "Capturer 400 Pokémon différents", 
+                unlocked: user.pokedexCount >= 400, 
+                icon: "https://www.pokepedia.fr/images/2/26/Badge_Terre_LGPE.png" 
+            },
+            { 
+                name: "Shiny Hunter", 
+                desc: "Posséder au moins 5 Pokémon Shinies", 
+                unlocked: (user.shinyCount || 0) >= 5, 
+                icon: "https://www.pokepedia.fr/images/d/d4/Badge_Plaine_DP.png" 
+            },
+            { 
+                name: "Millionnaire", 
+                desc: "Avoir plus de 100 000 💰", 
+                unlocked: user.money >= 100000, 
+                icon: "https://www.pokepedia.fr/images/8/85/Badge_Mine_DP.png" 
+            },
+            { 
+                name: "Maître Méga", 
+                desc: "Posséder au moins une Méga-Évolution", 
+                unlocked: (user.megaCount || 0) >= 1, 
+                icon: "https://www.pokepedia.fr/images/c/c2/Poids_Ic%C3%B4ne_Badge_M%C3%A9ga-Anneau_ROSS.png" 
+            },
+            { 
+                name: "Accro au Miracle", 
+                desc: "Avoir fait au moins 20 échanges miracle", 
+                unlocked: (user.tradesCount || 0) >= 20, 
+                icon: "https://www.pokepedia.fr/images/1/12/Badge_Zéphir_OAC.png" 
+            }
+        ];
+
+        let badgesHtml = `
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px; padding:10px; background:rgba(0,0,0,0.1); border-radius:10px;">
+                ${badges.map(b => `
+                    <img src="${b.icon}" 
+                         title="${b.name}: ${b.desc}" 
+                         style="width:40px; height:40px; object-fit:contain; ${b.unlocked ? '' : 'filter:grayscale(1) opacity(0.3);'}"
+                         class="${b.unlocked ? 'unlocked' : 'locked'}">
+                `).join('')}
+            </div>
+        `;
+
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
@@ -309,6 +367,10 @@ async function loadProfile() {
         const isOff = cooldownText !== null;
 
         container.innerHTML = `
+            <div class="stat-box" style="text-align:center;">
+                <h3>🏆 Badges d'Exploits</h3>
+                ${badgesHtml}
+            </div>
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
             <div class="stat-box" style="text-align:center;">
                 <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
@@ -446,3 +508,4 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
