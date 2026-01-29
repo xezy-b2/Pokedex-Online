@@ -312,8 +312,6 @@ async function loadProfile() {
                     .replace('mega-', '')
                     .trim();
 
-                let englishName = translations[baseName] || baseName;
-
 // Correction spécifique pour les formes X et Y
 if (baseName === "dracaufeu" || baseName === "mewtwo") {
     // Si ton bot enregistre "Méga-Dracaufeu X", on adapte le nom pour Showdown
@@ -503,6 +501,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
