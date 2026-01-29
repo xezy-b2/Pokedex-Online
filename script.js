@@ -382,7 +382,10 @@ async function loadShop() {
             for (let key of keys) if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
             return "0";
         };
-
+// Mettre à jour l'affichage de l'argent dans la boutique
+        if (shopMoneySpan) {
+            shopMoneySpan.innerText = user.money.toLocaleString();
+        }
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
         const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
@@ -460,6 +463,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
