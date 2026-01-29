@@ -281,16 +281,15 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
+// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
-        // --- CALCUL DES STATS POUR LES BADGES ---
-        // On calcule les stats à partir du tableau 'pokemons' fourni par ton modèle User.js
+        // --- LOGIQUE DES BADGES (URLs basées sur le dossier /badges de PokeAPI) ---
         const totalUnique = new Set(user.pokemons.map(p => p.pokedexId)).size;
         const totalShiny = user.pokemons.filter(p => p.isShiny).length;
         const totalMega = user.pokemons.filter(p => p.isMega).length;
@@ -350,19 +349,7 @@ async function loadProfile() {
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            let spriteSrc = `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
-
-            if (cp.isMega === true || cp.name.toLowerCase().includes('méga')) {
-                const translations = { 
-                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
-                    "tortank": "blastoise", "florizarre": "venusaur",
-                    "lucario": "lucario", "alakazam": "alakazam",
-                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
-                };
-                let baseName = cp.name.toLowerCase().replace(/[éèêë]/g, 'e').replace('méga-', '').replace('mega-', '').trim();
-                const englishName = translations[baseName] || baseName;
-                spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
-            }
+            const spriteSrc = getPokemonSprite(cp);
             
             compHtml = `
                 <div class="is-companion">
@@ -521,6 +508,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
