@@ -5,6 +5,48 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 
+// --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y et Mewtwo X/Y) ---
+function getPokemonSprite(p) {
+    const isShiny = p.isShiny;
+    const isMega = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
+    
+    if (isMega) {
+        let nameLower = p.name.toLowerCase();
+        
+        // Détection des formes X et Y
+        let suffix = "";
+        if (nameLower.includes(' x')) suffix = "x";
+        if (nameLower.includes(' y')) suffix = "y";
+        
+        // Nettoyage du nom pour le mapping
+        let baseName = nameLower
+            .replace(/[éèêë]/g, 'e')
+            .replace('méga-', '')
+            .replace('mega-', '')
+            .replace(' x', '')
+            .replace(' y', '')
+            .trim();
+
+        const translations = { 
+            "ectoplasma": "gengar", 
+            "dracaufeu": "charizard", 
+            "tortank": "blastoise", 
+            "florizarre": "venusaur",
+            "lucario": "lucario", 
+            "alakazam": "alakazam",
+            "mewtwo": "mewtwo", 
+            "rayquaza": "rayquaza"
+        };
+
+        const englishName = translations[baseName] || baseName;
+        const megaType = suffix ? `mega${suffix}` : `mega`;
+        
+        return `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${englishName}-${megaType}.gif`;
+    }
+    
+    return `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
+}
+
 // --- INITIALISATION ---
 function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -57,45 +99,19 @@ function calculatePrice(p) {
 
 // --- RENDU DES CARTES ---
 function createCard(p, mode = 'pokedex') {
-    const isShiny = p.isShiny;
-    const isMega = p.isMega === true;
     const isCaptured = p.isCaptured !== false;
     const isCompanion = p.isCompanion === true;
+    const isMega = p.isMega === true;
     const price = calculatePrice(p);
     
-    // --- LOGIQUE IMAGE ---
-    // Image par défaut (PokeAPI)
-    let img = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
-    
-    // Si c'est un Méga, on construit l'URL Showdown comme dans ta commande Discord
-    if (isMega) {
-        // On récupère le nom de base en minuscule et sans "Méga-"
-        let baseName = p.name.toLowerCase()
-            .replace('méga-', '')
-            .replace('mega-', '')
-            .trim();
-            
-        // Mapping des noms français vers anglais pour Showdown (essentiel pour éviter les 404)
-        const translations = {
-            "ectoplasma": "gengar",
-            "dracaufeu": "charizard",
-            "tortank": "blastoise",
-            "florizarre": "venusaur",
-            "mewtwo": "mewtwo",
-            "lucario": "lucario",
-            "alakazam": "alakazam"
-        };
-        
-        const englishName = translations[baseName] || baseName;
-        img = `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
-    }
+    const img = getPokemonSprite(p);
     
     const ballKey = p.capturedWith || 'pokeball';
     const ballFileName = ballKey.replace('ball', '-ball') + '.png';
     const ballImgUrl = `${BALL_URL}${ballFileName}`;
     
     let html = `
-        <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
+        <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
             
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
@@ -104,10 +120,10 @@ function createCard(p, mode = 'pokedex') {
             
             <img src="${img}" 
                  class="poke-sprite" 
-                 onerror="this.onerror=null; this.src='${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" 
+                 onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" 
                  style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
             
-            <span class="pokemon-name" style="font-weight:bold;">${isShiny ? '✨ ' : ''}${p.name || '???'}</span>
+            <span class="pokemon-name" style="font-weight:bold;">${p.isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
@@ -118,7 +134,7 @@ function createCard(p, mode = 'pokedex') {
     if (mode === 'collection' && isCaptured) {
         html += `
             <button class="btn-action btn-sell" onclick="sellPoke('${p._id}', '${p.name}', ${price})">Vendre (${price} 💰)</button>
-            ${!isShiny && !isMega ? `<button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Miracle 🎲</button>` : ''}
+            ${!p.isShiny && !isMega ? `<button class="btn-action btn-trade" onclick="wonderTrade('${p._id}', '${p.name}')">Miracle 🎲</button>` : ''}
         `;
     }
     return html + `</div>`;
@@ -126,13 +142,9 @@ function createCard(p, mode = 'pokedex') {
 
 async function loadPokedex() {
     try {
-        console.log("Tentative de mise à jour du compagnon...");
-        
-        // 1. Récupération du profil
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
         
-        // --- BLOC COMPAGNON ---
         const comp = userProfile.companionPokemon;
         const companionId = comp ? comp._id : null;
 
@@ -140,46 +152,18 @@ async function loadPokedex() {
         const compName = document.getElementById('companion-name');
 
         if (comp && compImg) {
-            // Image par défaut (PokeAPI)
-            let spriteUrl = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
-
-            // LOGIQUE MÉGA
-            if (comp.isMega === true || comp.name.toLowerCase().includes('méga')) {
-                const translations = { 
-                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
-                    "tortank": "blastoise", "florizarre": "venusaur",
-                    "lucario": "lucario", "alakazam": "alakazam",
-                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
-                };
-
-                let baseName = comp.name.toLowerCase()
-                    .replace(/[éèêë]/g, 'e')
-                    .replace('méga-', '')
-                    .replace('mega-', '')
-                    .trim();
-                
-                const englishName = translations[baseName] || baseName;
-                spriteUrl = `https://play.pokemonshowdown.com/sprites/ani${comp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
-            }
-
-            console.log("Nouvelle URL image compagnon :", spriteUrl);
-            
-            // Mise à jour de l'élément image
+            const spriteUrl = getPokemonSprite(comp);
             compImg.src = spriteUrl; 
-            compImg.style.display = 'block'; // On affiche l'image
-            
+            compImg.style.display = 'block';
             compImg.onerror = function() {
-                console.warn("Image Showdown introuvable, repli sur PokeAPI");
                 this.onerror = null;
                 this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
             };
-
             if (compName) compName.innerText = comp.name.toUpperCase();
         } else if (compImg) {
-            compImg.style.display = 'none'; // Cache l'image si pas de compagnon
+            compImg.style.display = 'none';
         }
 
-        // --- 2. RÉCUPÉRATION DU RESTE DES DONNÉES ---
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
@@ -227,11 +211,9 @@ async function loadPokedex() {
                 }
             }
         });
-
-    } catch (e) { 
-        console.error("Erreur critique loadPokedex :", e); 
-    }
+    } catch (e) { console.error("Erreur loadPokedex :", e); }
 }
+
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -240,7 +222,6 @@ async function setCompanion(pokemonId) {
             body: JSON.stringify({ userId: currentUserId, pokemonId: pokemonId })
         });
         if(res.ok) {
-            // Recharger les données mettra à jour l'image en haut grâce au nouveau code dans loadPokedex
             loadPokedex();
             if(document.getElementById('profile-page').classList.contains('active')) loadProfile();
         } else {
@@ -249,6 +230,7 @@ async function setCompanion(pokemonId) {
         }
     } catch (e) { console.error("Erreur setCompanion:", e); }
 }
+
 // --- LOGIQUE DAILY ---
 function getCooldownTime(lastDailyDate) {
     if (!lastDailyDate) return null;
@@ -276,9 +258,7 @@ async function claimDaily() {
         if (data.success) {
             alert(`🎁 ${data.message}\n${data.rewards}`);
             loadProfile(); 
-        } else {
-            alert(data.message);
-        }
+        } else { alert(data.message); }
     } catch (e) { alert("Erreur lors de la récupération."); }
 }
 
@@ -288,33 +268,12 @@ async function loadProfile() {
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            
-            // --- LOGIQUE D'IMAGE DYNAMIQUE ---
-            let spriteSrc = `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
-
-            if (cp.isMega === true || cp.name.toLowerCase().includes('méga')) {
-                const translations = { 
-                    "ectoplasma": "gengar", "dracaufeu": "charizard", 
-                    "tortank": "blastoise", "florizarre": "venusaur",
-                    "lucario": "lucario", "alakazam": "alakazam",
-                    "mewtwo": "mewtwo", "rayquaza": "rayquaza"
-                };
-
-                let baseName = cp.name.toLowerCase()
-                    .replace(/[éèêë]/g, 'e')
-                    .replace('méga-', '')
-                    .replace('mega-', '')
-                    .trim();
-                
-                const englishName = translations[baseName] || baseName;
-                spriteSrc = `https://play.pokemonshowdown.com/sprites/ani${cp.isShiny ? '-shiny' : ''}/${englishName}-mega.gif`;
-            }
+            const spriteSrc = getPokemonSprite(cp);
             
             compHtml = `
                 <div class="is-companion">
@@ -371,35 +330,22 @@ async function loadProfile() {
         }
     } catch (e) { container.innerHTML = "Erreur profil."; }
 }
+
 async function loadShop() {
     const container = document.getElementById('shopContainer');
-    const shopMoneySpan = document.getElementById('shop-money'); // L'ID que nous avons ajouté dans le HTML
+    const shopMoneySpan = document.getElementById('shop-money');
     if(!container) return;
-
     try {
-        // 1. RÉCUPÉRATION DE L'ARGENT DE L'UTILISATEUR
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await profRes.json();
-        
-        // Mise à jour du texte "Portefeuille" dans la boutique
-        if (shopMoneySpan) {
-            shopMoneySpan.innerText = user.money.toLocaleString();
-        }
+        if (shopMoneySpan) shopMoneySpan.innerText = user.money.toLocaleString();
 
-        // 2. RÉCUPÉRATION DES PRIX DE LA BOUTIQUE
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const data = await res.json();
-        
-        // Transformation des données pour accès facile par clé
-        const items = Array.isArray(data) 
-            ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) 
-            : data;
+        const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
 
         const getPrice = (keys) => {
-            for (let key of keys) {
-                // On vérifie si la clé existe et si elle a un coût
-                if (items[key] && items[key].cost) return items[key].cost.toLocaleString();
-            }
+            for (let key of keys) { if (items[key] && items[key].cost) return items[key].cost.toLocaleString(); }
             return "0";
         };
 
@@ -409,9 +355,7 @@ async function loadShop() {
         
         let shopHtml = '';
         itemKeys.forEach((key, i) => {
-            // Petite correction pour le nom des fichiers images
             const ballImg = key.replace('ball', '-ball') + '.png';
-            
             shopHtml += `
                 <div class="pokedex-card">
                     <img src="${BALL_URL}${ballImg}" style="${imgStyle}">
@@ -424,13 +368,8 @@ async function loadShop() {
                 </div>
             `;
         });
-        
         container.innerHTML = shopHtml;
-
-    } catch (e) { 
-        console.error("Erreur lors du chargement de la boutique :", e);
-        container.innerHTML = "<p style='text-align:center;'>Erreur de chargement des articles.</p>";
-    }
+    } catch (e) { container.innerHTML = "<p>Erreur boutique.</p>"; }
 }
 
 // --- ACTIONS ---
@@ -489,25 +428,3 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
