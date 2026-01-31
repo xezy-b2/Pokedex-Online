@@ -738,11 +738,36 @@ app.post('/api/daily/claim', async (req, res) => {
         res.status(500).json({ success: false, message: "Erreur lors de la récupération du cadeau." });
     }
 });
+
+app.post('/api/evolve-companion', async (req, res) => {
+    const { userId, newId, newName } = req.body;
+    try {
+        const user = await User.findOne({ userId: userId });
+        if (!user || !user.companionPokemon) return res.status(404).json({ error: "Dresseur ou compagnon non trouvé" });
+
+        // 1. On met à jour le compagnon
+        user.companionPokemon.pokedexId = newId;
+        user.companionPokemon.name = newName;
+
+        // 2. IMPORTANT : On met aussi à jour le Pokémon dans la liste globale 'pokemons'
+        const pokemonInList = user.pokemons.id(user.companionPokemon._id);
+        if (pokemonInList) {
+            pokemonInList.pokedexId = newId;
+            pokemonInList.name = newName;
+        }
+
+        await user.save();
+        res.json({ success: true, message: `Évolution réussie en ${newName}` });
+    } catch (e) {
+        res.status(500).json({ error: "Erreur lors de l'évolution" });
+    }
+});
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
