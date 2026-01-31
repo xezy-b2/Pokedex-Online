@@ -285,21 +285,23 @@ async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        const user = await res.json();
-        
-        // --- CALCULS ET DEBUG ---
-        const userPokes = user.pokemons || [];
-        
-        // On utilise Set pour compter les IDs uniques
+        // 1. On récupère les infos de base (Argent, LastDaily)
+        const resProfile = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const user = await resProfile.json();
+
+        // 2. On récupère la liste des Pokémon (car l'API profile ne les donne pas)
+        const resPokedex = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+        const pokedexData = await resPokedex.json();
+        const userPokes = pokedexData.capturedPokemonsList || [];
+
+        // 3. CALCULS RÉELS
         const uniqueIds = new Set(userPokes.map(p => p.pokedexId));
         const totalUnique = uniqueIds.size;
-        
-        const totalShiny = userPokes.filter(p => p.isShiny === true || p.isShiny === "true").length;
-        const totalMega = userPokes.filter(p => p.isMega === true || p.isMega === "true").length;
+        const totalShiny = userPokes.filter(p => p.isShiny).length;
+        const totalMega = userPokes.filter(p => p.isMega).length;
 
-        // DEBUG : Appuie sur F12 pour voir ces chiffres dans ta console navigateur
-        console.log("Stats Badge - Uniques:", totalUnique, "Shinies:", totalShiny, "Mégas:", totalMega, "Argent:", user.money);
+        // DEBUG pour vérifier que les chiffres ne sont plus à 0
+        console.log("Stats Réelles - Uniques:", totalUnique, "Shinies:", totalShiny, "Mégas:", totalMega);
 
         // --- LOGIQUE DES BADGES ---
         const badges = [
@@ -330,7 +332,7 @@ async function loadProfile() {
             { 
                 name: "Millionnaire", 
                 desc: "100 000 💰", 
-                unlocked: (user.money || 0) >= 100000, 
+                unlocked: user.money >= 100000, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" 
             },
             { 
@@ -349,13 +351,14 @@ async function loadProfile() {
                         <img src="${b.icon}" 
                              title="${b.name}: ${b.desc}" 
                              style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; 
-                             ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold) !important; opacity: 1 !important;' : 'filter: grayscale(1) opacity(0.2);'}">
+                             ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}"
+                             onmouseover="this.style.transform='scale(1.2)'" 
+                             onmouseout="this.style.transform='scale(1)'">
                     `).join('')}
                 </div>
             </div>
         `;
 
-        // --- COMPAGNON ---
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
@@ -374,12 +377,11 @@ async function loadProfile() {
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
 
-        // --- RENDU FINAL ---
         container.innerHTML = `
             ${badgesHtml}
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
             <div class="stat-box" style="text-align:center;">
-                <h2>💰 Portefeuille : ${(user.money || 0).toLocaleString()} 💰</h2>
+                <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
                 <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
                     ${isOff ? 'disabled' : ''} 
                     style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">
@@ -415,7 +417,7 @@ async function loadProfile() {
             }, 1000);
         }
     } catch (e) { 
-        console.error("Erreur Profil:", e);
+        console.error(e);
         container.innerHTML = "Erreur profil."; 
     }
 }
@@ -516,6 +518,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
