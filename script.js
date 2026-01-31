@@ -281,21 +281,25 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
-// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
-        // --- CALCUL DES STATS SÉCURISÉ ---
-        // On vérifie si user.pokemons existe, sinon on met un tableau vide pour éviter le crash
+        // --- CALCULS ET DEBUG ---
         const userPokes = user.pokemons || [];
-        const totalUnique = new Set(userPokes.map(p => p.pokedexId)).size;
-        const totalShiny = userPokes.filter(p => p.isShiny).length;
-        const totalMega = userPokes.filter(p => p.isMega).length;
+        
+        // On utilise Set pour compter les IDs uniques
+        const uniqueIds = new Set(userPokes.map(p => p.pokedexId));
+        const totalUnique = uniqueIds.size;
+        
+        const totalShiny = userPokes.filter(p => p.isShiny === true || p.isShiny === "true").length;
+        const totalMega = userPokes.filter(p => p.isMega === true || p.isMega === "true").length;
+
+        // DEBUG : Appuie sur F12 pour voir ces chiffres dans ta console navigateur
+        console.log("Stats Badge - Uniques:", totalUnique, "Shinies:", totalShiny, "Mégas:", totalMega, "Argent:", user.money);
 
         // --- LOGIQUE DES BADGES ---
         const badges = [
@@ -344,24 +348,21 @@ async function loadProfile() {
                     ${badges.map(b => `
                         <img src="${b.icon}" 
                              title="${b.name}: ${b.desc}" 
-                             style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; ${b.unlocked ? 'filter: drop-shadow(0 0 5px gold);' : 'filter:grayscale(1) opacity(0.2);'}"
-                             onmouseover="this.style.transform='scale(1.2)'" 
-                             onmouseout="this.style.transform='scale(1)'">
+                             style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; 
+                             ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold) !important; opacity: 1 !important;' : 'filter: grayscale(1) opacity(0.2);'}">
                     `).join('')}
                 </div>
             </div>
         `;
 
+        // --- COMPAGNON ---
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            // Utilisation de ta fonction getPokemonSprite définie dans ton script
-            const spriteSrc = typeof getPokemonSprite === "function" ? getPokemonSprite(cp) : `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
-            
+            const spriteSrc = getPokemonSprite(cp);
             compHtml = `
                 <div class="is-companion">
-                    <img src="${spriteSrc}" 
-                         class="poke-sprite" 
+                    <img src="${spriteSrc}" class="poke-sprite" 
                          onerror="this.onerror=null; this.src='${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png';"
                          style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));">
                     <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
@@ -373,6 +374,7 @@ async function loadProfile() {
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
 
+        // --- RENDU FINAL ---
         container.innerHTML = `
             ${badgesHtml}
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
@@ -407,19 +409,13 @@ async function loadProfile() {
                 const updatedTime = getCooldownTime(user.lastDaily);
                 const dailyBtn = document.getElementById('dailyBtn');
                 if (!updatedTime || !dailyBtn) {
-                    if(dailyBtn) { 
-                        dailyBtn.disabled = false; 
-                        dailyBtn.style.background = 'var(--highlight)'; 
-                        dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; 
-                    }
+                    if(dailyBtn) { dailyBtn.disabled = false; dailyBtn.style.background = 'var(--highlight)'; dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; }
                     clearInterval(timer);
-                } else { 
-                    dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; 
-                }
+                } else { dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; }
             }, 1000);
         }
     } catch (e) { 
-        console.error(e);
+        console.error("Erreur Profil:", e);
         container.innerHTML = "Erreur profil."; 
     }
 }
@@ -520,5 +516,6 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
