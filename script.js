@@ -327,19 +327,19 @@ async function loadProfile() {
                 name: "Shiny Hunter", 
                 desc: "5 Pokémon Shinies", 
                 unlocked: totalShiny >= 5, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
+                icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" 
             },
             { 
                 name: "Millionnaire", 
                 desc: "100 000 💰", 
                 unlocked: user.money >= 100000, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" 
+                icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" 
             },
             { 
                 name: "Maître Méga", 
                 desc: "Au moins une Méga-Évolution", 
                 unlocked: totalMega >= 1, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
+                icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" 
             }
         ];
 
@@ -518,6 +518,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
