@@ -294,14 +294,39 @@ async function loadProfile() {
         const pokedexData = await resPokedex.json();
         const userPokes = pokedexData.capturedPokemonsList || [];
 
-        // 3. CALCULS RÉELS
+        // --- LOGIQUE D'ÉVOLUTION AUTOMATIQUE DU COMPAGNON ---
+        const cp = user.companionPokemon;
+        if (cp) {
+            // On utilise la fonction getEvolutionData que tu as ajoutée en bas de ton fichier
+            const evo = await getEvolutionData(cp.pokedexId);
+            
+            // Si une évolution par niveau existe et que le niveau est atteint
+            if (evo && cp.level >= evo.minLevel) {
+                console.log(`Évolution détectée pour ${cp.name} vers ${evo.nextName} (Niveau requis: ${evo.minLevel})`);
+                
+                const evolveRes = await fetch(`${API_BASE_URL}/api/evolve-companion`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        userId: currentUserId, 
+                        newId: parseInt(evo.nextId), 
+                        newName: evo.nextName 
+                    })
+                });
+
+                if (evolveRes.ok) {
+                    alert(`✨ QUOI ?! Ton compagnon évolue en ${evo.nextName} ! ✨`);
+                    // On relance la fonction pour mettre à jour l'affichage avec le nouveau Pokémon
+                    return loadProfile();
+                }
+            }
+        }
+
+        // 3. CALCULS RÉELS POUR LES BADGES
         const uniqueIds = new Set(userPokes.map(p => p.pokedexId));
         const totalUnique = uniqueIds.size;
         const totalShiny = userPokes.filter(p => p.isShiny).length;
         const totalMega = userPokes.filter(p => p.isMega).length;
-
-        // DEBUG pour vérifier que les chiffres ne sont plus à 0
-        console.log("Stats Réelles - Uniques:", totalUnique, "Shinies:", totalShiny, "Mégas:", totalMega);
 
         // --- LOGIQUE DES BADGES ---
         const badges = [
@@ -552,6 +577,7 @@ async function getEvolutionData(pokedexId) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
