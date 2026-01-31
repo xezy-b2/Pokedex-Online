@@ -330,9 +330,9 @@ async function loadProfile() {
                 icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" 
             },
             { 
-                name: "Millionnaire", 
-                desc: "100 000 💰", 
-                unlocked: user.money >= 100000, 
+                name: "Vive la richesse", 
+                desc: "25 000 💰", 
+                unlocked: user.money >= 25000, 
                 icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" 
             },
             { 
@@ -518,6 +518,7 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
