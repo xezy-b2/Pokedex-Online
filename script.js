@@ -516,8 +516,43 @@ async function buyItem(key, qty) {
     } catch (e) { console.error(e); }
 }
 
+async function getEvolutionData(pokedexId) {
+    try {
+        // Récupère les infos de l'espèce
+        const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokedexId}/`);
+        const speciesData = await speciesRes.json();
+        
+        // Récupère la chaîne d'évolution
+        const evoRes = await fetch(speciesData.evolution_chain.url);
+        const evoData = await evoRes.json();
+
+        // Parcourt la chaîne pour trouver le Pokémon actuel et son évolution
+        let current = evoData.chain;
+        while (current && current.species.name !== speciesData.name) {
+            if (current.evolves_to.length > 0) current = current.evolves_to[0];
+            else break;
+        }
+
+        if (current && current.evolves_to.length > 0) {
+            const nextEvo = current.evolves_to[0];
+            const details = nextEvo.evolution_details[0];
+
+            // Si l'évolution se fait par niveau
+            if (details && details.trigger.name === "level-up" && details.min_level) {
+                return {
+                    minLevel: details.min_level,
+                    nextId: nextEvo.species.url.split('/').filter(Boolean).pop(),
+                    nextName: nextEvo.species.name.charAt(0).toUpperCase() + nextEvo.species.name.slice(1)
+                };
+            }
+        }
+        return null; 
+    } catch (e) { return null; }
+}
+
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
