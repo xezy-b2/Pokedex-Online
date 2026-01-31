@@ -281,54 +281,57 @@ async function claimDaily() {
 }
 
 // --- PROFIL ---
+// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        if (!res.ok) throw new Error("Erreur serveur");
         const user = await res.json();
         
-        // --- CALCUL DES STATS POUR LES BADGES ---
-        // On calcule les stats à partir du tableau 'pokemons' présent dans ton User.js
-        const totalUnique = new Set(user.pokemons.map(p => p.pokedexId)).size;
-        const totalShiny = user.pokemons.filter(p => p.isShiny).length;
-        const totalMega = user.pokemons.filter(p => p.isMega).length;
+        // --- CALCUL DES STATS SÉCURISÉ ---
+        // On vérifie si user.pokemons existe, sinon on met un tableau vide pour éviter le crash
+        const userPokes = user.pokemons || [];
+        const totalUnique = new Set(userPokes.map(p => p.pokedexId)).size;
+        const totalShiny = userPokes.filter(p => p.isShiny).length;
+        const totalMega = userPokes.filter(p => p.isMega).length;
 
-        // --- LOGIQUE DES BADGES (URLs basées sur ton lien GitHub /badges) ---
+        // --- LOGIQUE DES BADGES ---
         const badges = [
             { 
                 name: "Scout", 
-                desc: "Capturer 50 Pokémon différents", 
+                desc: "50 Pokémon différents", 
                 unlocked: totalUnique >= 50, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
             },
             { 
                 name: "Collectionneur", 
-                desc: "Capturer 150 Pokémon différents", 
+                desc: "150 Pokémon différents", 
                 unlocked: totalUnique >= 150, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
             },
             { 
                 name: "Maître Pokédex", 
-                desc: "Capturer 400 Pokémon différents", 
+                desc: "400 Pokémon différents", 
                 unlocked: totalUnique >= 400, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
             },
             { 
                 name: "Shiny Hunter", 
-                desc: "Posséder au moins 5 Pokémon Shinies", 
+                desc: "5 Pokémon Shinies", 
                 unlocked: totalShiny >= 5, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
             },
             { 
                 name: "Millionnaire", 
-                desc: "Avoir plus de 100 000 💰", 
-                unlocked: user.money >= 100000, 
+                desc: "100 000 💰", 
+                unlocked: (user.money || 0) >= 100000, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" 
             },
             { 
                 name: "Maître Méga", 
-                desc: "Posséder au moins une Méga-Évolution", 
+                desc: "Au moins une Méga-Évolution", 
                 unlocked: totalMega >= 1, 
                 icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
             }
@@ -352,7 +355,8 @@ async function loadProfile() {
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            const spriteSrc = getPokemonSprite(cp);
+            // Utilisation de ta fonction getPokemonSprite définie dans ton script
+            const spriteSrc = typeof getPokemonSprite === "function" ? getPokemonSprite(cp) : `${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png`;
             
             compHtml = `
                 <div class="is-companion">
@@ -373,7 +377,7 @@ async function loadProfile() {
             ${badgesHtml}
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
             <div class="stat-box" style="text-align:center;">
-                <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
+                <h2>💰 Portefeuille : ${(user.money || 0).toLocaleString()} 💰</h2>
                 <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
                     ${isOff ? 'disabled' : ''} 
                     style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">
@@ -403,14 +407,22 @@ async function loadProfile() {
                 const updatedTime = getCooldownTime(user.lastDaily);
                 const dailyBtn = document.getElementById('dailyBtn');
                 if (!updatedTime || !dailyBtn) {
-                    if(dailyBtn) { dailyBtn.disabled = false; dailyBtn.style.background = 'var(--highlight)'; dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; }
+                    if(dailyBtn) { 
+                        dailyBtn.disabled = false; 
+                        dailyBtn.style.background = 'var(--highlight)'; 
+                        dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; 
+                    }
                     clearInterval(timer);
-                } else { dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; }
+                } else { 
+                    dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; 
+                }
             }, 1000);
         }
-    } catch (e) { container.innerHTML = "Erreur profil."; }
+    } catch (e) { 
+        console.error(e);
+        container.innerHTML = "Erreur profil."; 
+    }
 }
-
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     const shopMoneySpan = document.getElementById('shop-money');
@@ -508,4 +520,5 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
