@@ -288,6 +288,67 @@ async function loadProfile() {
         const res = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await res.json();
         
+        // --- CALCUL DES STATS POUR LES BADGES ---
+        // On calcule les stats à partir du tableau 'pokemons' présent dans ton User.js
+        const totalUnique = new Set(user.pokemons.map(p => p.pokedexId)).size;
+        const totalShiny = user.pokemons.filter(p => p.isShiny).length;
+        const totalMega = user.pokemons.filter(p => p.isMega).length;
+
+        // --- LOGIQUE DES BADGES (URLs basées sur ton lien GitHub /badges) ---
+        const badges = [
+            { 
+                name: "Scout", 
+                desc: "Capturer 50 Pokémon différents", 
+                unlocked: totalUnique >= 50, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
+            },
+            { 
+                name: "Collectionneur", 
+                desc: "Capturer 150 Pokémon différents", 
+                unlocked: totalUnique >= 150, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
+            },
+            { 
+                name: "Maître Pokédex", 
+                desc: "Capturer 400 Pokémon différents", 
+                unlocked: totalUnique >= 400, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
+            },
+            { 
+                name: "Shiny Hunter", 
+                desc: "Posséder au moins 5 Pokémon Shinies", 
+                unlocked: totalShiny >= 5, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/7.png" 
+            },
+            { 
+                name: "Millionnaire", 
+                desc: "Avoir plus de 100 000 💰", 
+                unlocked: user.money >= 100000, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png" 
+            },
+            { 
+                name: "Maître Méga", 
+                desc: "Posséder au moins une Méga-Évolution", 
+                unlocked: totalMega >= 1, 
+                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/mega-ring.png" 
+            }
+        ];
+
+        let badgesHtml = `
+            <div class="stat-box" style="text-align:center;">
+                <h3 style="color:var(--highlight); margin-bottom:10px;">🏆 Badges d'Exploits</h3>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">
+                    ${badges.map(b => `
+                        <img src="${b.icon}" 
+                             title="${b.name}: ${b.desc}" 
+                             style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; ${b.unlocked ? 'filter: drop-shadow(0 0 5px gold);' : 'filter:grayscale(1) opacity(0.2);'}"
+                             onmouseover="this.style.transform='scale(1.2)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
@@ -309,6 +370,7 @@ async function loadProfile() {
         const isOff = cooldownText !== null;
 
         container.innerHTML = `
+            ${badgesHtml}
             <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
             <div class="stat-box" style="text-align:center;">
                 <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
@@ -446,3 +508,4 @@ async function buyItem(key, qty) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
