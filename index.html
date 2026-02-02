@@ -26,6 +26,35 @@
         .gen-nav button { background: rgba(255,255,255,0.05); color: var(--text-sec); border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
         .gen-nav button.active { background: var(--highlight); color: white; }
 
+        /* AJOUT : Style pour la pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 10px;
+            background: var(--header-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .pagination-btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--highlight);
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
         
         .pokedex-card { background: var(--card-bg); border-radius: 15px; padding: 15px; border: 1px solid var(--border); text-align: center; position: relative; display: flex; flex-direction: column; transition: 0.3s; }
@@ -65,100 +94,69 @@
         .stat-box { background: var(--header-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
         .ball-inventory { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center; }
         .ball-item img { width: 35px; }
-
         .is-mega { border: 2px solid #ff00ff !important; box-shadow: 0 0 15px rgba(255, 0, 255, 0.2); }
         
-        /* Style spécifique pour l'image animée dans le profil */
-        .is-companion img {
-            animation: floating 3s ease-in-out infinite;
-            image-rendering: auto; /* Pour les GIFs de Showdown */
-        }
-        @keyframes floating {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-
-        .badges-container {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-}
-
-.badge-icon {
-    width: 45px;
-    height: 45px;
-    object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-    transition: transform 0.2s;
-    cursor: help;
-}
-
-.badge-icon:hover {
-    transform: scale(1.2);
-}
-
-.badge-icon.locked {
-    filter: grayscale(1) opacity(0.3);
-}
+        .is-companion img { animation: floating 3s ease-in-out infinite; image-rendering: auto; }
+        @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        
+        .badges-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        .badge { background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.85em; display: flex; align-items: center; gap: 8px; }
+        .badge.unlocked { border-color: var(--shiny); background: rgba(241, 224, 90, 0.1); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Pokédex Online</h1>
-            <div id="auth-zone">
-                <div id="logged-out-user">
-                    <a href="https://discord.com/oauth2/authorize?client_id=1431303570996727848&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify" 
-                       style="color:white; text-decoration:none; background:var(--discord); padding:10px 20px; border-radius:10px; font-weight:bold;">
-                       Connexion Discord
-                    </a>
+            <h1 style="margin:0; font-weight:800; font-size:1.5em; background: linear-gradient(45deg, var(--red-poke), #ff7b72); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Pokédex Online</h1>
+            <div id="logged-out-user">
+                <button onclick="window.location.href='https://discord.com/api/oauth2/authorize?client_id=1130838151325794354&redirect_uri=https%3A%2F%2Fpokedex-online-pxmg.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify'" class="nav-btn" style="background: var(--discord); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">Se connecter avec Discord</button>
+            </div>
+            <div id="logged-in-user" style="display:none; align-items:center; gap:15px;">
+                <div id="companion-display" style="display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border);">
+                    <img id="companion-img" src="" style="width:40px; height:40px; display:none;">
+                    <span id="companion-name" style="font-weight:bold; font-size:0.8em; color:var(--shiny);"></span>
                 </div>
-                <div id="logged-in-user" style="display:none;">
-                    <span id="display-username" style="color:var(--shiny); font-weight:800; margin-right:15px;"></span>
-                    <button onclick="logout()" style="background:var(--red-poke); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">Quitter</button>
-                </div>
+                <span id="display-username" style="font-weight:600;"></span>
             </div>
         </header>
 
         <nav id="main-nav">
-            <button id="nav-pokedex" class="active" onclick="showPage('pokedex')">Encyclopédie</button>
+            <button id="nav-pokedex" onclick="showPage('pokedex')" class="active">Encyclopédie</button>
             <button id="nav-collection" onclick="showPage('collection')">Ma Collection</button>
-            <button id="nav-profile" onclick="showPage('profile')">Mon Profil</button>
             <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
+            <button id="nav-profile" onclick="showPage('profile')">Dresseur</button>
         </nav>
 
         <div id="pokedex-page" class="page-section active">
-            <div class="gen-nav" id="gen-tabs">
-                <button class="active" onclick="filterGen(1)">Gen 1</button>
+            <div id="gen-tabs" class="gen-nav">
+                <button onclick="filterGen(1)" class="active">Gen 1</button>
                 <button onclick="filterGen(2)">Gen 2</button>
                 <button onclick="filterGen(3)">Gen 3</button>
                 <button onclick="filterGen(4)">Gen 4</button>
                 <button onclick="filterGen(5)">Gen 5</button>
                 <button onclick="filterGen(6)">Gen 6</button>
             </div>
-            
-            <div id="gen-1" class="gen-content active"><div class="pokedex-grid" id="grid-1"></div></div>
-            <div id="gen-2" class="gen-content"><div class="pokedex-grid" id="grid-2"></div></div>
-            <div id="gen-3" class="gen-content"><div class="pokedex-grid" id="grid-3"></div></div>
-            <div id="gen-4" class="gen-content"><div class="pokedex-grid" id="grid-4"></div></div>
-            <div id="gen-5" class="gen-content"><div class="pokedex-grid" id="grid-5"></div></div>
-            <div id="gen-6" class="gen-content"><div class="pokedex-grid" id="grid-6"></div></div>
+
+            <div id="pokedex-pagination" class="pagination-container">
+                <button id="btn-prev" onclick="changePage(-1)" class="pagination-btn">Précédent</button>
+                <span id="page-info">Page 1 / 1</span>
+                <button id="btn-next" onclick="changePage(1)" class="pagination-btn">Suivant</button>
+            </div>
+
+            <div id="gen-1" class="gen-content active"><div id="grid-1" class="pokedex-grid"></div></div>
+            <div id="gen-2" class="gen-content"><div id="grid-2" class="pokedex-grid"></div></div>
+            <div id="gen-3" class="gen-content"><div id="grid-3" class="pokedex-grid"></div></div>
+            <div id="gen-4" class="gen-content"><div id="grid-4" class="pokedex-grid"></div></div>
+            <div id="gen-5" class="gen-content"><div id="grid-5" class="pokedex-grid"></div></div>
+            <div id="gen-6" class="gen-content"><div id="grid-6" class="pokedex-grid"></div></div>
         </div>
 
         <div id="collection-page" class="page-section">
-            <h2 style="color: var(--shiny);">✨ Favoris & Chromatiques</h2>
-            <div id="shiny-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
-
-            <h2>🧬 Ma Collection Méga</h2>
-            <div id="mega-grid" class="pokedex-grid" style="margin-bottom: 40px;"></div>
-            
-            <h2>📦 Mes Doublons</h2>
+            <h3 style="color:var(--shiny)">✨ Pokémon Chromatiques</h3>
+            <div id="shiny-grid" class="pokedex-grid"></div>
+            <h3 style="color:#ff00ff; margin-top:30px;">🧬 Formes Méga</h3>
+            <div id="mega-grid" class="pokedex-grid"></div>
+            <h3 style="color:var(--text-sec); margin-top:30px;">📂 Doublons & Autres</h3>
             <div id="duplicate-grid" class="pokedex-grid"></div>
         </div>
 
@@ -166,24 +164,26 @@
             <div id="profileContainer"></div>
         </div>
 
-<div id="shop-page" class="page-section">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2 id="shop-wallet" style="color: var(--shiny); background: var(--header-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); display: inline-block;">
-            💰 Portefeuille : <span id="shop-money">0</span> 💰
-        </h2>
-    </div>
-    <div id="shopContainer" class="pokedex-grid"></div>
-</div>
+        <div id="shop-page" class="page-section">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 id="shop-wallet" style="color: var(--shiny); background: var(--header-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border); display: inline-block;">
+                    💰 Portefeuille : <span id="shop-money">0</span> 💰
+                </h2>
+            </div>
+            <div id="shopContainer" class="pokedex-grid"></div>
+        </div>
 
-    <div id="trade-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
-        <div style="background:var(--header-bg); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--shiny); max-width:400px; width:90%;">
-            <h2 style="color:var(--shiny)">Échange Miracle Réussi !</h2>
-            <img id="modal-img" src="" style="width:150px; image-rendering: pixelated;">
-            <p id="modal-text" style="font-size:1.2em;"></p>
-            <button onclick="document.getElementById('trade-modal').style.display='none'" style="background:var(--highlight); color:white; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; width:100%; font-weight:bold; margin-top:15px;">Génial !</button>
+        <div id="trade-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:var(--header-bg); padding:30px; border-radius:20px; text-align:center; border:1px solid var(--shiny); max-width:400px; width:90%;">
+                <h2 style="color:var(--shiny)">Échange Miracle Réussi !</h2>
+                <img id="modal-img" src="" style="width:150px; image-rendering: pixelated;">
+                <p id="modal-text" style="font-size:1.1em; margin:20px 0;"></p>
+                <button onclick="document.getElementById('trade-modal').style.display='none'" class="nav-btn" style="background:var(--highlight); color:white; border:none; padding:10px 25px; border-radius:10px; cursor:pointer; font-weight:bold;">Super !</button>
+            </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script (5).js"></script>
+    <script>window.onload = initializeApp;</script>
 </body>
 </html>
