@@ -5,6 +5,13 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 
+// --- AJOUT : Variables d'état pour la pagination ---
+let currentPage = 1;
+const itemsPerPage = 50; 
+let cachedPokedexData = null;
+let currentGen = 1;
+let currentCompanionId = null;
+
 // --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y, Mewtwo X/Y et tous les Mégas Gen 1-6) ---
 function getPokemonSprite(p) {
     const isShiny = p.isShiny;
@@ -99,11 +106,64 @@ function showPage(id) {
 }
 
 function filterGen(gen) {
+    currentGen = gen;
+    currentPage = 1; // Reset à la page 1 lors du changement de Gen
     document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
     const targetGen = document.getElementById(`gen-${gen}`);
     if(targetGen) targetGen.classList.add('active');
+    
     document.querySelectorAll('#gen-tabs button').forEach(b => b.classList.remove('active'));
-    if(event && event.target) event.target.classList.add('active');
+    if(event && event.target) {
+        // Gère le clic sur le bouton ou sur le small à l'intérieur
+        const btn = event.target.closest('button');
+        if(btn) btn.classList.add('active');
+    }
+    renderPokedexGrid();
+}
+
+// --- AJOUT : Fonctions de Contrôle de la Pagination ---
+function changePage(step) {
+    currentPage += step;
+    renderPokedexGrid();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderPokedexGrid() {
+    if (!cachedPokedexData) return;
+
+    // Filtrage des données par génération
+    const genPokes = cachedPokedexData.fullPokedex.filter(p => {
+        if (currentGen === 1) return p.pokedexId <= 151;
+        if (currentGen === 2) return p.pokedexId > 151 && p.pokedexId <= 251;
+        if (currentGen === 3) return p.pokedexId > 251 && p.pokedexId <= 386;
+        if (currentGen === 4) return p.pokedexId > 386 && p.pokedexId <= 493;
+        if (currentGen === 5) return p.pokedexId > 493 && p.pokedexId <= 649;
+        if (currentGen === 6) return p.pokedexId > 649 && p.pokedexId <= 721;
+        return false;
+    });
+
+    const totalPages = Math.ceil(genPokes.length / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pokesToShow = genPokes.slice(start, end);
+
+    const grid = document.getElementById(`grid-${currentGen}`);
+    if (grid) {
+        grid.innerHTML = '';
+        pokesToShow.forEach(p => {
+            if (p.isCaptured) p.isCompanion = (p._id === currentCompanionId);
+            grid.innerHTML += createCard(p, 'pokedex');
+        });
+    }
+
+    // Mise à jour de l'interface utilisateur de pagination
+    const pageInfo = document.getElementById('page-info');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    
+    if (pageInfo) pageInfo.innerText = `Page ${currentPage} / ${totalPages}`;
+    if (btnPrev) btnPrev.disabled = (currentPage === 1);
+    if (btnNext) btnNext.disabled = (currentPage === totalPages || totalPages === 0);
 }
 
 // --- LOGIQUE PRIX ---
@@ -164,7 +224,7 @@ async function loadPokedex() {
         const userProfile = await profRes.json();
         
         const comp = userProfile.companionPokemon;
-        const companionId = comp ? comp._id : null;
+        currentCompanionId = comp ? comp._id : null;
 
         const compImg = document.getElementById('companion-img');
         const compName = document.getElementById('companion-name');
@@ -183,25 +243,16 @@ async function loadPokedex() {
         }
 
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
-        const data = await res.json();
+        cachedPokedexData = await res.json();
         
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
         
-        for(let i = 1; i <= 6; i++) {
-            const grid = document.getElementById(`grid-${i}`);
-            if(grid) grid.innerHTML = '';
-        }
-
-        data.fullPokedex.forEach(p => {
+        // Calcul des totaux pour les onglets
+        cachedPokedexData.fullPokedex.forEach(p => {
             let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
-            if (p.isCaptured) {
-                counts[gen]++;
-                p.isCompanion = (p._id === companionId);
-            }
-            const grid = document.getElementById(`grid-${gen}`);
-            if (grid) grid.innerHTML += createCard(p, 'pokedex');
+            if (p.isCaptured) counts[gen]++;
         });
 
         document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
@@ -209,14 +260,17 @@ async function loadPokedex() {
             btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
+        // Rendu initial de la grille avec pagination
+        renderPokedexGrid();
+
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
         if(sGrid) sGrid.innerHTML = ''; if(mGrid) mGrid.innerHTML = ''; if(dGrid) dGrid.innerHTML = '';
 
         const keepers = new Set();
-        data.capturedPokemonsList.forEach(p => {
-            p.isCompanion = (p._id === companionId);
+        cachedPokedexData.capturedPokemonsList.forEach(p => {
+            p.isCompanion = (p._id === currentCompanionId);
             if (p.isMega === true) {
                 if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
             } else if (p.isShiny) {
@@ -285,167 +339,72 @@ async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
-        // 1. On récupère les infos de base (Argent, LastDaily)
         const resProfile = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await resProfile.json();
-
-        // 2. On récupère la liste des Pokémon (car l'API profile ne les donne pas)
         const resPokedex = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const pokedexData = await resPokedex.json();
         const userPokes = pokedexData.capturedPokemonsList || [];
 
-        // --- LOGIQUE D'ÉVOLUTION AUTOMATIQUE DU COMPAGNON ---
         const cp = user.companionPokemon;
         if (cp) {
-            // On utilise la fonction getEvolutionData que tu as ajoutée en bas de ton fichier
             const evo = await getEvolutionData(cp.pokedexId);
-            
-            // Si une évolution par niveau existe et que le niveau est atteint
             if (evo && cp.level >= evo.minLevel) {
-                console.log(`Évolution détectée pour ${cp.name} vers ${evo.nextName} (Niveau requis: ${evo.minLevel})`);
-                
                 const evolveRes = await fetch(`${API_BASE_URL}/api/evolve-companion`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        userId: currentUserId, 
-                        newId: parseInt(evo.nextId), 
-                        newName: evo.nextName 
-                    })
+                    body: JSON.stringify({ userId: currentUserId, newId: parseInt(evo.nextId), newName: evo.nextName })
                 });
-
                 if (evolveRes.ok) {
                     alert(`✨ QUOI ?! Ton compagnon évolue en ${evo.nextName} ! ✨`);
-                    // On relance la fonction pour mettre à jour l'affichage avec le nouveau Pokémon
                     return loadProfile();
                 }
             }
         }
 
-        // 3. CALCULS RÉELS POUR LES BADGES
         const uniqueIds = new Set(userPokes.map(p => p.pokedexId));
         const totalUnique = uniqueIds.size;
         const totalShiny = userPokes.filter(p => p.isShiny).length;
         const totalMega = userPokes.filter(p => p.isMega).length;
 
-        // --- LOGIQUE DES BADGES ---
         const badges = [
-            { 
-                name: "Scout", 
-                desc: "50 Pokémon différents", 
-                unlocked: totalUnique >= 50, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
-            },
-            { 
-                name: "Collectionneur", 
-                desc: "150 Pokémon différents", 
-                unlocked: totalUnique >= 150, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
-            },
-            { 
-                name: "Maître Pokédex", 
-                desc: "400 Pokémon différents", 
-                unlocked: totalUnique >= 400, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
-            },
-            { 
-                name: "Shiny Hunter", 
-                desc: "5 Pokémon Shinies", 
-                unlocked: totalShiny >= 5, 
-                icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" 
-            },
-            { 
-                name: "Vive la richesse", 
-                desc: "25 000 💰", 
-                unlocked: user.money >= 25000, 
-                icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" 
-            },
-            { 
-                name: "Maître Méga", 
-                desc: "Au moins une Méga-Évolution", 
-                unlocked: totalMega >= 1, 
-                icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" 
-            }
+            { name: "Scout", desc: "50 Pokémon différents", unlocked: totalUnique >= 50, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" },
+            { name: "Collectionneur", desc: "150 Pokémon différents", unlocked: totalUnique >= 150, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" },
+            { name: "Maître Pokédex", desc: "400 Pokémon différents", unlocked: totalUnique >= 400, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" },
+            { name: "Shiny Hunter", desc: "5 Pokémon Shinies", unlocked: totalShiny >= 5, icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" },
+            { name: "Vive la richesse", desc: "25 000 💰", unlocked: user.money >= 25000, icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" },
+            { name: "Maître Méga", desc: "Au moins une Méga-Évolution", unlocked: totalMega >= 1, icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" }
         ];
 
         let badgesHtml = `
             <div class="stat-box" style="text-align:center;">
                 <h3 style="color:var(--highlight); margin-bottom:10px;">🏆 Badges d'Exploits</h3>
                 <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">
-                    ${badges.map(b => `
-                        <img src="${b.icon}" 
-                             title="${b.name}: ${b.desc}" 
-                             style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; 
-                             ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}"
-                             onmouseover="this.style.transform='scale(1.2)'" 
-                             onmouseout="this.style.transform='scale(1)'">
-                    `).join('')}
+                    ${badges.map(b => `<img src="${b.icon}" title="${b.name}: ${b.desc}" style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">`).join('')}
                 </div>
-            </div>
-        `;
+            </div>`;
 
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
-            const spriteSrc = getPokemonSprite(cp);
-            compHtml = `
-                <div class="is-companion">
-                    <img src="${spriteSrc}" class="poke-sprite" 
-                         onerror="this.onerror=null; this.src='${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png';"
-                         style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));">
-                    <p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
-                    <p style="font-size:0.8em;">Niveau ${cp.level}</p>
-                </div>
-            `;
+            compHtml = `<div class="is-companion"><img src="${getPokemonSprite(cp)}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png';" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));"><p style="color:var(--shiny); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p><p style="font-size:0.8em;">Niveau ${cp.level}</p></div>`;
         }
 
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
 
-        container.innerHTML = `
-            ${badgesHtml}
-            <div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div>
-            <div class="stat-box" style="text-align:center;">
-                <h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2>
-                <button id="dailyBtn" onclick="claimDaily()" class="btn-action" 
-                    ${isOff ? 'disabled' : ''} 
-                    style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">
-                    ${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}
-                </button>
-            </div>
-            <div class="stat-box">
-                <h3 style="text-align:center;">🎒 Inventaire des Balls</h3>
-                <div class="ball-inventory">
-                    <div class="ball-item"><img src="${BALL_URL}poke-ball.png"><br><b>x${user.pokeballs || 0}</b><br><small>Poké Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b><br><small>Super Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b><br><small>Hyper Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b><br><small>Master Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div>
-                    <div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div>
-                    <div class="ball-item">
-                        <img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3); width:35px;">
-                        <br><b>x${user.ellbaballs || 0}</b><br><small style="font-size:0.8em;">Ellba Ball</small>
-                    </div>
-                </div>
-            </div>
-        `;
+        container.innerHTML = `${badgesHtml}<div class="stat-box" style="text-align:center;"><h3>Compagnon Actuel</h3>${compHtml}</div><div class="stat-box" style="text-align:center;"><h2>💰 Portefeuille : ${user.money.toLocaleString()} 💰</h2><button id="dailyBtn" onclick="claimDaily()" class="btn-action" ${isOff ? 'disabled' : ''} style="margin-top:15px; padding:12px; width:100%; max-width:250px; font-weight:bold; border-radius:8px; border:none; color:white; cursor:${isOff ? 'not-allowed' : 'pointer'}; background:${isOff ? '#333' : 'var(--highlight)'};">${isOff ? `⏳ Prochain cadeau dans :<br>${cooldownText}` : '🎁 RÉCUPÉRER MON CADEAU'}</button></div><div class="stat-box"><h3 style="text-align:center;">🎒 Inventaire des Balls</h3><div class="ball-inventory"><div class="ball-item"><img src="${BALL_URL}poke-ball.png"><br><b>x${user.pokeballs || 0}</b><br><small>Poké Ball</small></div><div class="ball-item"><img src="${BALL_URL}great-ball.png"><br><b>x${user.greatballs || 0}</b><br><small>Super Ball</small></div><div class="ball-item"><img src="${BALL_URL}ultra-ball.png"><br><b>x${user.ultraballs || 0}</b><br><small>Hyper Ball</small></div><div class="ball-item"><img src="${BALL_URL}master-ball.png"><br><b>x${user.masterballs || 0}</b><br><small>Master Ball</small></div><div class="ball-item"><img src="${BALL_URL}premier-ball.png"><br><b>x${user.premierballs || 0}</b><br><small>Honor Ball</small></div><div class="ball-item"><img src="${BALL_URL}luxury-ball.png"><br><b>x${user.luxuryballs || 0}</b><br><small>Luxe Ball</small></div><div class="ball-item"><img src="${BALL_URL}safari-ball.png"><br><b>x${user.safariballs || 0}</b><br><small>Safari ball</small></div><div class="ball-item"><img src="https://raw.githubusercontent.com/xezy-b2/Pokedex-Online/refs/heads/main/elbaball30retesttt.png" style="filter: hue-rotate(290deg) brightness(1.3); width:35px;"><br><b>x${user.ellbaballs || 0}</b><br><small style="font-size:0.8em;">Ellba Ball</small></div></div></div>`;
 
         if (isOff) {
             const timer = setInterval(() => {
                 const updatedTime = getCooldownTime(user.lastDaily);
                 const dailyBtn = document.getElementById('dailyBtn');
-                if (!updatedTime || !dailyBtn) {
-                    if(dailyBtn) { dailyBtn.disabled = false; dailyBtn.style.background = 'var(--highlight)'; dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; }
-                    clearInterval(timer);
-                } else { dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; }
+                if (!updatedTime || !dailyBtn) { if(dailyBtn) { dailyBtn.disabled = false; dailyBtn.style.background = 'var(--highlight)'; dailyBtn.innerHTML = '🎁 RÉCUPÉRER MON CADEAU'; } clearInterval(timer); } 
+                else { dailyBtn.innerHTML = `⏳ Prochain cadeau dans :<br>${updatedTime}`; }
             }, 1000);
         }
-    } catch (e) { 
-        console.error(e);
-        container.innerHTML = "Erreur profil."; 
-    }
+    } catch (e) { console.error(e); container.innerHTML = "Erreur profil."; }
 }
+
 async function loadShop() {
     const container = document.getElementById('shopContainer');
     const shopMoneySpan = document.getElementById('shop-money');
@@ -454,40 +413,22 @@ async function loadShop() {
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await profRes.json();
         if (shopMoneySpan) shopMoneySpan.innerText = user.money.toLocaleString();
-
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const data = await res.json();
         const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-
-        const getPrice = (keys) => {
-            for (let key of keys) { if (items[key] && items[key].cost) return items[key].cost.toLocaleString(); }
-            return "0";
-        };
-
+        const getPrice = (keys) => { for (let key of keys) { if (items[key] && items[key].cost) return items[key].cost.toLocaleString(); } return "0"; };
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
         const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
-        
         let shopHtml = '';
         itemKeys.forEach((key, i) => {
             const ballImg = key.replace('ball', '-ball') + '.png';
-            shopHtml += `
-                <div class="pokedex-card">
-                    <img src="${BALL_URL}${ballImg}" style="${imgStyle}">
-                    <h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3>
-                    <p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p>
-                    <input type="number" id="qty-${key}" value="1" min="1" 
-                           style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;">
-                    <button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" 
-                            class="btn-action btn-trade" style="width:100%">Acheter</button>
-                </div>
-            `;
+            shopHtml += `<div class="pokedex-card"><img src="${BALL_URL}${ballImg}" style="${imgStyle}"><h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3><p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p><input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;"><button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button></div>`;
         });
         container.innerHTML = shopHtml;
     } catch (e) { container.innerHTML = "<p>Erreur boutique.</p>"; }
 }
 
-// --- ACTIONS ---
 async function sellPoke(id, name, price) {
     if(!confirm(`Vendre ${name} pour ${price} 💰 ?`)) return;
     const res = await fetch(`${API_BASE_URL}/api/sell/pokemon`, {
@@ -543,32 +484,20 @@ async function buyItem(key, qty) {
 
 async function getEvolutionData(pokedexId) {
     try {
-        // Récupère les infos de l'espèce
         const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokedexId}/`);
         const speciesData = await speciesRes.json();
-        
-        // Récupère la chaîne d'évolution
         const evoRes = await fetch(speciesData.evolution_chain.url);
         const evoData = await evoRes.json();
-
-        // Parcourt la chaîne pour trouver le Pokémon actuel et son évolution
         let current = evoData.chain;
         while (current && current.species.name !== speciesData.name) {
             if (current.evolves_to.length > 0) current = current.evolves_to[0];
             else break;
         }
-
         if (current && current.evolves_to.length > 0) {
             const nextEvo = current.evolves_to[0];
             const details = nextEvo.evolution_details[0];
-
-            // Si l'évolution se fait par niveau
             if (details && details.trigger.name === "level-up" && details.min_level) {
-                return {
-                    minLevel: details.min_level,
-                    nextId: nextEvo.species.url.split('/').filter(Boolean).pop(),
-                    nextName: nextEvo.species.name.charAt(0).toUpperCase() + nextEvo.species.name.slice(1)
-                };
+                return { minLevel: details.min_level, nextId: nextEvo.species.url.split('/').filter(Boolean).pop(), nextName: nextEvo.species.name.charAt(0).toUpperCase() + nextEvo.species.name.slice(1) };
             }
         }
         return null; 
