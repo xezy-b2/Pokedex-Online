@@ -5,6 +5,12 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 
+// --- VARIABLES POUR LA PAGINATION ---
+let currentPage = 1;
+const itemsPerPage = 20; 
+let fullInventory = []; 
+let currentCompanionId = null;
+
 // --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y, Mewtwo X/Y et tous les Mégas Gen 1-6) ---
 function getPokemonSprite(p) {
     const isShiny = p.isShiny;
@@ -95,7 +101,10 @@ function showPage(id) {
 
     if(id === 'shop') loadShop();
     if(id === 'profile') loadProfile();
-    if(id === 'pokedex' || id === 'collection') loadPokedex();
+    if(id === 'pokedex' || id === 'collection') {
+        currentPage = 1; // Reset pagination quand on change d'onglet
+        loadPokedex();
+    }
 }
 
 function filterGen(gen) {
@@ -164,7 +173,7 @@ async function loadPokedex() {
         const userProfile = await profRes.json();
         
         const comp = userProfile.companionPokemon;
-        const companionId = comp ? comp._id : null;
+        currentCompanionId = comp ? comp._id : null;
 
         const compImg = document.getElementById('companion-img');
         const compName = document.getElementById('companion-name');
@@ -185,6 +194,9 @@ async function loadPokedex() {
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const data = await res.json();
         
+        // Stockage pour la pagination de la collection
+        fullInventory = data.capturedPokemonsList;
+
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
@@ -198,7 +210,7 @@ async function loadPokedex() {
             let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
             if (p.isCaptured) {
                 counts[gen]++;
-                p.isCompanion = (p._id === companionId);
+                p.isCompanion = (p._id === currentCompanionId);
             }
             const grid = document.getElementById(`grid-${gen}`);
             if (grid) grid.innerHTML += createCard(p, 'pokedex');
@@ -209,27 +221,77 @@ async function loadPokedex() {
             btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
-        const sGrid = document.getElementById('shiny-grid');
-        const mGrid = document.getElementById('mega-grid'); 
-        const dGrid = document.getElementById('duplicate-grid');
-        if(sGrid) sGrid.innerHTML = ''; if(mGrid) mGrid.innerHTML = ''; if(dGrid) dGrid.innerHTML = '';
+        // Appel du rendu paginé pour les onglets de collection
+        renderCollectionPages();
 
-        const keepers = new Set();
-        data.capturedPokemonsList.forEach(p => {
-            p.isCompanion = (p._id === companionId);
-            if (p.isMega === true) {
-                if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-            } else if (p.isShiny) {
-                if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
-            } else {
-                if (keepers.has(p.pokedexId)) {
-                    if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
-                } else {
-                    keepers.add(p.pokedexId);
-                }
-            }
-        });
     } catch (e) { console.error("Erreur loadPokedex :", e); }
+}
+
+// --- FONCTION DE RENDU PAGINÉ POUR LA COLLECTION ---
+function renderCollectionPages() {
+    const sGrid = document.getElementById('shiny-grid');
+    const mGrid = document.getElementById('mega-grid'); 
+    const dGrid = document.getElementById('duplicate-grid');
+    
+    if(sGrid) sGrid.innerHTML = ''; 
+    if(mGrid) mGrid.innerHTML = ''; 
+    if(dGrid) dGrid.innerHTML = '';
+
+    // Pagination
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedItems = fullInventory.slice(start, end);
+
+    const keepers = new Set();
+    // On doit d'abord identifier les doublons sur la liste COMPLÈTE pour être cohérent
+    const globalKeepers = new Set();
+    const inventoryWithStatus = fullInventory.map(p => {
+        let type = 'normal';
+        if (p.isMega === true) type = 'mega';
+        else if (p.isShiny) type = 'shiny';
+        else {
+            if (globalKeepers.has(p.pokedexId)) type = 'duplicate';
+            else { globalKeepers.add(p.pokedexId); type = 'keep'; }
+        }
+        return { ...p, collectionType: type };
+    });
+
+    // Rendu des items de la page actuelle
+    inventoryWithStatus.slice(start, end).forEach(p => {
+        p.isCompanion = (p._id === currentCompanionId);
+        if (p.collectionType === 'mega') {
+            if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
+        } else if (p.collectionType === 'shiny') {
+            if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
+        } else if (p.collectionType === 'duplicate') {
+            if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
+        }
+    });
+
+    updatePaginationUI();
+}
+
+function updatePaginationUI() {
+    const totalPages = Math.ceil(fullInventory.length / itemsPerPage) || 1;
+    const pageInfo = document.getElementById('page-info');
+    if (pageInfo) pageInfo.innerText = `Page ${currentPage} / ${totalPages}`;
+    
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (prevBtn) prevBtn.disabled = (currentPage === 1);
+    if (nextBtn) nextBtn.disabled = (currentPage === totalPages);
+}
+
+function changePage(step) {
+    const totalPages = Math.ceil(fullInventory.length / itemsPerPage);
+    const newPage = currentPage + step;
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderCollectionPages();
+        // Optionnel : remonter en haut de la grille
+        const colPage = document.getElementById('collection-page');
+        if(colPage) colPage.scrollIntoView({behavior: 'smooth'});
+    }
 }
 
 async function setCompanion(pokemonId) {
@@ -285,25 +347,17 @@ async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
     try {
-        // 1. On récupère les infos de base (Argent, LastDaily)
         const resProfile = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await resProfile.json();
 
-        // 2. On récupère la liste des Pokémon (car l'API profile ne les donne pas)
         const resPokedex = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const pokedexData = await resPokedex.json();
         const userPokes = pokedexData.capturedPokemonsList || [];
 
-        // --- LOGIQUE D'ÉVOLUTION AUTOMATIQUE DU COMPAGNON ---
         const cp = user.companionPokemon;
         if (cp) {
-            // On utilise la fonction getEvolutionData que tu as ajoutée en bas de ton fichier
             const evo = await getEvolutionData(cp.pokedexId);
-            
-            // Si une évolution par niveau existe et que le niveau est atteint
             if (evo && cp.level >= evo.minLevel) {
-                console.log(`Évolution détectée pour ${cp.name} vers ${evo.nextName} (Niveau requis: ${evo.minLevel})`);
-                
                 const evolveRes = await fetch(`${API_BASE_URL}/api/evolve-companion`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -316,56 +370,23 @@ async function loadProfile() {
 
                 if (evolveRes.ok) {
                     alert(`✨ QUOI ?! Ton compagnon évolue en ${evo.nextName} ! ✨`);
-                    // On relance la fonction pour mettre à jour l'affichage avec le nouveau Pokémon
                     return loadProfile();
                 }
             }
         }
 
-        // 3. CALCULS RÉELS POUR LES BADGES
         const uniqueIds = new Set(userPokes.map(p => p.pokedexId));
         const totalUnique = uniqueIds.size;
         const totalShiny = userPokes.filter(p => p.isShiny).length;
         const totalMega = userPokes.filter(p => p.isMega).length;
 
-        // --- LOGIQUE DES BADGES ---
         const badges = [
-            { 
-                name: "Scout", 
-                desc: "50 Pokémon différents", 
-                unlocked: totalUnique >= 50, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" 
-            },
-            { 
-                name: "Collectionneur", 
-                desc: "150 Pokémon différents", 
-                unlocked: totalUnique >= 150, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" 
-            },
-            { 
-                name: "Maître Pokédex", 
-                desc: "400 Pokémon différents", 
-                unlocked: totalUnique >= 400, 
-                icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" 
-            },
-            { 
-                name: "Shiny Hunter", 
-                desc: "5 Pokémon Shinies", 
-                unlocked: totalShiny >= 5, 
-                icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" 
-            },
-            { 
-                name: "Vive la richesse", 
-                desc: "25 000 💰", 
-                unlocked: user.money >= 25000, 
-                icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" 
-            },
-            { 
-                name: "Maître Méga", 
-                desc: "Au moins une Méga-Évolution", 
-                unlocked: totalMega >= 1, 
-                icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" 
-            }
+            { name: "Scout", desc: "50 Pokémon différents", unlocked: totalUnique >= 50, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" },
+            { name: "Collectionneur", desc: "150 Pokémon différents", unlocked: totalUnique >= 150, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" },
+            { name: "Maître Pokédex", desc: "400 Pokémon différents", unlocked: totalUnique >= 400, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" },
+            { name: "Shiny Hunter", desc: "5 Pokémon Shinies", unlocked: totalShiny >= 5, icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" },
+            { name: "Vive la richesse", desc: "25 000 💰", unlocked: user.money >= 25000, icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" },
+            { name: "Maître Méga", desc: "Au moins une Méga-Évolution", unlocked: totalMega >= 1, icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" }
         ];
 
         let badgesHtml = `
@@ -373,12 +394,10 @@ async function loadProfile() {
                 <h3 style="color:var(--highlight); margin-bottom:10px;">🏆 Badges d'Exploits</h3>
                 <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">
                     ${badges.map(b => `
-                        <img src="${b.icon}" 
-                             title="${b.name}: ${b.desc}" 
+                        <img src="${b.icon}" title="${b.name}: ${b.desc}" 
                              style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; 
                              ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}"
-                             onmouseover="this.style.transform='scale(1.2)'" 
-                             onmouseout="this.style.transform='scale(1)'">
+                             onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
                     `).join('')}
                 </div>
             </div>
@@ -543,26 +562,18 @@ async function buyItem(key, qty) {
 
 async function getEvolutionData(pokedexId) {
     try {
-        // Récupère les infos de l'espèce
         const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokedexId}/`);
         const speciesData = await speciesRes.json();
-        
-        // Récupère la chaîne d'évolution
         const evoRes = await fetch(speciesData.evolution_chain.url);
         const evoData = await evoRes.json();
-
-        // Parcourt la chaîne pour trouver le Pokémon actuel et son évolution
         let current = evoData.chain;
         while (current && current.species.name !== speciesData.name) {
             if (current.evolves_to.length > 0) current = current.evolves_to[0];
             else break;
         }
-
         if (current && current.evolves_to.length > 0) {
             const nextEvo = current.evolves_to[0];
             const details = nextEvo.evolution_details[0];
-
-            // Si l'évolution se fait par niveau
             if (details && details.trigger.name === "level-up" && details.min_level) {
                 return {
                     minLevel: details.min_level,
@@ -577,11 +588,3 @@ async function getEvolutionData(pokedexId) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
-
-
-
-
-
-
