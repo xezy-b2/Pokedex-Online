@@ -5,27 +5,23 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 
-// --- AJOUT : Variables d'état pour la pagination ---
 let currentPage = 1;
 const itemsPerPage = 50; 
 let cachedPokedexData = null;
 let currentGen = 1;
 let currentCompanionId = null;
 
-// --- UTILITAIRE : GÉNÉRATION D'IMAGE (Gère Dracaufeu X/Y, Mewtwo X/Y et tous les Mégas Gen 1-6) ---
+// --- UTILITAIRE : GÉNÉRATION D'IMAGE ---
 function getPokemonSprite(p) {
     const isShiny = p.isShiny;
     const isMega = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
     
     if (isMega) {
         let nameLower = p.name.toLowerCase();
-        
-        // Détection des formes X et Y (Dracaufeu / Mewtwo)
         let suffix = "";
         if (nameLower.includes(' x')) suffix = "x";
         if (nameLower.includes(' y')) suffix = "y";
         
-        // Nettoyage du nom pour le mapping
         let baseName = nameLower
             .replace(/[éèêë]/g, 'e')
             .replace('méga-', '')
@@ -34,40 +30,28 @@ function getPokemonSprite(p) {
             .replace(' y', '')
             .trim();
 
-        // Dictionnaire complet des Mégas Gen 1 à 6
         const translations = { 
-            // Gen 1
             "florizarre": "venusaur", "dracaufeu": "charizard", "tortank": "blastoise",
             "dardargnan": "beedrill", "roucarnage": "pidgeot", "alakazam": "alakazam",
             "flagadoss": "slowbro", "ectoplasma": "gengar", "kangourex": "kangaskhan",
             "scarabrute": "pinsir", "leviator": "gyarados", "ptera": "aerodactyl",
-            "mewtwo": "mewtwo",
-            // Gen 2
-            "pharamp": "ampharos", "steelix": "steelix", "cizayox": "scizor",
+            "mewtwo": "mewtwo", "pharamp": "ampharos", "steelix": "steelix", "cizayox": "scizor",
             "scarhino": "heracross", "demolosse": "houndoom", "tyranocif": "tyranitar",
-            // Gen 3
             "jungleko": "sceptile", "brasegali": "blaziken", "laggron": "swampert",
             "gardevoir": "gardevoir", "tenefix": "sableye", "mysdibule": "mawhile",
             "galeking": "aggron", "charmina": "medicham", "elecsprint": "manectric",
             "sharpedo": "sharpedo", "camerupt": "camerupt", "altaria": "altaria",
             "branette": "banette", "absol": "absol", "oniglali": "glalie",
             "drattak": "salamence", "metalosse": "metagross", "latias": "latias",
-            "latios": "latios", "rayquaza": "rayquaza",
-            // Gen 4
-            "lockpin": "lopunny", "carchacrok": "garchomp", "lucario": "lucario",
-            "blizzaroi": "abomasnow", "gallame": "gallade",
-            // Gen 5
-            "nanmeouie": "audino",
-            // Gen 6
-            "diancie": "diancie"
+            "latios": "latios", "rayquaza": "rayquaza", "lockpin": "lopunny", 
+            "carchacrok": "garchomp", "lucario": "lucario", "blizzaroi": "abomasnow", 
+            "gallame": "gallade", "nanmeouie": "audino", "diancie": "diancie"
         };
 
         const englishName = translations[baseName] || baseName;
         const megaType = suffix ? `mega${suffix}` : `mega`;
-        
         return `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${englishName}-${megaType}.gif`;
     }
-    
     return `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
 }
 
@@ -102,26 +86,24 @@ function showPage(id) {
 
     if(id === 'shop') loadShop();
     if(id === 'profile') loadProfile();
-    if(id === 'pokedex' || id === 'collection') loadPokedex();
+    if(id === 'pokedex' || id === 'collection' || id === 'home') loadPokedex();
 }
 
 function filterGen(gen) {
     currentGen = gen;
-    currentPage = 1; // Reset à la page 1 lors du changement de Gen
+    currentPage = 1;
     document.querySelectorAll('.gen-content').forEach(c => c.classList.remove('active'));
     const targetGen = document.getElementById(`gen-${gen}`);
     if(targetGen) targetGen.classList.add('active');
     
     document.querySelectorAll('#gen-tabs button').forEach(b => b.classList.remove('active'));
     if(event && event.target) {
-        // Gère le clic sur le bouton ou sur le small à l'intérieur
         const btn = event.target.closest('button');
         if(btn) btn.classList.add('active');
     }
     renderPokedexGrid();
 }
 
-// --- AJOUT : Fonctions de Contrôle de la Pagination ---
 function changePage(step) {
     currentPage += step;
     renderPokedexGrid();
@@ -131,7 +113,6 @@ function changePage(step) {
 function renderPokedexGrid() {
     if (!cachedPokedexData) return;
 
-    // Filtrage des données par génération
     const genPokes = cachedPokedexData.fullPokedex.filter(p => {
         if (currentGen === 1) return p.pokedexId <= 151;
         if (currentGen === 2) return p.pokedexId > 151 && p.pokedexId <= 251;
@@ -156,7 +137,6 @@ function renderPokedexGrid() {
         });
     }
 
-    // Mise à jour de l'interface utilisateur de pagination
     const pageInfo = document.getElementById('page-info');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
@@ -183,7 +163,6 @@ function createCard(p, mode = 'pokedex') {
     const price = calculatePrice(p);
     
     const img = getPokemonSprite(p);
-    
     const ballKey = p.capturedWith || 'pokeball';
     const ballFileName = ballKey.replace('ball', '-ball') + '.png';
     const ballImgUrl = `${BALL_URL}${ballFileName}`;
@@ -191,18 +170,10 @@ function createCard(p, mode = 'pokedex') {
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
-            
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
-            
             ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
-            
-            <img src="${img}" 
-                 class="poke-sprite" 
-                 onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" 
-                 style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
-            
+            <img src="${img}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
             <span class="pokemon-name" style="font-weight:bold;">${p.isShiny ? '✨ ' : ''}${p.name || '???'}</span>
-            
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
                 ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px; margin:0;" title="${ballKey}">` : ''}
@@ -218,6 +189,7 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
+// --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
     try {
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
@@ -226,17 +198,12 @@ async function loadPokedex() {
         const comp = userProfile.companionPokemon;
         currentCompanionId = comp ? comp._id : null;
 
+        // Mise à jour header compagnon
         const compImg = document.getElementById('companion-img');
         const compName = document.getElementById('companion-name');
-
         if (comp && compImg) {
-            const spriteUrl = getPokemonSprite(comp);
-            compImg.src = spriteUrl; 
+            compImg.src = getPokemonSprite(comp); 
             compImg.style.display = 'block';
-            compImg.onerror = function() {
-                this.onerror = null;
-                this.src = `${POKEAPI_URL}${comp.isShiny ? 'shiny/' : ''}${comp.pokedexId}.png`;
-            };
             if (compName) compName.innerText = comp.name.toUpperCase();
         } else if (compImg) {
             compImg.style.display = 'none';
@@ -245,11 +212,27 @@ async function loadPokedex() {
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         cachedPokedexData = await res.json();
         
+        // --- MISE À JOUR DES STATS ACCUEIL ---
+        const totalVus = cachedPokedexData.fullPokedex.length;
+        const totalCaptures = cachedPokedexData.fullPokedex.filter(p => p.isCaptured).length;
+        const totalShinies = cachedPokedexData.capturedPokemonsList.filter(p => p.isShiny).length;
+
+        if(document.getElementById('stat-seen')) document.getElementById('stat-seen').innerText = totalVus;
+        if(document.getElementById('stat-caught')) document.getElementById('stat-caught').innerText = totalCaptures;
+        if(document.getElementById('stat-shiny')) document.getElementById('stat-shiny').innerText = totalShinies;
+
+        // --- POKÉMON À LA UNE (ACCUEIL) ---
+        const featuredContainer = document.getElementById('featured-pokemon');
+        if(featuredContainer && cachedPokedexData.capturedPokemonsList.length > 0) {
+            const randomPoke = cachedPokedexData.capturedPokemonsList[Math.floor(Math.random() * cachedPokedexData.capturedPokemonsList.length)];
+            featuredContainer.innerHTML = createCard(randomPoke, 'pokedex');
+        }
+
+        // Calcul des totaux pour les onglets Pokédex
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
         
-        // Calcul des totaux pour les onglets
         cachedPokedexData.fullPokedex.forEach(p => {
             let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
             if (p.isCaptured) counts[gen]++;
@@ -260,9 +243,9 @@ async function loadPokedex() {
             btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
-        // Rendu initial de la grille avec pagination
         renderPokedexGrid();
 
+        // Remplissage Collection
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
@@ -295,7 +278,7 @@ async function setCompanion(pokemonId) {
         });
         if(res.ok) {
             loadPokedex();
-            if(document.getElementById('profile-page') && document.getElementById('profile-page').classList.contains('active')) loadProfile();
+            if(document.getElementById('profile-page')?.classList.contains('active')) loadProfile();
         } else {
             const data = await res.json();
             alert(data.message);
@@ -303,7 +286,7 @@ async function setCompanion(pokemonId) {
     } catch (e) { console.error("Erreur setCompanion:", e); }
 }
 
-// --- LOGIQUE DAILY ---
+// --- DAILY & PROFIL & BOUTIQUE (Identique au précédent) ---
 function getCooldownTime(lastDailyDate) {
     if (!lastDailyDate) return null;
     const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -331,10 +314,9 @@ async function claimDaily() {
             alert(`🎁 ${data.message}\n${data.rewards}`);
             loadProfile(); 
         } else { alert(data.message); if(btn) btn.disabled = false; }
-    } catch (e) { alert("Erreur lors de la récupération."); if(btn) btn.disabled = false; }
+    } catch (e) { alert("Erreur."); if(btn) btn.disabled = false; }
 }
 
-// --- PROFIL ---
 async function loadProfile() {
     const container = document.getElementById('profileContainer');
     if(!container) return;
@@ -367,21 +349,15 @@ async function loadProfile() {
         const totalMega = userPokes.filter(p => p.isMega).length;
 
         const badges = [
-            { name: "Scout", desc: "50 Pokémon différents", unlocked: totalUnique >= 50, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" },
-            { name: "Collectionneur", desc: "150 Pokémon différents", unlocked: totalUnique >= 150, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" },
-            { name: "Maître Pokédex", desc: "400 Pokémon différents", unlocked: totalUnique >= 400, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" },
-            { name: "Shiny Hunter", desc: "5 Pokémon Shinies", unlocked: totalShiny >= 5, icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" },
+            { name: "Scout", desc: "50 Pokémon", unlocked: totalUnique >= 50, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/1.png" },
+            { name: "Collectionneur", desc: "150 Pokémon", unlocked: totalUnique >= 150, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/3.png" },
+            { name: "Maître Pokédex", desc: "400 Pokémon", unlocked: totalUnique >= 400, icon: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/8.png" },
+            { name: "Shiny Hunter", desc: "5 Shinies", unlocked: totalShiny >= 5, icon: "https://www.pokepedia.fr/images/archive/7/74/20190629205645%21Badge_Prisme_Kanto_LGPE.png" },
             { name: "Vive la richesse", desc: "25 000 💰", unlocked: user.money >= 25000, icon: "https://www.pokepedia.fr/images/archive/1/10/20210522214103%21Badge_Marais_Kanto_LGPE.png" },
-            { name: "Maître Méga", desc: "Au moins une Méga-Évolution", unlocked: totalMega >= 1, icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" }
+            { name: "Maître Méga", desc: "1 Méga", unlocked: totalMega >= 1, icon: "https://www.pokepedia.fr/images/archive/3/33/20190629203512%21Badge_Volcan_Kanto_LGPE.png" }
         ];
 
-        let badgesHtml = `
-            <div class="stat-box" style="text-align:center;">
-                <h3 style="color:var(--highlight); margin-bottom:10px;">🏆 Badges d'Exploits</h3>
-                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">
-                    ${badges.map(b => `<img src="${b.icon}" title="${b.name}: ${b.desc}" style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">`).join('')}
-                </div>
-            </div>`;
+        let badgesHtml = `<div class="stat-box" style="text-align:center;"><h3 style="color:var(--highlight); margin-bottom:10px;">🏆 Badges d'Exploits</h3><div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; background:rgba(0,0,0,0.2); border-radius:10px;">${badges.map(b => `<img src="${b.icon}" title="${b.name}: ${b.desc}" style="width:45px; height:45px; object-fit:contain; transition: transform 0.2s; ${b.unlocked ? 'filter: drop-shadow(0 0 8px gold); opacity: 1;' : 'filter: grayscale(1) opacity(0.2);'}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">`).join('')}</div></div>`;
 
         let compHtml = '<p>Aucun compagnon</p>';
         if(user.companionPokemon) {
@@ -416,7 +392,7 @@ async function loadShop() {
         const res = await fetch(`${API_BASE_URL}/api/shop`);
         const data = await res.json();
         const items = Array.isArray(data) ? data.reduce((acc, item) => ({...acc, [item.id || item.key]: item}), {}) : data;
-        const getPrice = (keys) => { for (let key of keys) { if (items[key] && items[key].cost) return items[key].cost.toLocaleString(); } return "0"; };
+        const getPrice = (keys) => { for (let key of keys) { if (items[key]?.cost) return items[key].cost.toLocaleString(); } return "0"; };
         const imgStyle = "width:35px; height:35px; object-fit:contain; display:block; margin: 10px auto;";
         const itemKeys = ['pokeball', 'greatball', 'ultraball', 'masterball', 'safariball', 'premierball', 'luxuryball'];
         const itemNames = ['Poké Ball', 'Super Ball', 'Hyper Ball', 'Master Ball', 'Safari Ball', 'Honor Ball', 'Luxe Ball'];
@@ -436,18 +412,6 @@ async function sellPoke(id, name, price) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUserId, pokemonIdToSell: id })
     });
-    if(res.ok) loadPokedex();
-}
-
-async function sellAllDuplicates() {
-    if(!confirm("Vendre tous tes doublons non-shiny ?")) return;
-    const res = await fetch(`${API_BASE_URL}/api/sell/duplicates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId })
-    });
-    const data = await res.json();
-    alert(data.message);
     if(res.ok) loadPokedex();
 }
 
