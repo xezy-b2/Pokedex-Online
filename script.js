@@ -4,6 +4,7 @@ const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprit
 
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
+let favoritePokes = JSON.parse(localStorage.getItem('favoritePokes')) || []; // AJOUTÉ : Stockage des favoris
 
 let currentPage = 1;
 const itemsPerPage = 50; 
@@ -155,11 +156,25 @@ function calculatePrice(p) {
     return 50 + levelBonus + shinyBonus + ivBonus;
 }
 
+// --- AJOUTÉ : GESTION DES FAVORIS ---
+function toggleFav(id) {
+    const idx = favoritePokes.indexOf(id);
+    if (idx > -1) {
+        favoritePokes.splice(idx, 1);
+    } else {
+        if (favoritePokes.length >= 5) return alert("Ton équipe est déjà au complet (5 Pokémon max) !");
+        favoritePokes.push(id);
+    }
+    localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
+    loadPokedex();
+}
+
 // --- RENDU DES CARTES ---
 function createCard(p, mode = 'pokedex') {
     const isCaptured = p.isCaptured !== false;
     const isCompanion = p.isCompanion === true;
     const isMega = p.isMega === true;
+    const isFav = favoritePokes.includes(p._id); // AJOUTÉ
     const price = calculatePrice(p);
     
     const img = getPokemonSprite(p);
@@ -170,6 +185,7 @@ function createCard(p, mode = 'pokedex') {
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
+            ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${p._id}')" title="Équipe Favorite" style="position: absolute; top: 8px; right: 35px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; filter: ${isFav ? 'grayscale(0)' : 'grayscale(1) opacity(0.3)'};">⭐</button>` : ''}
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
             ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
             <img src="${img}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
@@ -211,21 +227,30 @@ async function loadPokedex() {
 
         const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         cachedPokedexData = await res.json();
+        const list = cachedPokedexData.capturedPokemonsList; // AJOUTÉ : Alias pour plus de clarté
         
         // --- MISE À JOUR DES STATS ACCUEIL ---
         const totalVus = cachedPokedexData.fullPokedex.length;
         const totalCaptures = cachedPokedexData.fullPokedex.filter(p => p.isCaptured).length;
-        const totalShinies = cachedPokedexData.capturedPokemonsList.filter(p => p.isShiny).length;
+        const totalShinies = list.filter(p => p.isShiny).length;
 
         if(document.getElementById('stat-seen')) document.getElementById('stat-seen').innerText = totalVus;
         if(document.getElementById('stat-caught')) document.getElementById('stat-caught').innerText = totalCaptures;
         if(document.getElementById('stat-shiny')) document.getElementById('stat-shiny').innerText = totalShinies;
 
-        // --- POKÉMON À LA UNE (ACCUEIL) ---
+        // --- AJOUTÉ : ÉQUIPE FAVORITE (5 SLOTS) ---
         const featuredContainer = document.getElementById('featured-pokemon');
-        if(featuredContainer && cachedPokedexData.capturedPokemonsList.length > 0) {
-            const randomPoke = cachedPokedexData.capturedPokemonsList[Math.floor(Math.random() * cachedPokedexData.capturedPokemonsList.length)];
-            featuredContainer.innerHTML = createCard(randomPoke, 'pokedex');
+        if(featuredContainer) {
+            featuredContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const favId = favoritePokes[i];
+                const favData = list.find(p => p._id === favId);
+                if (favData) {
+                    featuredContainer.innerHTML += createCard(favData, 'pokedex');
+                } else {
+                    featuredContainer.innerHTML += `<div class="empty-slot" onclick="showPage('collection')" style="border: 2px dashed var(--border); border-radius: 15px; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 2.5em; color: var(--border); background: rgba(255,255,255,0.02); cursor: pointer;">+</div>`;
+                }
+            }
         }
 
         // Calcul des totaux pour les onglets Pokédex
@@ -252,11 +277,13 @@ async function loadPokedex() {
         if(sGrid) sGrid.innerHTML = ''; if(mGrid) mGrid.innerHTML = ''; if(dGrid) dGrid.innerHTML = '';
 
         const keepers = new Set();
-        cachedPokedexData.capturedPokemonsList.forEach(p => {
+        list.forEach(p => {
             p.isCompanion = (p._id === currentCompanionId);
+            const isFav = favoritePokes.includes(p._id); // AJOUTÉ
+            
             if (p.isMega === true) {
                 if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-            } else if (p.isShiny) {
+            } else if (p.isShiny || isFav) { // AJOUTÉ : Les favoris vont dans l'onglet Shiny/Favoris
                 if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
             } else {
                 if (keepers.has(p.pokedexId)) {
@@ -286,7 +313,7 @@ async function setCompanion(pokemonId) {
     } catch (e) { console.error("Erreur setCompanion:", e); }
 }
 
-// --- DAILY & PROFIL & BOUTIQUE (Identique au précédent) ---
+// --- DAILY & PROFIL & BOUTIQUE ---
 function getCooldownTime(lastDailyDate) {
     if (!lastDailyDate) return null;
     const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
