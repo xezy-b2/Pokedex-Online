@@ -34,7 +34,8 @@ const userSchema = new mongoose.Schema({
     ellbaballs: { type: Number, default: 1 },
     lastDaily: { type: Date, default: null }, 
     dailyNotified: { type: Boolean, default: false },
-    companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null } 
+    companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    favorites: { type: [Number], default: [] }
 });
 
 module.exports = mongoose.model('User', userSchema);
