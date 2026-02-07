@@ -154,7 +154,7 @@ const GITHUB_PAGES_URL = 'https://xezy-b2.github.io/Pokedex-Online';
 // --- 2. CONFIGURATION EXPRESS & CORS ---
 const corsOptions = {
     origin: [RENDER_API_PUBLIC_URL, GITHUB_PAGES_URL, 'https://xezy-b2.github.io'], 
-    methods: 'GET, POST, OPTIONS', 
+    methods: 'GET, POST, OPTIONS', 'DELETE'
     allowedHeaders: ['Content-Type'], 
     credentials: true, 
     optionsSuccessStatus: 200
@@ -841,6 +841,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
