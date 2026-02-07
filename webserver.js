@@ -46,6 +46,16 @@ async function fetchPokemonBaseStats(pokedexId) {
     }
 }
 
+const GalleryPostSchema = new mongoose.Schema({
+    userId: String,
+    username: String,
+    message: String,
+    teamData: Array, // On stocke les détails des Pokémon au moment du post
+    createdAt: { type: Date, default: Date.now }
+});
+
+const GalleryPost = mongoose.model('GalleryPost', GalleryPostSchema);
+
 // Utility function for generating random numbers
 function getRandomInt(min, max) {
     min = Math.ceil(min);
@@ -785,11 +795,49 @@ app.post('/api/profile/update-favorites', async (req, res) => {
     }
 });
 
+// 1. Récupérer les derniers posts de la galerie
+app.get('/api/gallery', async (req, res) => {
+    try {
+        // On récupère les 20 derniers posts, du plus récent au plus ancien
+        const posts = await GalleryPost.find().sort({ createdAt: -1 }).limit(20);
+        res.json(posts);
+    } catch (e) {
+        res.status(500).json({ error: "Erreur lors du chargement de la galerie" });
+    }
+});
+
+// 2. Publier une équipe dans la galerie
+app.post('/api/gallery/post', async (req, res) => {
+    const { userId, username, message, teamIds } = req.body;
+
+    try {
+        const user = await User.findOne({ userId: userId });
+        if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+        // On filtre les Pokémon de l'utilisateur pour ne récupérer que ceux qu'il a mis en favoris
+        const teamData = user.pokemons.filter(p => teamIds.includes(p._id.toString()));
+
+        const newPost = new GalleryPost({
+            userId,
+            username,
+            message,
+            teamData: teamData
+        });
+
+        await newPost.save();
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Erreur lors de la publication" });
+    }
+});
+
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
