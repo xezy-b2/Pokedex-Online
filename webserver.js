@@ -795,46 +795,45 @@ app.post('/api/profile/update-favorites', async (req, res) => {
     }
 });
 
-// Remplace ta route GET /api/gallery par celle-ci
+const MY_ADMIN_ID = "1238112721984028706"; 
+
+// GET GALLERY
 app.get('/api/gallery', async (req, res) => {
     try {
         const posts = await GalleryPost.find().sort({ createdAt: -1 }).limit(50);
         res.json(posts);
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Route pour Liker/Unliker
-app.post('/api/gallery/like', async (req, res) => {
-    const { postId, userId } = req.body;
+// POST GALLERY
+app.post('/api/gallery/post', async (req, res) => {
     try {
-        const post = await GalleryPost.findById(postId);
-        if (!post) return res.status(404).send();
+        const { userId, username, message, teamIds } = req.body;
+        const user = await User.findOne({ userId });
+        if (!user) return res.status(404).json({ error: "User non trouvé" });
         
-        const index = post.likes.indexOf(userId);
-        if (index === -1) post.likes.push(userId); // Ajoute le like
-        else post.likes.splice(index, 1); // Retire le like (toggle)
+        // On prend les données des Pokémon favoris de l'user
+        const teamData = user.pokemons.filter(p => teamIds.includes(p._id.toString()));
         
-        await post.save();
-        res.json({ likesCount: post.likes.length, hasLiked: !post.likes.includes(userId) });
-    } catch (e) { res.status(500).send(); }
+        const newPost = new GalleryPost({ userId, username, message, teamData });
+        await newPost.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Route de SUPPRESSION (SÉCURISÉE)
+// DELETE POST (Sécurisé)
 app.delete('/api/gallery/post/:postId', async (req, res) => {
     const { postId } = req.params;
-    const { adminId } = req.body; // L'ID envoyé par le front
-
-    // REMPLACE 'TON_ID_DISCORD' par ton véritable ID Discord (ex: "123456789")
-    const MY_ADMIN_ID = "1238112721984028706"; 
+    const { adminId } = req.body;
 
     if (adminId !== MY_ADMIN_ID) {
-        return res.status(403).json({ error: "Accès refusé. Tu n'es pas l'administrateur." });
+        return res.status(403).json({ error: "Interdit" });
     }
 
     try {
         await GalleryPost.findByIdAndDelete(postId);
         res.json({ success: true });
-    } catch (e) { res.status(500).send(); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- 6. DÉMARRAGE DU SERVEUR ---
@@ -842,6 +841,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
