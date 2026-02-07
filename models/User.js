@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
     lastDaily: { type: Date, default: null }, 
     dailyNotified: { type: Boolean, default: false },
     companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null },
-    favorites: { type: [Number], default: [] }
+    favorites: { type: [String], default: [] }
 });
 
 module.exports = mongoose.model('User', userSchema);
