@@ -795,8 +795,6 @@ app.post('/api/profile/update-favorites', async (req, res) => {
     }
 });
 
-const MY_ADMIN_ID = "1238112721984028706"; 
-
 // GET GALLERY
 app.get('/api/gallery', async (req, res) => {
     try {
@@ -822,18 +820,25 @@ app.post('/api/gallery/post', async (req, res) => {
 });
 
 // DELETE POST (Sécurisé)
+// REMPLACE BIEN "TON_ID_DISCORD" par ton ID numérique (celui que tu copies sur Discord)
+const MY_ADMIN_ID = "1238112721984028706"; 
+
 app.delete('/api/gallery/post/:postId', async (req, res) => {
-    const { postId } = req.params;
-    const { adminId } = req.body;
-
-    if (adminId !== MY_ADMIN_ID) {
-        return res.status(403).json({ error: "Interdit" });
-    }
-
     try {
+        const { postId } = req.params;
+        const { adminId } = req.body;
+
+        // On force la comparaison en texte pour éviter les bugs
+        if (String(adminId) !== String(MY_ADMIN_ID)) {
+            console.log(`Tentative de suppression refusée pour l'ID : ${adminId}`);
+            return res.status(403).json({ error: "Accès refusé : Identifiant Admin incorrect." });
+        }
+
         await GalleryPost.findByIdAndDelete(postId);
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+        res.json({ success: true, message: "Post supprimé avec succès" });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // --- 6. DÉMARRAGE DU SERVEUR ---
@@ -841,6 +846,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
