@@ -157,15 +157,26 @@ function calculatePrice(p) {
 }
 
 // --- AJOUTÉ : GESTION DES FAVORIS ---
-function toggleFav(id) {
+async function toggleFav(id) {
     const idx = favoritePokes.indexOf(id);
     if (idx > -1) {
         favoritePokes.splice(idx, 1);
     } else {
-        if (favoritePokes.length >= 5) return alert("Ton équipe est déjà au complet (5 Pokémon max) !");
+        if (favoritePokes.length >= 5) return alert("Équipe complète (5 max) !");
         favoritePokes.push(id);
     }
+
+    // Sauvegarde locale + Envoi au serveur
     localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
+    
+    try {
+        await fetch(`${API_BASE_URL}/api/profile/update-favorites`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, favorites: favoritePokes })
+        });
+    } catch (e) { console.error("Erreur sauvegarde favoris:", e); }
+    
     loadPokedex();
 }
 
@@ -210,6 +221,12 @@ async function loadPokedex() {
     try {
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
+
+        // À ajouter juste après : const userProfile = await profRes.json();
+        if (userProfile.favorites) {
+            favoritePokes = userProfile.favorites;
+            localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
+}
         
         const comp = userProfile.companionPokemon;
         currentCompanionId = comp ? comp._id : null;
@@ -497,3 +514,4 @@ async function getEvolutionData(pokedexId) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
