@@ -762,11 +762,30 @@ app.post('/api/evolve-companion', async (req, res) => {
         res.status(500).json({ error: "Erreur lors de l'évolution" });
     }
 });
+
+// Route pour sauvegarder les Pokémon favoris (À la une)
+app.post('/api/profile/update-favorites', async (req, res) => {
+    const { userId, favorites } = req.body;
+    try {
+        const user = await User.findOne({ userId: userId });
+        if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+        // On met à jour le champ favorites (assure-toi qu'il est dans ton modèle User)
+        user.favorites = favorites; 
+        await user.save();
+        
+        res.json({ success: true, message: "Équipe sauvegardée !" });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Erreur lors de la sauvegarde" });
+    }
+});
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
