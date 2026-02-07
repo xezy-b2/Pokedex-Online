@@ -88,6 +88,7 @@ function showPage(id) {
     if(id === 'shop') loadShop();
     if(id === 'profile') loadProfile();
     if(id === 'pokedex' || id === 'collection' || id === 'home') loadPokedex();
+    if(pageId === 'gallery') loadGallery();
 }
 
 function filterGen(gen) {
@@ -590,6 +591,7 @@ async function loadGallery() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
