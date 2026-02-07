@@ -88,6 +88,7 @@ function showPage(id) {
     if(id === 'shop') loadShop();
     if(id === 'profile') loadProfile();
     if(id === 'pokedex' || id === 'collection' || id === 'home') loadPokedex();
+    if(id === 'gallery') loadGallery();
 }
 
 function filterGen(gen) {
@@ -525,8 +526,60 @@ async function getEvolutionData(pokedexId) {
     } catch (e) { return null; }
 }
 
+async function postToGallery() {
+    const message = document.getElementById('gallery-message').value;
+    if (!message) return alert("Écris un petit message avant de publier !");
+    if (favoritePokes.length === 0) return alert("Tu dois avoir au moins un Pokémon dans ton équipe favorite !");
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/gallery/post`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: currentUserId,
+                username: currentUsername,
+                message: message,
+                teamIds: favoritePokes // Utilise tes favoris
+            })
+        });
+        if (res.ok) {
+            document.getElementById('gallery-message').value = '';
+            loadGallery();
+        }
+    } catch (e) { console.error("Erreur publication galerie:", e); }
+}
+
+async function loadGallery() {
+    const container = document.getElementById('gallery-container');
+    if (!container) return;
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/gallery`);
+        const posts = await res.json();
+        
+        container.innerHTML = posts.map(post => `
+            <div class="gallery-post">
+                <div class="gallery-header">
+                    <strong style="color: var(--discord);">${post.username}</strong>
+                    <span style="font-size: 0.8em; color: var(--text-sec);">${new Date(post.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p class="gallery-message">"${post.message}"</p>
+                <div class="gallery-team">
+                    ${post.teamData.map(p => `
+                        <div style="text-align:center; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 5px;">
+                            <img src="${getPokemonSprite(p)}" style="width: 60px;">
+                            <div style="font-size: 0.7em;">${p.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) { container.innerHTML = "<p>Impossible de charger la galerie.</p>"; }
+}
+
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
