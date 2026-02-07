@@ -103,6 +103,17 @@
         .page-section.active { display: block; }
         .gen-content { display: none; }
         .gen-content.active { display: block; }
+
+        .gallery-post {
+    background: var(--header-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+.gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.gallery-team { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
+.gallery-message { font-style: italic; color: var(--text-sec); margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -128,6 +139,7 @@
             <button id="nav-collection" onclick="showPage('collection')">Ma Collection</button>
             <button id="nav-shop" onclick="showPage('shop')">Boutique</button>
             <button id="nav-profile" onclick="showPage('profile')">Dresseur</button>
+            <button id="nav-gallery" onclick="showPage('gallery')">Galerie</button>
         </nav>
 
         <div id="home-page" class="page-section active">
@@ -205,8 +217,22 @@
         </div>
     </div>
 
+    <div id="gallery-page" class="page-section">
+    <div class="stat-box" style="text-align: center;">
+        <h2 style="color: var(--highlight);">Partager mon Équipe</h2>
+        <textarea id="gallery-message" placeholder="Laisse un message à la communauté..." style="width: 100%; max-width: 500px; height: 80px; background: var(--background); color: white; border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 10px; font-family: inherit;"></textarea>
+        <br>
+        <button class="cta-button" onclick="postToGallery()">Publier mon équipe</button>
+    </div>
+
+    <h3 style="margin-top: 30px; text-align: center; color: var(--text-sec);">Dernières publications</h3>
+    <div id="gallery-container" style="display: flex; flex-direction: column; gap: 20px;">
+        </div>
+</div>
+
     <script src="script.js"></script>
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
+
 
