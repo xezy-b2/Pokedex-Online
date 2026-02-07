@@ -88,7 +88,6 @@ function showPage(id) {
     if(id === 'shop') loadShop();
     if(id === 'profile') loadProfile();
     if(id === 'pokedex' || id === 'collection' || id === 'home') loadPokedex();
-    if(pageId === 'gallery') loadGallery();
 }
 
 function filterGen(gen) {
@@ -526,71 +525,9 @@ async function getEvolutionData(pokedexId) {
     } catch (e) { return null; }
 }
 
-function openShareModal() {
-    if (favoritePokes.length === 0) return alert("Ton équipe est vide !");
-    document.getElementById('share-modal').style.display = 'flex';
-}
-
-async function submitShare() {
-    const message = document.getElementById('share-message').value;
-    
-    // On prépare les données des Pokémon à envoyer (pour que l'image reste fixe)
-    const teamData = [];
-    for (let id of favoritePokes) {
-        const p = userInventory.find(item => item._id === id);
-        if (p) {
-            teamData.push({
-                name: p.name,
-                sprite: getPokemonSprite(p),
-                isShiny: p.isShiny
-            });
-        }
-    }
-
-    const res = await fetch(`${API_BASE_URL}/api/gallery/share`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: currentUsername, message, teamData })
-    });
-
-    if (res.ok) {
-        alert("Partagé !");
-        document.getElementById('share-modal').style.display = 'none';
-        showPage('gallery');
-    }
-}
-
-async function loadGallery() {
-    const res = await fetch(`${API_BASE_URL}/api/gallery`);
-    const posts = await res.json();
-    const container = document.getElementById('gallery-container');
-    container.innerHTML = "";
-
-    posts.forEach(post => {
-        const postDiv = document.createElement('div');
-        postDiv.className = "stat-card"; // Réutilise ton style existant
-        postDiv.style.textAlign = "left";
-        postDiv.innerHTML = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <strong style="color:var(--discord)">@${post.username}</strong>
-                <small style="color:var(--text-sec)">${new Date(post.date).toLocaleDateString()}</small>
-            </div>
-            <p style="font-style:italic; margin-bottom:15px;">"${post.message}"</p>
-            <div style="display:flex; gap:10px; overflow-x:auto;">
-                ${post.pokemonData.map(p => `
-                    <div style="text-align:center; min-width:80px;">
-                        <img src="${p.sprite}" style="width:60px; ${p.isShiny ? 'filter: drop-shadow(0 0 5px gold);' : ''}">
-                        <div style="font-size:0.7em;">${p.name}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        container.appendChild(postDiv);
-    });
-}
-
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
