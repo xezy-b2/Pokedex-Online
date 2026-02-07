@@ -149,21 +149,29 @@
             </div>
         </div>
 
-        <div id="pokedex-page" class="page-section">
-            <div id="gen-tabs" class="gen-nav">
-                </div>
-            <div id="pokedex-pagination" class="pagination-container">
-                <button id="btn-prev" onclick="changePage(-1)" class="pagination-btn">Précédent</button>
-                <span id="page-info">Page 1 / 1</span>
-                <button id="btn-next" onclick="changePage(1)" class="pagination-btn">Suivant</button>
-            </div>
-            <div id="gen-1" class="gen-content active"><div id="grid-1" class="pokedex-grid"></div></div>
-            <div id="gen-2" class="gen-content"><div id="grid-2" class="pokedex-grid"></div></div>
-            <div id="gen-3" class="gen-content"><div id="grid-3" class="pokedex-grid"></div></div>
-            <div id="gen-4" class="gen-content"><div id="grid-4" class="pokedex-grid"></div></div>
-            <div id="gen-5" class="gen-content"><div id="grid-5" class="pokedex-grid"></div></div>
-            <div id="gen-6" class="gen-content"><div id="grid-6" class="pokedex-grid"></div></div>
-        </div>
+<div id="pokedex-page" class="page-section">
+    <div id="gen-tabs" class="gen-nav">
+        <button onclick="filterGen(1)" class="active">Gen 1 <br><small>Kanto</small></button>
+        <button onclick="filterGen(2)">Gen 2 <br><small>Johto</small></button>
+        <button onclick="filterGen(3)">Gen 3 <br><small>Hoenn</small></button>
+        <button onclick="filterGen(4)">Gen 4 <br><small>Sinnoh</small></button>
+        <button onclick="filterGen(5)">Gen 5 <br><small>Unys</small></button>
+        <button onclick="filterGen(6)">Gen 6 <br><small>Kalos</small></button>
+    </div>
+
+    <div id="pokedex-pagination" class="pagination-container">
+        <button id="btn-prev" onclick="changePage(-1)" class="pagination-btn">Précédent</button>
+        <span id="page-info">Page 1 / 1</span>
+        <button id="btn-next" onclick="changePage(1)" class="pagination-btn">Suivant</button>
+    </div>
+
+    <div id="gen-1" class="gen-content active"><div id="grid-1" class="pokedex-grid"></div></div>
+    <div id="gen-2" class="gen-content"><div id="grid-2" class="pokedex-grid"></div></div>
+    <div id="gen-3" class="gen-content"><div id="grid-3" class="pokedex-grid"></div></div>
+    <div id="gen-4" class="gen-content"><div id="grid-4" class="pokedex-grid"></div></div>
+    <div id="gen-5" class="gen-content"><div id="grid-5" class="pokedex-grid"></div></div>
+    <div id="gen-6" class="gen-content"><div id="grid-6" class="pokedex-grid"></div></div>
+</div>
 
         <div id="collection-page" class="page-section">
             <h3 style="color:var(--shiny)">✨ Pokémon Chromatiques</h3>
@@ -201,3 +209,4 @@
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
+
