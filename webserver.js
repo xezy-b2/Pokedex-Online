@@ -785,41 +785,12 @@ app.post('/api/profile/update-favorites', async (req, res) => {
     }
 });
 
-// Schéma pour les partages de la galerie
-const PostSchema = new mongoose.Schema({
-    username: String,
-    message: String,
-    pokemonData: Array, // Stockera les images/noms de l'équipe au moment du partage
-    date: { type: Date, default: Date.now }
-});
-const Post = mongoose.model('Post', PostSchema);
-
-// Route pour partager son équipe
-app.post('/api/gallery/share', async (req, res) => {
-    const { username, message, teamData } = req.body;
-    try {
-        const newPost = new Post({ username, message, pokemonData: teamData });
-        await newPost.save();
-        res.json({ success: true, message: "Équipe partagée dans la galerie !" });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// Route pour récupérer la galerie
-app.get('/api/gallery', async (req, res) => {
-    try {
-        const posts = await Post.find().sort({ date: -1 }).limit(20);
-        res.json(posts);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
