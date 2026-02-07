@@ -551,34 +551,66 @@ async function postToGallery() {
 
 async function loadGallery() {
     const container = document.getElementById('gallery-container');
-    if (!container) return;
-    
+    const MY_ADMIN_ID = "1238112721984028706"; // METS LE MÊME ID ICI
+
     try {
         const res = await fetch(`${API_BASE_URL}/api/gallery`);
         const posts = await res.json();
         
-        container.innerHTML = posts.map(post => `
-            <div class="gallery-post">
+        container.innerHTML = posts.map(post => {
+            const hasLiked = post.likes.includes(currentUserId);
+            // On n'affiche le bouton supprimer que si c'est TON ID
+            const deleteBtn = (currentUserId === MY_ADMIN_ID) 
+                ? `<button onclick="deletePost('${post._id}')" style="background:none; border:none; color:var(--red-poke); cursor:pointer;">🗑️ Supprimer</button>` 
+                : "";
+
+            return `
+            <div class="gallery-post" id="post-${post._id}">
                 <div class="gallery-header">
                     <strong style="color: var(--discord);">${post.username}</strong>
-                    <span style="font-size: 0.8em; color: var(--text-sec);">${new Date(post.createdAt).toLocaleDateString()}</span>
+                    <div>
+                        ${deleteBtn}
+                        <span style="font-size: 0.8em; color: var(--text-sec); margin-left:10px;">${new Date(post.createdAt).toLocaleDateString()}</span>
+                    </div>
                 </div>
                 <p class="gallery-message">"${post.message}"</p>
                 <div class="gallery-team">
-                    ${post.teamData.map(p => `
-                        <div style="text-align:center; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 5px;">
-                            <img src="${getPokemonSprite(p)}" style="width: 60px;">
-                            <div style="font-size: 0.7em;">${p.name}</div>
-                        </div>
-                    `).join('')}
+                    ${post.teamData.map(p => `<img src="${getPokemonSprite(p)}" title="${p.name}" style="width: 50px;">`).join('')}
                 </div>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = "<p>Impossible de charger la galerie.</p>"; }
+                <div style="margin-top:15px; border-top: 1px solid var(--border); padding-top:10px;">
+                    <button onclick="likePost('${post._id}')" style="background:none; border:none; color:${hasLiked ? 'var(--red-poke)' : 'white'}; cursor:pointer; font-size:1.2em;">
+                        ${hasLiked ? '❤️' : '🤍'} ${post.likes.length}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) { console.error(e); }
 }
 
+// Fonctions d'action
+async function likePost(postId) {
+    await fetch(`${API_BASE_URL}/api/gallery/like`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ postId, userId: currentUserId })
+    });
+    loadGallery();
+}
+
+async function deletePost(postId) {
+    if(!confirm("Supprimer cette publication ?")) return;
+    const MY_ADMIN_ID = "TON_ID_DISCORD"; // TOUJOURS LE MÊME ID
+
+    await fetch(`${API_BASE_URL}/api/gallery/post/${postId}`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ adminId: MY_ADMIN_ID })
+    });
+    loadGallery();
+}
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
