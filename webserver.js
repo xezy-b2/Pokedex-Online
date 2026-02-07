@@ -767,17 +767,21 @@ app.post('/api/evolve-companion', async (req, res) => {
 app.post('/api/profile/update-favorites', async (req, res) => {
     const { userId, favorites } = req.body;
     try {
-        const user = await User.findOne({ userId: userId });
-        if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
+        // On s'assure que favorites est bien un tableau de strings propres
+        const cleanFavorites = Array.isArray(favorites) ? favorites.map(id => String(id)) : [];
 
-        // On met à jour le champ favorites (assure-toi qu'il est dans ton modèle User)
-        user.favorites = favorites; 
-        await user.save();
+        const user = await User.findOneAndUpdate(
+            { userId: userId },
+            { $set: { favorites: cleanFavorites } },
+            { new: true }
+        );
+
+        if (!user) return res.status(404).json({ error: "Utilisateur non trouvé" });
         
-        res.json({ success: true, message: "Équipe sauvegardée !" });
+        res.json({ success: true, favorites: user.favorites });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Erreur lors de la sauvegarde" });
+        console.error("Erreur Backend Favorites:", e);
+        res.status(500).json({ error: e.message });
     }
 });
 // --- 6. DÉMARRAGE DU SERVEUR ---
@@ -785,6 +789,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
