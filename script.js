@@ -599,7 +599,7 @@ async function likePost(postId) {
 
 async function deletePost(postId) {
     if(!confirm("Supprimer cette publication ?")) return;
-    const MY_ADMIN_ID = "TON_ID_DISCORD"; // TOUJOURS LE MÊME ID
+    const MY_ADMIN_ID = "1238112721984028706"; // TOUJOURS LE MÊME ID
 
     await fetch(`${API_BASE_URL}/api/gallery/post/${postId}`, {
         method: 'DELETE',
@@ -610,6 +610,7 @@ async function deletePost(postId) {
 }
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
