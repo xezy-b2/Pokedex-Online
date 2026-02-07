@@ -841,11 +841,48 @@ app.delete('/api/gallery/post/:postId', async (req, res) => {
     }
 });
 
+// Route pour Liker / Enlever un like
+app.post('/api/gallery/like', async (req, res) => {
+    const { postId, userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: "Vous devez être connecté pour liker." });
+    }
+
+    try {
+        const post = await GalleryPost.findById(postId);
+        if (!post) return res.status(404).json({ error: "Publication introuvable." });
+
+        // On vérifie si l'utilisateur a déjà liké
+        const hasLiked = post.likes.includes(userId);
+
+        if (hasLiked) {
+            // Si déjà liké, on retire le userId du tableau
+            await GalleryPost.findByIdAndUpdate(postId, { $pull: { likes: userId } });
+        } else {
+            // Sinon, on ajoute le userId (addToSet évite les doublons)
+            await GalleryPost.findByIdAndUpdate(postId, { $addToSet: { likes: userId } });
+        }
+
+        const updatedPost = await GalleryPost.findById(postId);
+        res.json({ 
+            success: true, 
+            likesCount: updatedPost.likes.length, 
+            hasLiked: !hasLiked 
+        });
+
+    } catch (e) {
+        console.error("Erreur Like:", e);
+        res.status(500).json({ error: "Erreur lors du like." });
+    }
+});
+
 // --- 6. DÉMARRAGE DU SERVEUR ---
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
