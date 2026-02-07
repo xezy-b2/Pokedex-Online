@@ -162,22 +162,35 @@ async function toggleFav(id) {
     if (idx > -1) {
         favoritePokes.splice(idx, 1);
     } else {
-        if (favoritePokes.length >= 5) return alert("Équipe complète (5 max) !");
+        if (favoritePokes.length >= 5) {
+            alert("Ton équipe est déjà complète (5 Pokémon max) !");
+            return;
+        }
         favoritePokes.push(id);
     }
 
-    // Sauvegarde locale + Envoi au serveur
+    // Mise à jour immédiate du localStorage
     localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
     
-    try {
-        await fetch(`${API_BASE_URL}/api/profile/update-favorites`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUserId, favorites: favoritePokes })
-        });
-    } catch (e) { console.error("Erreur sauvegarde favoris:", e); }
+    // Sauvegarde persistante en base de données
+    if (currentUserId) {
+        try {
+            await fetch(`${API_BASE_URL}/api/profile/update-favorites`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    userId: currentUserId, 
+                    favorites: favoritePokes 
+                })
+            });
+        } catch (e) {
+            console.error("Erreur de sauvegarde distante:", e);
+        }
+    }
     
+    // Rafraîchir l'affichage
     loadPokedex();
+    if (typeof updateHomeStats === 'function') updateHomeStats();
 }
 
 // --- RENDU DES CARTES ---
@@ -514,4 +527,5 @@ async function getEvolutionData(pokedexId) {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
