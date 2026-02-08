@@ -22,27 +22,6 @@ const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
 const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 
-// À mettre après tes constantes MAX_POKEDEX_ID
-function getChromaBonus(userPokemons) {
-    const ownedIds = [...new Set(userPokemons.map(p => p.pokedexId))];
-    let bonus = 0;
-    const gens = [
-        { min: 1, max: 151 },   // Gen 1
-        { min: 152, max: 251 }, // Gen 2
-        { min: 252, max: 386 }, // Gen 3
-        { min: 387, max: 493 }, // Gen 4
-        { min: 494, max: 649 }, // Gen 5
-        { min: 650, max: 721 }  // Gen 6
-    ];
-
-    gens.forEach(gen => {
-        const countInGen = ownedIds.filter(id => id >= gen.min && id <= gen.max).length;
-        const totalInGen = gen.max - gen.min + 1;
-        if (countInGen >= totalInGen) bonus += 1; // +1% par génération complétée
-    });
-    return bonus;
-}
-
 async function fetchPokemonBaseStats(pokedexId) {
     if (statsCache[pokedexId]) {
         return statsCache[pokedexId];
@@ -903,20 +882,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
