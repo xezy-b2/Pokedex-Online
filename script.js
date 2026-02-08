@@ -381,6 +381,7 @@ async function loadProfile() {
     try {
         const resProfile = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const user = await resProfile.json();
+        updateChromaBadges(user.pokemons);
         const resPokedex = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
         const pokedexData = await resPokedex.json();
         const userPokes = pokedexData.capturedPokemonsList || [];
@@ -608,8 +609,44 @@ async function deletePost(postId) {
     });
     loadGallery();
 }
+function updateChromaBadges(userPokemons) {
+    const container = document.getElementById('chroma-badges');
+    const bonusText = document.getElementById('chroma-bonus-text');
+    if (!container) return;
+
+    const gens = [
+        { name: "Kanto", min: 1, max: 151 },
+        { name: "Johto", min: 152, max: 251 },
+        { name: "Hoenn", min: 252, max: 386 },
+        { name: "Sinnoh", min: 387, max: 493 },
+        { name: "Unys", min: 494, max: 649 },
+        { name: "Kalos", min: 650, max: 721 }
+    ];
+
+    const ownedIds = [...new Set(userPokemons.map(p => p.pokedexId))];
+    let completedGens = 0;
+
+    container.innerHTML = gens.map(gen => {
+        const count = ownedIds.filter(id => id >= gen.min && id <= gen.max).length;
+        const total = gen.max - gen.min + 1;
+        const isComplete = count >= total;
+        if (isComplete) completedGens++;
+
+        return `
+            <div style="text-align: center; opacity: ${isComplete ? '1' : '0.2'}; filter: ${isComplete ? 'none' : 'grayscale(100%)'};">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/shiny-charm.png" 
+                     style="width: 35px; ${isComplete ? 'filter: drop-shadow(0 0 5px var(--shiny));' : ''}" 
+                     title="${gen.name}: ${count}/${total}">
+                <div style="font-size: 0.6em; color: ${isComplete ? 'var(--shiny)' : 'white'}">${gen.name}</div>
+            </div>
+        `;
+    }).join('');
+
+    bonusText.innerHTML = `Bonus actuel : <span style="color:var(--shiny)">+${completedGens}%</span> de chance Shiny`;
+}
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
