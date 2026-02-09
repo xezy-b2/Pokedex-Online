@@ -13,7 +13,7 @@ const statsCache = {};
 
 
 const MAX_POKEDEX_ID_GEN_1 = 151; 
-const MAX_POKEDEX_ID_GEN_2 = 251; /
+const MAX_POKEDEX_ID_GEN_2 = 251; 
 const MAX_POKEDEX_ID_GEN_3 = 386;
 const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
@@ -779,3 +779,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
