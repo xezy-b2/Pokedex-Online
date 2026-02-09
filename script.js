@@ -230,16 +230,36 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
-    try {
-        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
-        const userProfile = await profRes.json();
+    const CACHE_KEY = 'pokedex_data_cache';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24h
 
-        // À ajouter juste après : const userProfile = await profRes.json();
-        if (userProfile.favorites) {
-            favoritePokes = userProfile.favorites;
-            localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
+    try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+                console.log("🚀 Chargement du Pokédex depuis le cache local");
+                cachedPokedexData = parsed.data;
+                displayPokedex();
+                return;
+            }
+        }
+
+        console.log("🌐 Cache expiré ou absent, appel API...");
+        const res = await fetch(`${API_BASE_URL}/api/pokedex`);
+        cachedPokedexData = await res.json();
+
+        // On sauvegarde pour la prochaine fois
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            data: cachedPokedexData
+        }));
+
+        displayPokedex();
+    } catch (e) {
+        console.error("Erreur lors du chargement du Pokédex:", e);
+    }
 }
         
         const comp = userProfile.companionPokemon;
@@ -608,5 +628,11 @@ async function deletePost(postId) {
     });
     loadGallery();
 }
+
+function refreshPokedexCache() {
+    localStorage.removeItem('pokedex_data_cache');
+    loadPokedex();
+}
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
