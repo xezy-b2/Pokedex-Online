@@ -360,7 +360,9 @@ async function setCompanion(pokemonId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: currentUserId, pokemonId: pokemonId })
         });
-        if(res.ok) {
+        if(res.ok) 
+        {
+            localStorage.removeItem('pokedex_data_cache');
             loadPokedex();
             if(document.getElementById('profile-page')?.classList.contains('active')) loadProfile();
         } else {
@@ -511,6 +513,7 @@ async function wonderTrade(id, name) {
         document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
         document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
         document.getElementById('trade-modal').style.display = 'flex';
+        localStorage.removeItem('pokedex_data_cache');
         loadPokedex();
     }
 }
@@ -641,7 +644,14 @@ function refreshPokedexCache() {
     console.log("🔄 Cache vidé et données actualisées !");
 }
 
+// À ajouter dans script.js
+function invalidatePokedexCache() {
+    localStorage.removeItem('pokedex_data_cache');
+    loadPokedex(); // Recharge proprement les données depuis le serveur
+}
+
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
