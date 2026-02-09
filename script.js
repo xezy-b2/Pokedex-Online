@@ -634,6 +634,14 @@ async function deletePost(postId) {
     });
     loadGallery();
 }
+
+function refreshPokedexCache() {
+    localStorage.removeItem('pokedex_data_cache');
+    loadPokedex();
+    console.log("🔄 Cache vidé et données actualisées !");
+}
+
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
