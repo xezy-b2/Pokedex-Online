@@ -213,7 +213,7 @@ function createCard(p, mode = 'pokedex') {
             ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${p._id}')" title="Équipe Favorite" style="position: absolute; top: 8px; right: 35px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; filter: ${isFav ? 'grayscale(0)' : 'grayscale(1) opacity(0.3)'};">⭐</button>` : ''}
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
             ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
-            <img src="${img}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
+            <img src="${img}" class="poke-sprite" loading="lazy" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
             <span class="pokemon-name" style="font-weight:bold;">${p.isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
@@ -230,17 +230,20 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DES DONNÉES ---
+// --- CHARGEMENT DES DONNÉES (VERSION OPTIMISÉE AVEC CACHE) ---
 async function loadPokedex() {
+    const CACHE_KEY = 'pokedex_data_cache';
+    const CACHE_DURATION = 30 * 60 * 1000; // Cache de 30 minutes pour les données Pokédex
+
     try {
+        // 1. Récupération du Profil (Toujours en direct pour avoir l'argent et le compagnon à jour)
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
 
-        // À ajouter juste après : const userProfile = await profRes.json();
         if (userProfile.favorites) {
             favoritePokes = userProfile.favorites;
             localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
-}
+        }
         
         const comp = userProfile.companionPokemon;
         currentCompanionId = comp ? comp._id : null;
@@ -256,9 +259,33 @@ async function loadPokedex() {
             compImg.style.display = 'none';
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
-        cachedPokedexData = await res.json();
-        const list = cachedPokedexData.capturedPokemonsList; // AJOUTÉ : Alias pour plus de clarté
+        // 2. Logique de Cache pour le Pokédex Complet
+        const cached = localStorage.getItem(CACHE_KEY);
+        let data;
+
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            const isExpired = (Date.now() - parsed.timestamp) > CACHE_DURATION;
+            if (!isExpired) {
+                console.log("🚀 Utilisation du cache pour le Pokédex");
+                data = parsed.data;
+            }
+        }
+
+        if (!data) {
+            console.log("🌐 Appel API pour le Pokédex...");
+            const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+            data = await res.json();
+            
+            // Sauvegarde dans le cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: data
+            }));
+        }
+
+        cachedPokedexData = data;
+        const list = cachedPokedexData.capturedPokemonsList; 
         
         // --- MISE À JOUR DES STATS ACCUEIL ---
         const totalVus = cachedPokedexData.fullPokedex.length;
@@ -269,7 +296,7 @@ async function loadPokedex() {
         if(document.getElementById('stat-caught')) document.getElementById('stat-caught').innerText = totalCaptures;
         if(document.getElementById('stat-shiny')) document.getElementById('stat-shiny').innerText = totalShinies;
 
-        // --- AJOUTÉ : ÉQUIPE FAVORITE (5 SLOTS) ---
+        // --- ÉQUIPE FAVORITE (5 SLOTS) ---
         const featuredContainer = document.getElementById('featured-pokemon');
         if(featuredContainer) {
             featuredContainer.innerHTML = '';
@@ -301,7 +328,7 @@ async function loadPokedex() {
 
         renderPokedexGrid();
 
-        // Remplissage Collection
+        // Remplissage Collection (Shiny, Méga, Doublons)
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
@@ -310,11 +337,11 @@ async function loadPokedex() {
         const keepers = new Set();
         list.forEach(p => {
             p.isCompanion = (p._id === currentCompanionId);
-            const isFav = favoritePokes.includes(p._id); // AJOUTÉ
+            const isFav = favoritePokes.includes(p._id); 
             
             if (p.isMega === true) {
                 if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-            } else if (p.isShiny || isFav) { // AJOUTÉ : Les favoris vont dans l'onglet Shiny/Favoris
+            } else if (p.isShiny || isFav) {
                 if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
             } else {
                 if (keepers.has(p.pokedexId)) {
@@ -326,7 +353,6 @@ async function loadPokedex() {
         });
     } catch (e) { console.error("Erreur loadPokedex :", e); }
 }
-
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -610,3 +636,4 @@ async function deletePost(postId) {
 }
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
