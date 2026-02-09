@@ -213,7 +213,7 @@ function createCard(p, mode = 'pokedex') {
             ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${p._id}')" title="Équipe Favorite" style="position: absolute; top: 8px; right: 35px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; filter: ${isFav ? 'grayscale(0)' : 'grayscale(1) opacity(0.3)'};">⭐</button>` : ''}
             <span style="font-size:0.7em; color:var(--text-sec); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
             ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
-            <img src="${img}" class="poke-sprite" loading="lazy" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
+            <img src="${img}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''}">
             <span class="pokemon-name" style="font-weight:bold;">${p.isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
                 <span style="color:var(--highlight); font-size:0.85em; font-weight:bold;">Lv.${p.level || 5}</span>
@@ -230,36 +230,16 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
+// --- CHARGEMENT DES DONNÉES ---
 async function loadPokedex() {
-    const CACHE_KEY = 'pokedex_data_cache';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24h
-
     try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Date.now() - parsed.timestamp < CACHE_DURATION) {
-                console.log("🚀 Chargement du Pokédex depuis le cache local");
-                cachedPokedexData = parsed.data;
-                displayPokedex();
-                return;
-            }
-        }
+        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const userProfile = await profRes.json();
 
-        console.log("🌐 Cache expiré ou absent, appel API...");
-        const res = await fetch(`${API_BASE_URL}/api/pokedex`);
-        cachedPokedexData = await res.json();
-
-        // On sauvegarde pour la prochaine fois
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-            timestamp: Date.now(),
-            data: cachedPokedexData
-        }));
-
-        displayPokedex();
-    } catch (e) {
-        console.error("Erreur lors du chargement du Pokédex:", e);
-    }
+        // À ajouter juste après : const userProfile = await profRes.json();
+        if (userProfile.favorites) {
+            favoritePokes = userProfile.favorites;
+            localStorage.setItem('favoritePokes', JSON.stringify(favoritePokes));
 }
         
         const comp = userProfile.companionPokemon;
@@ -628,12 +608,5 @@ async function deletePost(postId) {
     });
     loadGallery();
 }
-
-function refreshPokedexCache() {
-    localStorage.removeItem('pokedex_data_cache');
-    loadPokedex();
-}
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-
