@@ -509,15 +509,25 @@ async function wonderTrade(id, name) {
         body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
     });
     const data = await res.json();
+    
     if(res.ok) {
-        document.getElementById('modal-img').src = `${POKEAPI_URL}${data.newPokemon.isShiny ? 'shiny/' : ''}${data.newPokemon.pokedexId}.png`;
-        document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${data.newPokemon.name}</b> !`;
+        const pk = data.newPokemon;
+        
+        // On utilise ta fonction getPokemonSprite(pk) pour avoir le GIF Showdown ou le sprite correct
+        document.getElementById('modal-img').src = getPokemonSprite(pk);
+        
+        let displayName = pk.name;
+        if(pk.isMega) {
+            displayName = `<span style="color: #e67e22;">🔥 ${pk.name} 🔥</span>`;
+        }
+
+        document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${displayName}</b> !`;
         document.getElementById('trade-modal').style.display = 'flex';
+        
         localStorage.removeItem('pokedex_data_cache');
         loadPokedex();
     }
 }
-
 async function buyItem(key, qty) {
     const quantity = parseInt(qty);
     if (isNaN(quantity) || quantity <= 0) return alert("Quantité invalide");
@@ -652,6 +662,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
