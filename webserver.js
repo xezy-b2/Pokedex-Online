@@ -60,7 +60,7 @@ function getRandomInt(min, max) {
 
 async function generateRandomPokemon() {
     // --- CONFIGURATION MÉGAS ---
-    const MEGA_CHANCE = 0.05; // 5% de chance d'obtenir un Méga en Échange Miracle
+    const MEGA_CHANCE = 0.02; // 5% de chance d'obtenir un Méga en Échange Miracle
     const MEGA_IDS = [
         10033, 10034, 10035, 10036, 10037, 10038, 10039, 10040, 10041, 10042, 
         10043, 10044, 10045, 10046, 10047, 10048, 10049, 10050, 10051, 10052, 
@@ -812,6 +812,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
