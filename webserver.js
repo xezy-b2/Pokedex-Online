@@ -437,49 +437,63 @@ app.post('/api/sell/pokemon', async (req, res) => {
     }
 });
 
-app.post('/api/trade/wonder', async (req, res) => {
-    const { userId, pokemonIdToTrade } = req.body;
+async function generateRandomPokemon() {
+    // --- CONFIGURATION MÉGAS ---
+    const MEGA_CHANCE = 0.05; // 5% de chance d'obtenir un Méga
+    const MEGA_IDS = [
+        10033, 10034, 10035, 10036, 10037, 10038, 10039, 10040, 10041, 10042, 
+        10043, 10044, 10045, 10046, 10047, 10048, 10049, 10050, 10051, 10052, 
+        10053, 10054, 10055, 10056, 10057, 10058, 10059, 10060, 10061, 10062, 
+        10063, 10064, 10065, 10066, 10067, 10068, 10069, 10070, 10071, 10072, 
+        10073, 10074, 10075, 10076, 10077, 10078, 10079, 10087, 10088, 10089, 10090
+    ];
 
-    if (!userId || !pokemonIdToTrade) {
-        return res.status(400).json({ success: false, message: "ID Dresseur et ID Pokémon requis." });
+    const isMegaLucky = Math.random() < MEGA_CHANCE;
+    let pokedexId;
+    let isMega = false;
+
+    if (isMegaLucky) {
+        pokedexId = MEGA_IDS[Math.floor(Math.random() * MEGA_IDS.length)];
+        isMega = true;
+    } else {
+        pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_6);
     }
+    // ----------------------------
 
+    const level = isMega ? getRandomInt(50, 100) : getRandomInt(1, 100);
+    const iv_hp = getRandomInt(0, 31);
+    const iv_attack = getRandomInt(0, 31);
+    const iv_defense = getRandomInt(0, 31);
+    const iv_special_attack = getRandomInt(0, 31);
+    const iv_special_defense = getRandomInt(0, 31);
+    const iv_speed = getRandomInt(0, 31);
+    const isShiny = getRandomInt(1, 100) === 1; 
+
+    let pokemonName = 'Inconnu';
     try {
-        const user = await User.findOne({ userId });
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Dresseur non trouvé." });
-        }
-
-        const pokemonIndex = user.pokemons.findIndex(p => p._id.toString() === pokemonIdToTrade);
-        if (pokemonIndex === -1) {
-            return res.status(404).json({ success: false, message: "Pokémon non trouvé dans votre collection." });
-        }
-
-        if (user.companionPokemonId && user.companionPokemonId.toString() === pokemonIdToTrade) {
-            return res.status(403).json({ success: false, message: "Vous ne pouvez pas échanger votre Pokémon compagnon." });
-        }
-        
-        user.pokemons.splice(pokemonIndex, 1);
-
-        const newPokemon = await generateRandomPokemon();
-        const alreadyHadIt = user.pokemons.some(p => p.pokedexId === newPokemon.pokedexId);
-
-        user.pokemons.push(newPokemon);
-        await user.save();
-        
-        res.json({ 
-            success: true, 
-            message: "Échange réussi !", 
-            newPokemon: newPokemon,
-            isNewSlotCaptured: !alreadyHadIt 
-        });
-
+        const nameResponse = await axios.get(`${POKEAPI_BASE_URL}${pokedexId}`);
+        // Nettoyage du nom pour enlever les tirets (ex: "charizard-mega-x" -> "Charizard Mega X")
+        pokemonName = nameResponse.data.name.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
     } catch (error) {
-        console.error('Erreur API Échange Miracle:', error);
-        res.status(500).json({ success: false, message: 'Erreur interne du serveur.' });
+        console.error(`Erreur de récupération du nom pour Pokedex ID ${pokedexId}:`, error.message);
     }
-});
 
+    return {
+        pokedexId,
+        name: pokemonName, 
+        level,
+        isShiny,
+        isMega, // Crucial pour ton badge "Maître Méga"
+        iv_hp,
+        iv_attack,
+        iv_defense,
+        iv_special_attack,
+        iv_special_defense,
+        iv_speed,
+    };
+}
 app.post('/api/companion/set', async (req, res) => {
     const { userId, pokemonId } = req.body;
     
@@ -779,4 +793,5 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
