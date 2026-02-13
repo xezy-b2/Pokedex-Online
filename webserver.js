@@ -59,8 +59,32 @@ function getRandomInt(min, max) {
 }
 
 async function generateRandomPokemon() {
-    // --- CONFIGURATION MÉGAS ---
-    const MEGA_CHANCE = 0.02; // 5% de chance d'obtenir un Méga en Échange Miracle
+    // --- CONFIGURATION CUSTOMS (Vaudou/Magma) ---
+    const CUSTOM_CHANCE = 0.02; // 2% de chance
+    const isCustomLucky = Math.random() < CUSTOM_CHANCE;
+
+    if (isCustomLucky) {
+        const variants = [
+            { name: "Ectoplasma Vaudou", sprite: "gengar-voodoo.png" },
+            { name: "Ectoplasma Magma", sprite: "gengar-magma.png" }
+        ];
+        const chosen = variants[Math.floor(Math.random() * variants.length)];
+        
+        return {
+            pokedexId: 94, // ID d'Ectoplasma
+            name: chosen.name,
+            level: 100,
+            isShiny: false,
+            isMega: false,
+            isCustom: true, // IMPORTANT : pour le script.js
+            customSprite: chosen.sprite, // IMPORTANT : nom du fichier
+            iv_hp: 31, iv_attack: 31, iv_defense: 31, 
+            iv_special_attack: 31, iv_special_defense: 31, iv_speed: 31
+        };
+    }
+
+    // --- CONFIGURATION MÉGAS (Ton code actuel) ---
+    const MEGA_CHANCE = 0.02; 
     const MEGA_IDS = [
         10033, 10034, 10035, 10036, 10037, 10038, 10039, 10040, 10041, 10042, 
         10043, 10044, 10045, 10046, 10047, 10048, 10049, 10050, 10051, 10052, 
@@ -80,7 +104,7 @@ async function generateRandomPokemon() {
         pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_6);
     }
 
-    // Statistiques de base
+    // Statistiques et Shiny
     const level = isMega ? getRandomInt(50, 100) : getRandomInt(1, 100);
     const iv_hp = getRandomInt(0, 31);
     const iv_attack = getRandomInt(0, 31);
@@ -93,25 +117,20 @@ async function generateRandomPokemon() {
     let pokemonName = 'Inconnu';
     try {
         const nameResponse = await axios.get(`${POKEAPI_BASE_URL}${pokedexId}`);
-        let rawName = nameResponse.data.name; // ex: "charizard-mega-x"
+        let rawName = nameResponse.data.name;
 
         if (isMega) {
-            // Logique pour correspondre à ton getPokemonSprite du script.js
-            // On transforme "charizard-mega-x" -> "Méga-Charizard X"
             let formattedName = rawName
                 .replace('-mega', '')
                 .replace('-x', ' X')
                 .replace('-y', ' Y');
-            
-            // On met la première lettre du nom en majuscule
             formattedName = formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
             pokemonName = "Méga-" + formattedName;
         } else {
-            // Pokémon normal
             pokemonName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         }
     } catch (error) {
-        console.error(`Erreur de récupération du nom pour Pokedex ID ${pokedexId}:`, error.message);
+        console.error(`Erreur pour ID ${pokedexId}:`, error.message);
     }
 
     return {
@@ -119,7 +138,8 @@ async function generateRandomPokemon() {
         name: pokemonName, 
         level,
         isShiny,
-        isMega, // Permet d'activer le badge "Maître Méga"
+        isMega,
+        isCustom: false, // Pas un custom si on arrive ici
         iv_hp,
         iv_attack,
         iv_defense,
@@ -812,6 +832,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
