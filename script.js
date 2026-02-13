@@ -15,7 +15,7 @@ let currentCompanionId = null;
 function getPokemonSprite(p) {
     // --- 1. PRIORITÉ : POKÉMON WTF (Vaudou, Magma, etc.) ---
     if (p.isCustom && p.customSprite) {
-        return `/assets/sprites/custom/${p.customSprite}`;
+        return `assets/sprites/custom/${p.customSprite}`;
     }
 
     // --- 2. LOGIQUE MÉGA (Ta fonction originale) ---
@@ -670,6 +670,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
