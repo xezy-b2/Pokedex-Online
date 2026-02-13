@@ -12,8 +12,13 @@ let cachedPokedexData = null;
 let currentGen = 1;
 let currentCompanionId = null;
 
-// --- UTILITAIRE : GÉNÉRATION D'IMAGE ---
 function getPokemonSprite(p) {
+    // --- 1. PRIORITÉ : POKÉMON WTF (Vaudou, Magma, etc.) ---
+    if (p.isCustom && p.customSprite) {
+        return `/assets/sprites/custom/${p.customSprite}`;
+    }
+
+    // --- 2. LOGIQUE MÉGA (Ta fonction originale) ---
     const isShiny = p.isShiny;
     const isMega = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
     
@@ -51,11 +56,14 @@ function getPokemonSprite(p) {
 
         const englishName = translations[baseName] || baseName;
         const megaType = suffix ? `mega${suffix}` : `mega`;
+        
+        // Retourne le GIF animé de Showdown
         return `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${englishName}-${megaType}.gif`;
     }
+
+    // --- 3. LOGIQUE CLASSIQUE ---
     return `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
 }
-
 // --- INITIALISATION ---
 function initializeApp() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -662,6 +670,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
