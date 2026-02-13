@@ -60,13 +60,14 @@ function getRandomInt(min, max) {
 
 async function generateRandomPokemon() {
     // --- CONFIGURATION CUSTOMS (Vaudou/Magma) ---
-    const CUSTOM_CHANCE = 0.02; // 2% de chance
+    const CUSTOM_CHANCE = 0.01; // 2% de chance
     const isCustomLucky = Math.random() < CUSTOM_CHANCE;
 
     if (isCustomLucky) {
         const variants = [
             { name: "Ectoplasma Vaudou", sprite: "gengar-voodoo.png" },
-            { name: "Ectoplasma Magma", sprite: "gengar-magma.png" }
+            { name: "Ectoplasma Magma", sprite: "gengar-magma.png" },
+            { name: "Dracaufeu Magma", sprite: "dracaufeu-magma.png"}
         ];
         const chosen = variants[Math.floor(Math.random() * variants.length)];
         
@@ -84,7 +85,7 @@ async function generateRandomPokemon() {
     }
 
     // --- CONFIGURATION MÉGAS (Ton code actuel) ---
-    const MEGA_CHANCE = 0.02; 
+    const MEGA_CHANCE = 0.01; 
     const MEGA_IDS = [
         10033, 10034, 10035, 10036, 10037, 10038, 10039, 10040, 10041, 10042, 
         10043, 10044, 10045, 10046, 10047, 10048, 10049, 10050, 10051, 10052, 
@@ -832,6 +833,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
