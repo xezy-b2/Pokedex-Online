@@ -238,13 +238,12 @@ function createCard(p, mode = 'pokedex') {
     return html + `</div>`;
 }
 
-// --- CHARGEMENT DES DONNÉES (VERSION OPTIMISÉE AVEC CACHE) ---
 async function loadPokedex() {
     const CACHE_KEY = 'pokedex_data_cache';
-    const CACHE_DURATION = 30 * 60 * 1000; // Cache de 30 minutes pour les données Pokédex
+    const CACHE_DURATION = 30 * 60 * 1000; // Cache de 30 minutes
 
     try {
-        // 1. Récupération du Profil (Toujours en direct pour avoir l'argent et le compagnon à jour)
+        // 1. Récupération du Profil (Argent et Compagnon)
         const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
         const userProfile = await profRes.json();
 
@@ -256,7 +255,7 @@ async function loadPokedex() {
         const comp = userProfile.companionPokemon;
         currentCompanionId = comp ? comp._id : null;
 
-        // Mise à jour header compagnon
+        // Mise à jour de l'affichage du compagnon dans le header
         const compImg = document.getElementById('companion-img');
         const compName = document.getElementById('companion-name');
         if (comp && compImg) {
@@ -267,7 +266,7 @@ async function loadPokedex() {
             compImg.style.display = 'none';
         }
 
-        // 2. Logique de Cache pour le Pokédex Complet
+        // 2. Logique de Cache pour le Pokédex
         const cached = localStorage.getItem(CACHE_KEY);
         let data;
 
@@ -285,7 +284,6 @@ async function loadPokedex() {
             const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
             data = await res.json();
             
-            // Sauvegarde dans le cache
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
                 data: data
@@ -299,10 +297,13 @@ async function loadPokedex() {
         const totalVus = cachedPokedexData.fullPokedex.length;
         const totalCaptures = cachedPokedexData.fullPokedex.filter(p => p.isCaptured).length;
         const totalShinies = list.filter(p => p.isShiny).length;
+        const totalWTF = list.filter(p => p.isCustom).length; // Nouvelle stat
 
         if(document.getElementById('stat-seen')) document.getElementById('stat-seen').innerText = totalVus;
         if(document.getElementById('stat-caught')) document.getElementById('stat-caught').innerText = totalCaptures;
         if(document.getElementById('stat-shiny')) document.getElementById('stat-shiny').innerText = totalShinies;
+        // Optionnel : si tu ajoutes un ID 'stat-wtf' dans ton HTML
+        if(document.getElementById('stat-wtf')) document.getElementById('stat-wtf').innerText = totalWTF;
 
         // --- ÉQUIPE FAVORITE (5 SLOTS) ---
         const featuredContainer = document.getElementById('featured-pokemon');
@@ -319,7 +320,7 @@ async function loadPokedex() {
             }
         }
 
-        // Calcul des totaux pour les onglets Pokédex
+        // --- ONGLETS GÉNÉRATIONS ---
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
         const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
@@ -336,22 +337,37 @@ async function loadPokedex() {
 
         renderPokedexGrid();
 
-        // Remplissage Collection (Shiny, Méga, Doublons)
+        // --- REMPLISSAGE COLLECTION (WTF, SHINY, MÉGA, DOUBLONS) ---
+        const wGrid = document.getElementById('wtf-grid'); // NOUVEAU
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
-        if(sGrid) sGrid.innerHTML = ''; if(mGrid) mGrid.innerHTML = ''; if(dGrid) dGrid.innerHTML = '';
+
+        if(wGrid) wGrid.innerHTML = ''; 
+        if(sGrid) sGrid.innerHTML = ''; 
+        if(mGrid) mGrid.innerHTML = ''; 
+        if(dGrid) dGrid.innerHTML = '';
 
         const keepers = new Set();
+
         list.forEach(p => {
             p.isCompanion = (p._id === currentCompanionId);
             const isFav = favoritePokes.includes(p._id); 
             
-            if (p.isMega === true) {
+            // 1. PRIORITÉ : Pokémon WTF
+            if (p.isCustom === true) {
+                if(wGrid) wGrid.innerHTML += createCard(p, 'collection');
+            } 
+            // 2. Formes Méga
+            else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
                 if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-            } else if (p.isShiny || isFav) {
+            } 
+            // 3. Shinies ou Favoris
+            else if (p.isShiny || isFav) {
                 if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
-            } else {
+            } 
+            // 4. Le reste (Doublons vs Premier exemplaire)
+            else {
                 if (keepers.has(p.pokedexId)) {
                     if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
                 } else {
@@ -359,7 +375,9 @@ async function loadPokedex() {
                 }
             }
         });
-    } catch (e) { console.error("Erreur loadPokedex :", e); }
+    } catch (e) { 
+        console.error("Erreur loadPokedex :", e); 
+    }
 }
 async function setCompanion(pokemonId) {
     try {
@@ -670,6 +688,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
