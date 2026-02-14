@@ -855,6 +855,60 @@
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 15px;
             }
+
+            /* Fix header mobile */
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+                text-align: center;
+            }
+
+            #logged-in-user {
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+                gap: 10px !important;
+            }
+
+            #companion-display {
+                order: 1;
+                flex: 1 1 100%;
+                justify-content: center;
+            }
+
+            #display-username {
+                order: 2;
+                flex: 1 1 100%;
+                text-align: center;
+                font-size: 1em;
+            }
+
+            .btn-refresh {
+                order: 3;
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+
+            header button[onclick="logout()"] {
+                order: 4;
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+
+            #logged-out-user {
+                width: 100%;
+            }
+
+            #logged-out-user button {
+                width: 100%;
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
         }
 
         /* Effet de brillance sur les cartes */
