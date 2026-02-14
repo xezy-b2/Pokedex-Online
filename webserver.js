@@ -75,11 +75,12 @@ async function generateRandomPokemon() {
             { name: "Mew Magma", sprite: "mew-magma.png"}
         ];
         const chosen = variants[Math.floor(Math.random() * variants.length)];
+        const randomLevel = Math.floor(Math.random() * 31) + 70;
         
         return {
             pokedexId: 94, // ID d'Ectoplasma
             name: chosen.name,
-            level: 100,
+            level: randomLevel,
             isShiny: false,
             isMega: false,
             isCustom: true, // IMPORTANT : pour le script.js
@@ -838,6 +839,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
