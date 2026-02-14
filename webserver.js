@@ -67,7 +67,10 @@ async function generateRandomPokemon() {
         const variants = [
             { name: "Ectoplasma Vaudou", sprite: "gengar-voodoo.png" },
             { name: "Ectoplasma Magma", sprite: "gengar-magma.png" },
-            { name: "Dracaufeu Magma", sprite: "dracaufeu-magma.png"}
+            { name: "Dracaufeu Magma", sprite: "dracaufeu-magma.png"},
+            { name: "Evoli Magma", sprite: "evoli-magma.png"},
+            { name: "Salameche Magma", sprite: "salameche-magma.png"},
+            { name: "Bulbizarre Magma", sprite: "bulbizarre-magma.png"}
         ];
         const chosen = variants[Math.floor(Math.random() * variants.length)];
         
@@ -833,6 +836,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
