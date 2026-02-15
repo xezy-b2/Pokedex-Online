@@ -516,7 +516,7 @@ async function loadShop() {
         let shopHtml = '';
         itemKeys.forEach((key, i) => {
             const ballImg = key.replace('ball', '-ball') + '.png';
-            shopHtml += `<div class="pokedex-card"><img src="${BALL_URL}${ballImg}" style="${imgStyle}"><h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3><p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p><input type="number" id="qty-${key}" value="1" min="1" style="width:50px; background:#000; color:#fff; border:1px solid var(--border); border-radius:5px; margin-bottom:10px; text-align:center;"><button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button></div>`;
+              shopHtml += `<div class="pokedex-card"><img src="${BALL_URL}${ballImg}" style="${imgStyle}"><h3 style="font-size:1em; margin: 5px 0;">${itemNames[i]}</h3><p style="color:var(--shiny); font-weight:bold; margin-bottom: 10px;">${getPrice([key])} 💰</p><input type="number" id="qty-${key}" value="1" min="1" style="width:120px; padding:12px 15px; background:rgba(26, 20, 16, 0.6); color:var(--text-primary); border:2px solid rgba(255, 154, 108, 0.3); border-radius:15px; margin:15px auto 10px; text-align:center; font-size:1.1em; font-weight:600; display:block; position:relative; z-index:10; font-family: 'Quicksand', sans-serif;"><button onclick="buyItem('${key}', document.getElementById('qty-${key}').value)" class="btn-action btn-trade" style="width:100%">Acheter</button></div>`;
         });
         container.innerHTML = shopHtml;
     } catch (e) { container.innerHTML = "<p>Erreur boutique.</p>"; }
@@ -693,4 +693,5 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
