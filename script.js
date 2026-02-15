@@ -393,9 +393,9 @@ function createCard(p, mode = 'pokedex') {
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
-            ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${p._id}')" title="Équipe Favorite" style="position: absolute; top: 8px; right: 35px; background: none; border: none; font-size: 1.2em; cursor: pointer; z-index: 5; filter: ${isFav ? 'grayscale(0)' : 'grayscale(1) opacity(0.3)'};">⭐</button>` : ''}
-            <span style="font-size:0.7em; color:var(--text-secondary); position:absolute; top:10px; right:10px;">#${p.pokedexId}</span>
-            ${isMega ? `<span style="position:absolute; top:10px; left:10px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
+            ${isCaptured ? `<button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${p._id}')" title="Équipe Favorite" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 1.5em; cursor: pointer; z-index: 5; filter: ${isFav ? 'grayscale(0)' : 'grayscale(1) opacity(0.4)'}; transition: all 0.3s ease;">⭐</button>` : ''}
+            <span style="font-size:0.7em; color:var(--text-secondary); position:absolute; top:10px; right:45px;">#${p.pokedexId}</span>
+            ${isMega ? `<span style="position:absolute; top:10px; left:50px; background:#ff00ff; color:white; font-size:0.6em; padding:2px 5px; border-radius:4px; font-weight:bold; z-index:10;">MÉGA</span>` : ''}
             <img data-src="${img}" class="poke-sprite" loading="lazy" onerror="this.onerror=null; this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';" style="${isMega ? 'width:100px; height:100px; object-fit:contain;' : ''} background: linear-gradient(135deg, rgba(52, 40, 32, 0.3), rgba(42, 31, 26, 0.4));">
             <span class="pokemon-name" style="font-weight:bold;">${p.isShiny ? '✨ ' : ''}${p.name || '???'}</span>
             <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 5px;">
@@ -678,7 +678,7 @@ async function loadGallery() {
                 </div>
                 <p class="gallery-message">"${post.message}"</p>
                 <div class="gallery-team">
-                    ${post.teamData.map(p => `<img data-src="${getPokemonSprite(p)}" title="${p.name}" style="width: 50px;" loading="lazy">`).join('')}
+                    ${post.teamData.map(p => `<img data-src="${getPokemonSprite(p)}" title="${p.name}" style="width: 80px; height: 80px;" loading="lazy">`).join('')}
                 </div>
                 <div style="margin-top:15px; border-top: 1px solid var(--border); padding-top:10px;">
                     <button onclick="likePost('${post._id}')" style="background:none; border:none; color:${hasLiked ? 'var(--red-poke)' : 'white'}; cursor:pointer; font-size:1.2em;">
