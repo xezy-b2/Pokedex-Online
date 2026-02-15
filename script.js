@@ -351,34 +351,35 @@ async function loadPokedex() {
         const keepers = new Set();
 
         list.forEach(p => {
-            p.isCompanion = (p._id === currentCompanionId);
-            const isFav = favoritePokes.includes(p._id); 
-            
-            // 1. PRIORITÉ : Pokémon WTF
-            if (p.isCustom === true) {
-                if(wGrid) wGrid.innerHTML += createCard(p, 'collection');
-            } 
-            // 2. Formes Méga
-            else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
-                if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-            } 
-            // 3. Shinies ou Favoris
-            else if (p.isShiny || isFav) {
-                if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
-            } 
-            // 4. Le reste (Doublons vs Premier exemplaire)
-            else {
-                if (keepers.has(p.pokedexId)) {
-                    if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
-                } else {
-                    keepers.add(p.pokedexId);
-                }
+    p.isCompanion = (p._id === currentCompanionId);
+    const isFav = favoritePokes.includes(p._id); 
+    
+    if (p.isCustom === true) {
+        if(wGrid) wGrid.innerHTML += createCard(p, 'collection');
+    } 
+
+    else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
+        if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
+    } 
+
+    else if (p.isShiny) {
+        if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
+    } 
+
+    else {
+
+        if (!keepers.has(p.pokedexId) || isFav) {
+            if (keepers.has(p.pokedexId) && !isFav) {
+                if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
+            } else {
+
+                keepers.add(p.pokedexId);
             }
-        });
-    } catch (e) { 
-        console.error("Erreur loadPokedex :", e); 
+        } else {
+            if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
+        }
     }
-}
+});
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -688,6 +689,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
