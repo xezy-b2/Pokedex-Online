@@ -297,12 +297,11 @@ async function loadPokedex() {
         const totalVus = cachedPokedexData.fullPokedex.length;
         const totalCaptures = cachedPokedexData.fullPokedex.filter(p => p.isCaptured).length;
         const totalShinies = list.filter(p => p.isShiny).length;
-        const totalWTF = list.filter(p => p.isCustom).length; // Nouvelle stat
+        const totalWTF = list.filter(p => p.isCustom).length;
 
         if(document.getElementById('stat-seen')) document.getElementById('stat-seen').innerText = totalVus;
         if(document.getElementById('stat-caught')) document.getElementById('stat-caught').innerText = totalCaptures;
         if(document.getElementById('stat-shiny')) document.getElementById('stat-shiny').innerText = totalShinies;
-        // Optionnel : si tu ajoutes un ID 'stat-wtf' dans ton HTML
         if(document.getElementById('stat-wtf')) document.getElementById('stat-wtf').innerText = totalWTF;
 
         // --- ÉQUIPE FAVORITE (5 SLOTS) ---
@@ -335,10 +334,11 @@ async function loadPokedex() {
             btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
         });
 
+        // Affiche la grille principale (le Pokédex de 1 à 721)
         renderPokedexGrid();
 
-        // --- REMPLISSAGE COLLECTION (WTF, SHINY, MÉGA, DOUBLONS) ---
-        const wGrid = document.getElementById('wtf-grid'); // NOUVEAU
+        // --- REMPLISSAGE DES GRILLES DE COLLECTION ---
+        const wGrid = document.getElementById('wtf-grid'); 
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
@@ -351,35 +351,39 @@ async function loadPokedex() {
         const keepers = new Set();
 
         list.forEach(p => {
-    p.isCompanion = (p._id === currentCompanionId);
-    const isFav = favoritePokes.includes(p._id); 
-    
-    if (p.isCustom === true) {
-        if(wGrid) wGrid.innerHTML += createCard(p, 'collection');
-    } 
-
-    else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
-        if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
-    } 
-
-    else if (p.isShiny) {
-        if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
-    } 
-
-    else {
-
-        if (!keepers.has(p.pokedexId) || isFav) {
-            if (keepers.has(p.pokedexId) && !isFav) {
-                if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
-            } else {
-
-                keepers.add(p.pokedexId);
+            p.isCompanion = (p._id === currentCompanionId);
+            const isFav = favoritePokes.includes(p._id); 
+            
+            // 1. Catégorie WTF
+            if (p.isCustom === true) {
+                if(wGrid) wGrid.innerHTML += createCard(p, 'collection');
+            } 
+            // 2. Catégorie MÉGA
+            else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
+                if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
+            } 
+            // 3. Catégorie SHINY (Uniquement si p.isShiny est vrai)
+            else if (p.isShiny === true) {
+                if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
+            } 
+            // 4. Catégorie DOUBLONS / RESTE
+            else {
+                // Si on a déjà ce Pokémon en stock ET qu'il n'est pas en favori -> Doublon
+                if (keepers.has(p.pokedexId) && !isFav) {
+                    if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
+                } else {
+                    // C'est soit le premier exemplaire, soit un favori
+                    // On ne l'ajoute pas visuellement ici car renderPokedexGrid s'occupe déjà de l'affichage principal
+                    // Mais on l'enregistre dans les 'keepers' pour que les suivants soient considérés comme doublons
+                    keepers.add(p.pokedexId);
+                }
             }
-        } else {
-            if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
-        }
+        });
+
+    } catch (e) { 
+        console.error("Erreur loadPokedex :", e); 
     }
-});
+}
 async function setCompanion(pokemonId) {
     try {
         const res = await fetch(`${API_BASE_URL}/api/companion/set`, {
@@ -689,6 +693,7 @@ function invalidatePokedexCache() {
 
 function logout() { localStorage.clear(); location.reload(); }
 document.addEventListener('DOMContentLoaded', initializeApp);
+
 
 
 
