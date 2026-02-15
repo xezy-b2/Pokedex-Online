@@ -658,6 +658,10 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            background: linear-gradient(135deg, rgba(52, 40, 32, 0.7) 0%, rgba(42, 31, 26, 0.8) 100%);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 154, 108, 0.2);
         }
 
         #companion-img {
@@ -665,6 +669,11 @@
             height: 40px;
             object-fit: contain;
             image-rendering: pixelated;
+        }
+
+        #companion-name {
+            font-weight: 600;
+            color: var(--accent-warm);
         }
 
         #logged-in-user {
@@ -804,9 +813,11 @@
                 <div class="stat-card"><h4>✨ Raretés</h4><p id="stat-shiny" style="background: linear-gradient(135deg, #f4d06f 0%, #e8b4b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">--</p></div>
             </div>
             <div>
-                <h3>À la une</h3>
-                <div id="featured-pokemon" class="pokedex-grid">
-                    <p style="color: var(--text-secondary); font-style: italic;">Connectez-vous pour voir vos statistiques ✨</p>
+                <h3 style="text-align: center; margin-bottom: 20px;">À la une</h3>
+                <div style="background: linear-gradient(135deg, rgba(52, 40, 32, 0.7) 0%, rgba(42, 31, 26, 0.8) 100%); padding: 25px; border-radius: 20px; border: 2px solid rgba(255, 154, 108, 0.2);">
+                    <div id="featured-pokemon" class="pokedex-grid" style="max-width: 900px; margin: 0 auto;">
+                        <p style="color: var(--text-secondary); font-style: italic;">Connectez-vous pour voir vos statistiques ✨</p>
+                    </div>
                 </div>
             </div>
         </div>
