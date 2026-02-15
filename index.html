@@ -157,27 +157,7 @@
             font-size: 0.9em;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        /* OPTIMISATION: Effets complexes uniquement sur desktop */
-        @media (min-width: 768px) {
-            nav button::before {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 0;
-                height: 0;
-                border-radius: 50%;
-                background: radial-gradient(circle, var(--accent-warm), var(--accent-soft));
-                transform: translate(-50%, -50%);
-                transition: width 0.5s, height 0.5s;
-            }
-
-            nav button:hover::before {
-                width: 300px;
-                height: 300px;
-            }
+            position: relative;
         }
 
         nav button:hover, nav button.active {
@@ -598,10 +578,15 @@
         }
 
         .gallery-team img {
-            width: 50px;
-            height: 50px;
+            width: 80px;
+            height: 80px;
             object-fit: contain;
             image-rendering: pixelated;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-team img:hover {
+            transform: scale(1.2);
         }
 
         /* Responsive */
@@ -687,6 +672,90 @@
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
+        }
+
+        /* Ball inventory styling */
+        .ball-inventory {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .ball-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(52, 40, 32, 0.5);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 154, 108, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .ball-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-warm);
+        }
+
+        .ball-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .ball-item b {
+            display: block;
+            color: var(--accent-warm);
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+
+        .ball-item small {
+            color: var(--text-secondary);
+            font-size: 0.85em;
+        }
+
+        /* Companion button styling */
+        .companion-btn {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            z-index: 5;
+            transition: all 0.3s ease;
+            filter: grayscale(1) opacity(0.4);
+        }
+
+        .companion-btn:hover {
+            transform: scale(1.2);
+            filter: grayscale(0) opacity(1);
+        }
+
+        .companion-btn.active {
+            filter: grayscale(0) opacity(1);
+            animation: heartbeat 1.5s infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Fix companion and shiny classes */
+        .is-companion {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .is-shiny {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .is-mega {
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
         }
     </style>
 </head>
