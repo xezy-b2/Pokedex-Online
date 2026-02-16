@@ -571,34 +571,48 @@ async function sellPoke(id, name, price) {
 }
 
 async function wonderTrade(id, name) {
+    console.log("🎲 wonderTrade appelée pour:", name);
     if(!confirm(`Envoyer ${name} en Échange Miracle ?`)) return;
-    const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
-    });
-    const data = await res.json();
     
-    if(res.ok) {
-        const pk = data.newPokemon;
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/trade/wonder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, pokemonIdToTrade: id })
+        });
+        const data = await res.json();
         
-        // CORRECTION: Utiliser src directement pour le modal (image immédiate)
-        const modalImg = document.getElementById('modal-img');
-        modalImg.src = getPokemonSprite(pk);
-        
-        let displayName = pk.name;
-        if(pk.isMega) {
-            displayName = `<span style="color: #e67e22;">🔥 ${pk.name} 🔥</span>`;
-        }
+        if(res.ok) {
+            const pk = data.newPokemon;
+            console.log("✅ Pokémon reçu:", pk.name);
+            
+            // CORRECTION: Utiliser src directement pour le modal (image immédiate)
+            const modalImg = document.getElementById('modal-img');
+            modalImg.src = getPokemonSprite(pk);
+            
+            let displayName = pk.name;
+            if(pk.isMega) {
+                displayName = `<span style="color: #e67e22;">🔥 ${pk.name} 🔥</span>`;
+            }
 
-        document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${displayName}</b> !`;
-        document.getElementById('trade-modal').style.display = 'flex';
-        
-        localStorage.removeItem('pokedex_data_cache');
-        loadPokedex();
-    } else {
-        alert(data.message || "Erreur lors de l'échange miracle");
+            document.getElementById('modal-text').innerHTML = `Vous avez reçu : <b>${displayName}</b> !`;
+            document.getElementById('trade-modal').style.display = 'flex';
+            
+            localStorage.removeItem('pokedex_data_cache');
+            loadPokedex();
+        } else {
+            console.error("❌ Erreur échange:", data.message);
+            alert(data.message || "Erreur lors de l'échange miracle");
+        }
+    } catch (e) {
+        console.error("❌ Erreur wonderTrade:", e);
+        alert("Erreur lors de l'échange miracle: " + e.message);
     }
+}
+
+function closeTradeModal() {
+    console.log("✅ Fermeture du modal");
+    document.getElementById('trade-modal').style.display = 'none';
 }
 
 async function buyItem(key, qty) {
@@ -765,6 +779,7 @@ window.toggleFav = toggleFav;
 window.setCompanion = setCompanion;
 window.sellPoke = sellPoke;
 window.wonderTrade = wonderTrade;
+window.closeTradeModal = closeTradeModal;
 window.buyItem = buyItem;
 window.postToGallery = postToGallery;
 window.likePost = likePost;
@@ -775,3 +790,4 @@ console.log("✅ Fonctions exposées au scope global:");
 console.log("- refreshPokedexCache:", typeof window.refreshPokedexCache);
 console.log("- logout:", typeof window.logout);
 console.log("- showPage:", typeof window.showPage);
+console.log("- closeTradeModal:", typeof window.closeTradeModal);
