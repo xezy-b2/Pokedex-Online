@@ -1,11 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); 
-const axios = require('axios'); 
-const User = require('./models/User.js'); 
+const cors = require('cors');
+const axios = require('axios');
+const User = require('./models/User.js');
+const TradeOffer = require('./models/TradeOffer.js');
 
 const app = express();
-const PORT = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 3000;
+
+// ========== MIDDLEWARES (ORDRE IMPORTANT) ==========
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
@@ -1315,6 +1321,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
