@@ -19,6 +19,474 @@ const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
 const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 
+// ==========================================
+// 🔄 ROUTES D'ÉCHANGE DIRECT
+// À ajouter dans webserver.js AVANT app.listen()
+// ==========================================
+
+const TradeOffer = require('./models/TradeOffer.js');
+
+// ==========================================
+// 1. CRÉER UNE OFFRE D'ÉCHANGE
+// ==========================================
+app.post('/api/trade/create-offer', async (req, res) => {
+    const { userId, offeredPokemonId, wantedPokemonName, conditions, message } = req.body;
+
+    if (!userId || !offeredPokemonId || !wantedPokemonName) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        // Vérifier que le Pokémon appartient à l'utilisateur
+        const pokemon = user.pokemons.id(offeredPokemonId);
+        if (!pokemon) {
+            return res.status(404).json({ error: "Pokémon introuvable" });
+        }
+
+        // Vérifier que ce n'est pas le compagnon
+        if (user.companionPokemonId && user.companionPokemonId.toString() === offeredPokemonId) {
+            return res.status(400).json({ error: "Vous ne pouvez pas échanger votre compagnon actuel" });
+        }
+
+        // Vérifier le nombre d'offres actives
+        const activeOffersCount = await TradeOffer.countDocuments({ 
+            creatorId: userId, 
+            status: 'active' 
+        });
+
+        if (activeOffersCount >= 5) {
+            return res.status(400).json({ error: "Vous avez déjà 5 offres actives. Annulez-en une pour en créer une nouvelle." });
+        }
+
+        // Créer l'offre
+        const newOffer = new TradeOffer({
+            creatorId: userId,
+            creatorUsername: user.username,
+            offeredPokemon: {
+                _id: pokemon._id,
+                name: pokemon.name,
+                pokedexId: pokemon.pokedexId,
+                level: pokemon.level,
+                isShiny: pokemon.isShiny || false,
+                isMega: pokemon.isMega || false,
+                isCustom: pokemon.isCustom || false,
+                customSprite: pokemon.customSprite || null
+            },
+            wantedPokemon: {
+                name: wantedPokemonName,
+                conditions: conditions || {}
+            },
+            message: message || ''
+        });
+
+        await newOffer.save();
+
+        res.json({ 
+            success: true, 
+            message: "Offre créée avec succès !",
+            offerId: newOffer._id 
+        });
+
+    } catch (e) {
+        console.error("Erreur création offre:", e);
+        res.status(500).json({ error: "Erreur lors de la création de l'offre" });
+    }
+});
+
+// ==========================================
+// 2. LISTER TOUTES LES OFFRES ACTIVES
+// ==========================================
+app.get('/api/trade/offers', async (req, res) => {
+    const { filter, search, userId } = req.query;
+
+    try {
+        let query = { status: 'active', expiresAt: { $gt: new Date() } };
+
+        // Filtres
+        if (filter === 'shiny') {
+            query['offeredPokemon.isShiny'] = true;
+        } else if (filter === 'mega') {
+            query['offeredPokemon.isMega'] = true;
+        } else if (filter === 'custom') {
+            query['offeredPokemon.isCustom'] = true;
+        }
+
+        // Recherche par nom
+        if (search) {
+            query.$or = [
+                { 'offeredPokemon.name': { $regex: search, $options: 'i' } },
+                { 'wantedPokemon.name': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Ne pas afficher ses propres offres dans la liste publique
+        if (userId) {
+            query.creatorId = { $ne: userId };
+        }
+
+        const offers = await TradeOffer.find(query)
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        res.json({ offers });
+
+    } catch (e) {
+        console.error("Erreur listing offres:", e);
+        res.status(500).json({ error: "Erreur lors de la récupération des offres" });
+    }
+});
+
+// ==========================================
+// 3. PROPOSER UN ÉCHANGE SUR UNE OFFRE
+// ==========================================
+app.post('/api/trade/propose', async (req, res) => {
+    const { userId, offerId, offeredPokemonId, message } = req.body;
+
+    if (!userId || !offerId || !offeredPokemonId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        const offer = await TradeOffer.findById(offerId);
+        if (!offer) {
+            return res.status(404).json({ error: "Offre introuvable" });
+        }
+
+        if (offer.status !== 'active') {
+            return res.status(400).json({ error: "Cette offre n'est plus active" });
+        }
+
+        if (offer.creatorId === userId) {
+            return res.status(400).json({ error: "Vous ne pouvez pas proposer sur votre propre offre" });
+        }
+
+        // Vérifier que le Pokémon appartient à l'utilisateur
+        const pokemon = user.pokemons.id(offeredPokemonId);
+        if (!pokemon) {
+            return res.status(404).json({ error: "Pokémon introuvable" });
+        }
+
+        // Vérifier que ce n'est pas le compagnon
+        if (user.companionPokemonId && user.companionPokemonId.toString() === offeredPokemonId) {
+            return res.status(400).json({ error: "Vous ne pouvez pas échanger votre compagnon actuel" });
+        }
+
+        // Vérifier les conditions de l'offre
+        const conditions = offer.wantedPokemon.conditions;
+        
+        if (pokemon.name.toLowerCase() !== offer.wantedPokemon.name.toLowerCase()) {
+            return res.status(400).json({ error: `Cette offre recherche un ${offer.wantedPokemon.name}` });
+        }
+
+        if (conditions.minLevel && pokemon.level < conditions.minLevel) {
+            return res.status(400).json({ error: `Niveau minimum requis : ${conditions.minLevel}` });
+        }
+
+        if (conditions.mustBeShiny && !pokemon.isShiny) {
+            return res.status(400).json({ error: "Un Pokémon chromatique est requis" });
+        }
+
+        if (conditions.mustBeMega && !pokemon.isMega) {
+            return res.status(400).json({ error: "Une Méga-évolution est requise" });
+        }
+
+        // Vérifier qu'on n'a pas déjà proposé
+        const alreadyProposed = offer.proposals.some(p => p.proposerId === userId && p.status === 'pending');
+        if (alreadyProposed) {
+            return res.status(400).json({ error: "Vous avez déjà proposé un échange sur cette offre" });
+        }
+
+        // Limiter le nombre de propositions par jour
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const proposalsToday = await TradeOffer.countDocuments({
+            'proposals.proposerId': userId,
+            'proposals.createdAt': { $gte: today }
+        });
+
+        if (proposalsToday >= 10) {
+            return res.status(400).json({ error: "Limite de 10 propositions par jour atteinte" });
+        }
+
+        // Créer la proposition
+        const proposalId = `prop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        offer.proposals.push({
+            proposalId,
+            proposerId: userId,
+            proposerUsername: user.username,
+            offeredPokemon: {
+                _id: pokemon._id,
+                name: pokemon.name,
+                pokedexId: pokemon.pokedexId,
+                level: pokemon.level,
+                isShiny: pokemon.isShiny || false,
+                isMega: pokemon.isMega || false,
+                isCustom: pokemon.isCustom || false
+            },
+            message: message || ''
+        });
+
+        await offer.save();
+
+        res.json({ 
+            success: true, 
+            message: "Proposition envoyée avec succès !",
+            proposalId 
+        });
+
+    } catch (e) {
+        console.error("Erreur proposition:", e);
+        res.status(500).json({ error: "Erreur lors de la proposition" });
+    }
+});
+
+// ==========================================
+// 4. ACCEPTER UNE PROPOSITION
+// ==========================================
+app.post('/api/trade/accept', async (req, res) => {
+    const { userId, offerId, proposalId } = req.body;
+
+    if (!userId || !offerId || !proposalId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const offer = await TradeOffer.findById(offerId).session(session);
+        if (!offer) {
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Offre introuvable" });
+        }
+
+        if (offer.creatorId !== userId) {
+            await session.abortTransaction();
+            return res.status(403).json({ error: "Vous n'êtes pas le créateur de cette offre" });
+        }
+
+        if (offer.status !== 'active') {
+            await session.abortTransaction();
+            return res.status(400).json({ error: "Cette offre n'est plus active" });
+        }
+
+        const proposal = offer.proposals.find(p => p.proposalId === proposalId);
+        if (!proposal) {
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Proposition introuvable" });
+        }
+
+        if (proposal.status !== 'pending') {
+            await session.abortTransaction();
+            return res.status(400).json({ error: "Cette proposition a déjà été traitée" });
+        }
+
+        // Récupérer les deux utilisateurs
+        const creator = await User.findOne({ userId: offer.creatorId }).session(session);
+        const proposer = await User.findOne({ userId: proposal.proposerId }).session(session);
+
+        if (!creator || !proposer) {
+            await session.abortTransaction();
+            return res.status(404).json({ error: "Un des utilisateurs est introuvable" });
+        }
+
+        // Vérifier que les deux Pokémon existent toujours
+        const creatorPokemon = creator.pokemons.id(offer.offeredPokemon._id);
+        const proposerPokemon = proposer.pokemons.id(proposal.offeredPokemon._id);
+
+        if (!creatorPokemon) {
+            await session.abortTransaction();
+            return res.status(400).json({ error: "Votre Pokémon n'existe plus" });
+        }
+
+        if (!proposerPokemon) {
+            await session.abortTransaction();
+            return res.status(400).json({ error: "Le Pokémon proposé n'existe plus" });
+        }
+
+        // ÉCHANGE ATOMIQUE
+        // Retirer les Pokémon de leurs propriétaires actuels
+        creator.pokemons.pull(creatorPokemon._id);
+        proposer.pokemons.pull(proposerPokemon._id);
+
+        // Ajouter les Pokémon aux nouveaux propriétaires
+        creator.pokemons.push(proposerPokemon);
+        proposer.pokemons.push(creatorPokemon);
+
+        // Sauvegarder les utilisateurs
+        await creator.save({ session });
+        await proposer.save({ session });
+
+        // Marquer l'offre comme complétée
+        offer.status = 'completed';
+        proposal.status = 'accepted';
+        await offer.save({ session });
+
+        await session.commitTransaction();
+
+        res.json({ 
+            success: true, 
+            message: "Échange réussi !",
+            receivedPokemon: {
+                name: proposerPokemon.name,
+                level: proposerPokemon.level,
+                isShiny: proposerPokemon.isShiny
+            }
+        });
+
+    } catch (e) {
+        await session.abortTransaction();
+        console.error("Erreur acceptation:", e);
+        res.status(500).json({ error: "Erreur lors de l'échange" });
+    } finally {
+        session.endSession();
+    }
+});
+
+// ==========================================
+// 5. REFUSER UNE PROPOSITION
+// ==========================================
+app.post('/api/trade/reject', async (req, res) => {
+    const { userId, offerId, proposalId } = req.body;
+
+    if (!userId || !offerId || !proposalId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const offer = await TradeOffer.findById(offerId);
+        if (!offer) {
+            return res.status(404).json({ error: "Offre introuvable" });
+        }
+
+        if (offer.creatorId !== userId) {
+            return res.status(403).json({ error: "Vous n'êtes pas le créateur de cette offre" });
+        }
+
+        const proposal = offer.proposals.find(p => p.proposalId === proposalId);
+        if (!proposal) {
+            return res.status(404).json({ error: "Proposition introuvable" });
+        }
+
+        proposal.status = 'rejected';
+        await offer.save();
+
+        res.json({ success: true, message: "Proposition refusée" });
+
+    } catch (e) {
+        console.error("Erreur refus:", e);
+        res.status(500).json({ error: "Erreur lors du refus" });
+    }
+});
+
+// ==========================================
+// 6. ANNULER SON OFFRE
+// ==========================================
+app.delete('/api/trade/cancel/:offerId', async (req, res) => {
+    const { offerId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: "UserId manquant" });
+    }
+
+    try {
+        const offer = await TradeOffer.findById(offerId);
+        if (!offer) {
+            return res.status(404).json({ error: "Offre introuvable" });
+        }
+
+        if (offer.creatorId !== userId) {
+            return res.status(403).json({ error: "Vous n'êtes pas le créateur de cette offre" });
+        }
+
+        offer.status = 'cancelled';
+        await offer.save();
+
+        res.json({ success: true, message: "Offre annulée avec succès" });
+
+    } catch (e) {
+        console.error("Erreur annulation:", e);
+        res.status(500).json({ error: "Erreur lors de l'annulation" });
+    }
+});
+
+// ==========================================
+// 7. MES OFFRES ET PROPOSITIONS
+// ==========================================
+app.get('/api/trade/my-activity/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Mes offres créées
+        const myOffers = await TradeOffer.find({ 
+            creatorId: userId,
+            status: { $in: ['active', 'completed'] }
+        }).sort({ createdAt: -1 });
+
+        // Propositions que j'ai faites
+        const myProposals = await TradeOffer.find({ 
+            'proposals.proposerId': userId,
+            status: 'active'
+        }).sort({ createdAt: -1 });
+
+        // Propositions reçues sur mes offres
+        const receivedProposals = await TradeOffer.find({
+            creatorId: userId,
+            status: 'active',
+            'proposals.status': 'pending'
+        }).sort({ createdAt: -1 });
+
+        res.json({ 
+            myOffers,
+            myProposals,
+            receivedProposals 
+        });
+
+    } catch (e) {
+        console.error("Erreur activité:", e);
+        res.status(500).json({ error: "Erreur lors de la récupération de l'activité" });
+    }
+});
+
+// ==========================================
+// 8. NETTOYAGE AUTOMATIQUE DES OFFRES EXPIRÉES
+// ==========================================
+async function cleanExpiredOffers() {
+    try {
+        const result = await TradeOffer.updateMany(
+            { 
+                status: 'active',
+                expiresAt: { $lt: new Date() }
+            },
+            { 
+                $set: { status: 'cancelled' }
+            }
+        );
+        
+        if (result.modifiedCount > 0) {
+            console.log(`🧹 ${result.modifiedCount} offres expirées nettoyées`);
+        }
+    } catch (e) {
+        console.error("Erreur nettoyage:", e);
+    }
+}
+
+// Exécuter le nettoyage toutes les heures
+setInterval(cleanExpiredOffers, 60 * 60 * 1000);
+cleanExpiredOffers(); // Exécution au démarrage
+
 async function fetchPokemonBaseStats(pokedexId) {
     if (statsCache[pokedexId]) {
         return statsCache[pokedexId];
@@ -840,6 +1308,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
