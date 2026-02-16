@@ -2,6 +2,8 @@ const API_BASE_URL = 'https://pokedex-online-pxmg.onrender.com';
 const POKEAPI_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
 const BALL_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/';
 
+console.log("🚀 Script chargé !");
+
 let currentUserId = localStorage.getItem('currentUserId');
 let currentUsername = localStorage.getItem('currentUsername');
 let favoritePokes = JSON.parse(localStorage.getItem('favoritePokes')) || [];
@@ -11,6 +13,8 @@ const itemsPerPage = 50;
 let cachedPokedexData = null;
 let currentGen = 1;
 let currentCompanionId = null;
+
+console.log("📦 Variables initialisées, userId:", currentUserId);
 
 // OPTIMISATION: Intersection Observer pour lazy loading des images
 const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -719,30 +723,33 @@ async function deletePost(postId) {
 }
 
 function refreshPokedexCache() {
+    console.log("🔄 refreshPokedexCache appelée !");
     try {
         localStorage.removeItem('pokedex_data_cache');
-        console.log("🔄 Cache vidé !");
+        console.log("✅ Cache supprimé");
         loadPokedex();
         alert("✅ Cache actualisé !");
     } catch (e) {
-        console.error("Erreur refresh:", e);
-        alert("❌ Erreur lors de l'actualisation");
+        console.error("❌ Erreur refresh:", e);
+        alert("❌ Erreur lors de l'actualisation: " + e.message);
     }
 }
 
 function invalidatePokedexCache() {
+    console.log("♻️ invalidatePokedexCache appelée");
     localStorage.removeItem('pokedex_data_cache');
     loadPokedex();
 }
 
 function logout() { 
+    console.log("🚪 logout appelée !");
     try {
-        console.log("🚪 Déconnexion...");
         localStorage.clear();
+        console.log("✅ LocalStorage vidé");
         location.reload();
     } catch (e) {
-        console.error("Erreur logout:", e);
-        alert("❌ Erreur lors de la déconnexion");
+        console.error("❌ Erreur logout:", e);
+        alert("❌ Erreur lors de la déconnexion: " + e.message);
     }
 }
 
@@ -763,3 +770,8 @@ window.postToGallery = postToGallery;
 window.likePost = likePost;
 window.deletePost = deletePost;
 window.claimDaily = claimDaily;
+
+console.log("✅ Fonctions exposées au scope global:");
+console.log("- refreshPokedexCache:", typeof window.refreshPokedexCache);
+console.log("- logout:", typeof window.logout);
+console.log("- showPage:", typeof window.showPage);
