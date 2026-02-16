@@ -1,8 +1,3 @@
-// ==========================================
-// 🔄 SYSTÈME D'ÉCHANGES DIRECTS
-// Code à ajouter dans script.js
-// ==========================================
-
 let selectedOfferPokemon = null;
 let selectedProposePokemon = null;
 let currentOffer = null;
@@ -282,23 +277,48 @@ function loadSelectablePokemon(gridId, type) {
     const grid = document.getElementById(gridId);
     if (!grid || !cachedPokedexData) return;
     
+    // Compter les Pokémon par pokedexId pour identifier les doublons
+    const pokemonCounts = {};
+    cachedPokedexData.capturedPokemonsList.forEach(p => {
+        const key = `${p.pokedexId}_${p.isShiny ? 'shiny' : 'normal'}_${p.isMega ? 'mega' : 'normal'}_${p.isCustom ? 'custom' : 'normal'}`;
+        if (!pokemonCounts[key]) {
+            pokemonCounts[key] = [];
+        }
+        pokemonCounts[key].push(p);
+    });
+    
+    // Filtrer pour ne garder que les doublons (+ exclure compagnon et favoris)
     const pokemons = cachedPokedexData.capturedPokemonsList.filter(p => {
         // Ne pas montrer le compagnon
         if (currentCompanionId && p._id === currentCompanionId) return false;
-        return true;
+        
+        // Ne pas montrer les favoris (optionnel, tu peux commenter cette ligne si tu veux autoriser les favoris)
+        if (favoritePokes.includes(p._id)) return false;
+        
+        // Vérifier si c'est un doublon
+        const key = `${p.pokedexId}_${p.isShiny ? 'shiny' : 'normal'}_${p.isMega ? 'mega' : 'normal'}_${p.isCustom ? 'custom' : 'normal'}`;
+        const count = pokemonCounts[key].length;
+        
+        // Garder seulement si on en a 2 ou plus
+        return count >= 2;
     });
     
     if (pokemons.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">Aucun Pokémon disponible.</p>';
+        grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">Aucun doublon disponible pour l\'échange.<br><small>Seuls les Pokémon en double peuvent être échangés.</small></p>';
         return;
     }
     
     grid.innerHTML = pokemons.map(p => {
+        // Compter combien on en a
+        const key = `${p.pokedexId}_${p.isShiny ? 'shiny' : 'normal'}_${p.isMega ? 'mega' : 'normal'}_${p.isCustom ? 'custom' : 'normal'}`;
+        const count = pokemonCounts[key].length;
+        
         return `
             <div class="pokedex-card pokemon-selectable" onclick="selectPokemon('${p._id}', '${type}')" id="${type}-pokemon-${p._id}">
                 <img src="${getPokemonSprite(p)}" loading="lazy">
                 <h3>${p.isShiny ? '✨ ' : ''}${p.name}</h3>
                 <p>Niv. ${p.level}</p>
+                <p style="font-size: 0.8em; color: var(--accent-warm);">x${count} en stock</p>
             </div>
         `;
     }).join('');
