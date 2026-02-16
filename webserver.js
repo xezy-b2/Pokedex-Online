@@ -1304,10 +1304,18 @@ app.post('/api/gallery/like', async (req, res) => {
     }
 });
 
+app.get('/ping', (req, res) => {
+    res.status(200).json({ 
+        status: 'alive', 
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
