@@ -162,10 +162,21 @@ function renderPokedexGrid() {
     const grid = document.getElementById(`grid-${currentGen}`);
     if (grid) {
         grid.innerHTML = '';
-        pokesToShow.forEach(p => {
-            if (p.isCaptured) p.isCompanion = (p._id === currentCompanionId);
-            grid.innerHTML += createCard(p, 'pokedex');
-        });
+pokesToShow.forEach(p => {
+    if (p.isCaptured) {
+        p.isCompanion = (p._id === currentCompanionId);
+        grid.innerHTML += createCard(p, 'pokedex');
+    } else {
+        // Pokémon non capturé
+        grid.innerHTML += `
+            <div class="pokedex-card missing" style="opacity: 0.5; filter: grayscale(0.8);">
+                <div style="width: 96px; height: 96px; background: rgba(255, 154, 108, 0.1); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 3em;">❓</div>
+                <h3 style="color: var(--text-secondary);">#${p.pokedexId}</h3>
+                <p style="color: var(--text-secondary); font-style: italic;">Inconnu</p>
+            </div>
+        `;
+    }
+});
         
         // OPTIMISATION: Observer les images après insertion
         grid.querySelectorAll('img[data-src]').forEach(img => {
@@ -791,3 +802,4 @@ console.log("- refreshPokedexCache:", typeof window.refreshPokedexCache);
 console.log("- logout:", typeof window.logout);
 console.log("- showPage:", typeof window.showPage);
 console.log("- closeTradeModal:", typeof window.closeTradeModal);
+
