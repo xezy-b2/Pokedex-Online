@@ -30,8 +30,6 @@ const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 // À ajouter dans webserver.js AVANT app.listen()
 // ==========================================
 
-const TradeOffer = require('./models/TradeOffer.js');
-
 // ==========================================
 // 1. CRÉER UNE OFFRE D'ÉCHANGE
 // ==========================================
@@ -1321,6 +1319,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
