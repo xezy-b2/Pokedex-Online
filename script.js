@@ -578,7 +578,9 @@ async function wonderTrade(id, name) {
     if(res.ok) {
         const pk = data.newPokemon;
         
-        document.getElementById('modal-img').src = getPokemonSprite(pk);
+        // CORRECTION: Utiliser src directement pour le modal (image immédiate)
+        const modalImg = document.getElementById('modal-img');
+        modalImg.src = getPokemonSprite(pk);
         
         let displayName = pk.name;
         if(pk.isMega) {
@@ -590,6 +592,8 @@ async function wonderTrade(id, name) {
         
         localStorage.removeItem('pokedex_data_cache');
         loadPokedex();
+    } else {
+        alert(data.message || "Erreur lors de l'échange miracle");
     }
 }
 
@@ -715,9 +719,15 @@ async function deletePost(postId) {
 }
 
 function refreshPokedexCache() {
-    localStorage.removeItem('pokedex_data_cache');
-    loadPokedex();
-    console.log("🔄 Cache vidé et données actualisées !");
+    try {
+        localStorage.removeItem('pokedex_data_cache');
+        console.log("🔄 Cache vidé !");
+        loadPokedex();
+        alert("✅ Cache actualisé !");
+    } catch (e) {
+        console.error("Erreur refresh:", e);
+        alert("❌ Erreur lors de l'actualisation");
+    }
 }
 
 function invalidatePokedexCache() {
@@ -726,8 +736,30 @@ function invalidatePokedexCache() {
 }
 
 function logout() { 
-    localStorage.clear(); 
-    location.reload(); 
+    try {
+        console.log("🚪 Déconnexion...");
+        localStorage.clear();
+        location.reload();
+    } catch (e) {
+        console.error("Erreur logout:", e);
+        alert("❌ Erreur lors de la déconnexion");
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Exposition explicite des fonctions au scope global pour les onclick
+window.refreshPokedexCache = refreshPokedexCache;
+window.logout = logout;
+window.showPage = showPage;
+window.filterGen = filterGen;
+window.changePage = changePage;
+window.toggleFav = toggleFav;
+window.setCompanion = setCompanion;
+window.sellPoke = sellPoke;
+window.wonderTrade = wonderTrade;
+window.buyItem = buyItem;
+window.postToGallery = postToGallery;
+window.likePost = likePost;
+window.deletePost = deletePost;
+window.claimDaily = claimDaily;
