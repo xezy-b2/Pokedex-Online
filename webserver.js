@@ -545,7 +545,7 @@ async function generateRandomPokemon() {
             { name: "Bulbizarre Magma", sprite: "bulbizarre-magma.png"},
             { name: "Carapuce Magma", sprite: "carapuce-magma.png"},
             { name: "Mew Magma", sprite: "mew-magma.png"},
-            { name: "Mewtwo Magma", sprite: "mewtwo-magma.png"}
+            { name: "Mewtwo Magma", sprite: "mewtow-magma.png"}
         ];
         const chosen = variants[Math.floor(Math.random() * variants.length)];
         const randomLevel = Math.floor(Math.random() * 31) + 70;
@@ -1319,6 +1319,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
