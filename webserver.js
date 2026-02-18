@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-global.updateMissionProgress = updateMissionProgress;
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
 const statsCache = {}; 
 
@@ -249,28 +248,45 @@ async function updateMissionProgress(userId, missionType, amount = 1) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const userMissions = await DailyMissions.findOne({ 
-            userId,
-            date: { $gte: today }
-        });
+        // On cherche uniquement par userId pour éviter les problèmes de comparaison de dates
+        const userMissions = await DailyMissions.findOne({ userId });
 
-        if (!userMissions) return;
+        if (!userMissions) {
+            console.log(`[Missions] Aucun document trouvé pour userId=${userId}`);
+            return;
+        }
+
+        // Vérifier que les missions sont bien du jour
+        const missionDate = new Date(userMissions.date);
+        missionDate.setHours(0, 0, 0, 0);
+        if (missionDate.getTime() < today.getTime()) {
+            console.log(`[Missions] Missions périmées pour userId=${userId}, pas de mise à jour`);
+            return;
+        }
 
         // Trouver les missions du type concerné
         const missions = userMissions.missions.filter(m => m.type === missionType && !m.completed);
+        console.log(`[Missions] userId=${userId} type=${missionType} amount=${amount} → ${missions.length} mission(s) trouvée(s)`);
+
+        if (missions.length === 0) return;
 
         missions.forEach(mission => {
             mission.current = Math.min(mission.current + amount, mission.target);
             if (mission.current >= mission.target) {
                 mission.completed = true;
             }
+            console.log(`[Missions] "${mission.title}" → ${mission.current}/${mission.target} completed=${mission.completed}`);
         });
 
         await userMissions.save();
+        console.log(`[Missions] Sauvegarde OK pour userId=${userId}`);
     } catch (e) {
-        console.error("Erreur update mission:", e);
+        console.error("[Missions] Erreur update mission:", e);
     }
 }
+
+// Exposition globale après définition de la fonction
+global.updateMissionProgress = updateMissionProgress;
 
 app.post('/api/trade/create-offer', async (req, res) => {
     const { userId, offeredPokemonId, wantedPokemonName, conditions, message } = req.body;
