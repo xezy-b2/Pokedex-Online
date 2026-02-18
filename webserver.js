@@ -578,6 +578,10 @@ app.post('/api/trade/accept', async (req, res) => {
 
         await session.commitTransaction();
 
+        // Mise à jour mission "trade" pour les deux joueurs
+        await updateMissionProgress(offer.creatorId, 'trade', 1);
+        await updateMissionProgress(proposal.proposerId, 'trade', 1);
+
         res.json({ 
             success: true, 
             message: "Échange réussi !",
@@ -1138,6 +1142,9 @@ app.post('/api/shop/buy', async (req, res) => {
             { new: true }
         );
 
+        // Mise à jour mission "spend_money"
+        await updateMissionProgress(userId, 'spend_money', totalCost);
+
         res.json({
             success: true,
             message: `Achat réussi : ${quantity} ${item.name}(s).${bonusMessage}`,
@@ -1196,6 +1203,9 @@ app.post('/api/sell/pokemon', async (req, res) => {
         user.pokemons.splice(pokemonIndex, 1); 
 
         await user.save();
+
+        // Mise à jour mission "sell_pokemon"
+        await updateMissionProgress(userId, 'sell_pokemon', 1);
         
         res.json({ 
             success: true, 
@@ -1238,6 +1248,9 @@ app.post('/api/trade/wonder', async (req, res) => {
 
         user.pokemons.push(newPokemon);
         await user.save();
+
+        // Mise à jour mission "trade"
+        await updateMissionProgress(userId, 'trade', 1);
         
         res.json({ 
             success: true, 
@@ -1492,6 +1505,10 @@ app.post('/api/gallery/post', async (req, res) => {
         
         const newPost = new GalleryPost({ userId, username, message, teamData });
         await newPost.save();
+
+        // Mise à jour mission "gallery_post"
+        await updateMissionProgress(userId, 'gallery_post', 1);
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -1558,21 +1575,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
