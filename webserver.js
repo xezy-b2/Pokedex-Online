@@ -4,16 +4,14 @@ const cors = require('cors');
 const axios = require('axios');
 const User = require('./models/User.js');
 const TradeOffer = require('./models/TradeOffer.js');
+const DailyMissions = require('./models/DailyMissions.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// ========== MIDDLEWARES (ORDRE IMPORTANT) ==========
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
+global.updateMissionProgress = updateMissionProgress;
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
 const statsCache = {}; 
 
@@ -25,14 +23,255 @@ const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
 const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 
-// ==========================================
-// 🔄 ROUTES D'ÉCHANGE DIRECT
-// À ajouter dans webserver.js AVANT app.listen()
-// ==========================================
+function generateDailyMissions() {
+    // Pool de missions possibles
+    const missionPool = [
+        {
+            type: 'capture',
+            title: 'Chasseur du jour',
+            description: 'Capture 3 Pokémon',
+            target: 3,
+            reward: { money: 500, pokeballs: 2 }
+        },
+        {
+            type: 'capture',
+            title: 'Collectionneur actif',
+            description: 'Capture 5 Pokémon',
+            target: 5,
+            reward: { money: 1000, greatballs: 3 }
+        },
+        {
+            type: 'trade',
+            title: 'Échangeur mystère',
+            description: 'Fais 1 Échange Miracle',
+            target: 1,
+            reward: { money: 300, pokeballs: 1 }
+        },
+        {
+            type: 'trade',
+            title: 'Maître du commerce',
+            description: 'Réalise 2 échanges directs',
+            target: 2,
+            reward: { money: 800, ultraballs: 1 }
+        },
+        {
+            type: 'gallery_post',
+            title: 'Vedette du jour',
+            description: 'Publie dans la Galerie',
+            target: 1,
+            reward: { money: 400, greatballs: 2 }
+        },
+        {
+            type: 'sell_pokemon',
+            title: 'Vendeur efficace',
+            description: 'Vends 3 Pokémon',
+            target: 3,
+            reward: { money: 600, pokeballs: 3 }
+        },
+        {
+            type: 'spend_money',
+            title: 'Client fidèle',
+            description: 'Dépense 1000💰 dans la boutique',
+            target: 1000,
+            reward: { money: 500, ultraballs: 1 }
+        },
+        {
+            type: 'login_streak',
+            title: 'Dresseur assidu',
+            description: 'Connecte-toi 3 jours de suite',
+            target: 3,
+            reward: { money: 1500, masterballs: 1 }
+        },
+        {
+            type: 'login_streak',
+            title: 'Légende vivante',
+            description: 'Connecte-toi 7 jours de suite',
+            target: 7,
+            reward: { money: 5000, masterballs: 2, ultraballs: 5 }
+        }
+    ];
+
+    // Sélectionner 3-4 missions aléatoires
+    const shuffled = missionPool.sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, 3 + Math.floor(Math.random() * 2)); // 3 ou 4 missions
+
+    return selected.map(m => ({
+        type: m.type,
+        title: m.title,
+        description: m.description,
+        target: m.target,
+        current: 0,
+        reward: m.reward,
+        completed: false,
+        claimed: false
+    }));
+}
 
 // ==========================================
-// 1. CRÉER UNE OFFRE D'ÉCHANGE
+// 1. RÉCUPÉRER LES MISSIONS DU JOUR
 // ==========================================
+app.get('/api/missions/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let userMissions = await DailyMissions.findOne({ userId });
+
+        // Si pas de missions ou missions d'hier → générer nouvelles missions
+        if (!userMissions || new Date(userMissions.date).getTime() < today.getTime()) {
+            
+            // Calculer le streak
+            let loginStreak = 1;
+            if (userMissions && userMissions.lastLogin) {
+                const lastLogin = new Date(userMissions.lastLogin);
+                lastLogin.setHours(0, 0, 0, 0);
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                if (lastLogin.getTime() === yesterday.getTime()) {
+                    // Connecté hier → incrémente le streak
+                    loginStreak = (userMissions.loginStreak || 0) + 1;
+                } else if (lastLogin.getTime() === today.getTime()) {
+                    // Déjà connecté aujourd'hui → garde le streak
+                    loginStreak = userMissions.loginStreak || 1;
+                }
+                // Sinon → reset à 1
+            }
+
+            // Créer ou mettre à jour les missions
+            const newMissions = generateDailyMissions();
+
+            if (userMissions) {
+                userMissions.date = today;
+                userMissions.missions = newMissions;
+                userMissions.loginStreak = loginStreak;
+                userMissions.lastLogin = new Date();
+                await userMissions.save();
+            } else {
+                userMissions = new DailyMissions({
+                    userId,
+                    date: today,
+                    missions: newMissions,
+                    loginStreak,
+                    lastLogin: new Date()
+                });
+                await userMissions.save();
+            }
+
+            // Mettre à jour la progression du streak
+            const streakMission = userMissions.missions.find(m => m.type === 'login_streak');
+            if (streakMission) {
+                streakMission.current = loginStreak;
+                if (streakMission.current >= streakMission.target) {
+                    streakMission.completed = true;
+                }
+                await userMissions.save();
+            }
+        }
+
+        res.json({ 
+            missions: userMissions.missions,
+            loginStreak: userMissions.loginStreak
+        });
+
+    } catch (e) {
+        console.error("Erreur missions:", e);
+        res.status(500).json({ error: "Erreur lors de la récupération des missions" });
+    }
+});
+
+// ==========================================
+// 2. RÉCLAMER UNE RÉCOMPENSE
+// ==========================================
+app.post('/api/missions/claim', async (req, res) => {
+    const { userId, missionId } = req.body;
+
+    if (!userId || !missionId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const userMissions = await DailyMissions.findOne({ userId });
+        if (!userMissions) {
+            return res.status(404).json({ error: "Missions introuvables" });
+        }
+
+        const mission = userMissions.missions.id(missionId);
+        if (!mission) {
+            return res.status(404).json({ error: "Mission introuvable" });
+        }
+
+        if (!mission.completed) {
+            return res.status(400).json({ error: "Mission non complétée" });
+        }
+
+        if (mission.claimed) {
+            return res.status(400).json({ error: "Récompense déjà réclamée" });
+        }
+
+        // Donner les récompenses
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        user.money += mission.reward.money || 0;
+        user.pokeballs += mission.reward.pokeballs || 0;
+        user.greatballs += mission.reward.greatballs || 0;
+        user.ultraballs += mission.reward.ultraballs || 0;
+        user.masterballs += mission.reward.masterballs || 0;
+
+        await user.save();
+
+        // Marquer comme réclamée
+        mission.claimed = true;
+        await userMissions.save();
+
+        res.json({ 
+            success: true, 
+            message: "Récompense réclamée !",
+            rewards: mission.reward
+        });
+
+    } catch (e) {
+        console.error("Erreur claim:", e);
+        res.status(500).json({ error: "Erreur lors de la réclamation" });
+    }
+});
+
+// ==========================================
+// 3. INCRÉMENTER LA PROGRESSION (appelé par d'autres routes)
+// ==========================================
+async function updateMissionProgress(userId, missionType, amount = 1) {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const userMissions = await DailyMissions.findOne({ 
+            userId,
+            date: { $gte: today }
+        });
+
+        if (!userMissions) return;
+
+        // Trouver les missions du type concerné
+        const missions = userMissions.missions.filter(m => m.type === missionType && !m.completed);
+
+        missions.forEach(mission => {
+            mission.current = Math.min(mission.current + amount, mission.target);
+            if (mission.current >= mission.target) {
+                mission.completed = true;
+            }
+        });
+
+        await userMissions.save();
+    } catch (e) {
+        console.error("Erreur update mission:", e);
+    }
+}
+
 app.post('/api/trade/create-offer', async (req, res) => {
     const { userId, offeredPokemonId, wantedPokemonName, conditions, message } = req.body;
 
@@ -1319,6 +1558,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
