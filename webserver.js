@@ -241,7 +241,21 @@ app.post('/api/missions/claim', async (req, res) => {
 });
 
 // ==========================================
-// 3. INCRÉMENTER LA PROGRESSION (appelé par d'autres routes)
+// 3. ROUTE INTERNE : INCRÉMENTER LA PROGRESSION (appelée par le bot Discord)
+// ==========================================
+app.post('/api/missions/progress', async (req, res) => {
+    const { userId, missionType, amount } = req.body;
+
+    if (!userId || !missionType) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    await updateMissionProgress(userId, missionType, amount || 1);
+    res.json({ success: true });
+});
+
+// ==========================================
+// 4. FONCTION INTERNE : INCRÉMENTER LA PROGRESSION
 // ==========================================
 async function updateMissionProgress(userId, missionType, amount = 1) {
     try {
