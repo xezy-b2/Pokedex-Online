@@ -391,6 +391,8 @@
                 background: radial-gradient(circle, rgba(255, 154, 108, 0.1) 0%, transparent 70%);
                 transform: scale(0);
                 transition: transform 0.5s ease;
+                pointer-events: none; /* CRITIQUE: Permet les clics sur les boutons */
+                z-index: 0;
             }
 
             .pokedex-card:hover::before {
@@ -445,6 +447,8 @@
             font-weight: 700;
             margin: 5px;
             transition: all 0.3s ease;
+            position: relative;
+            z-index: 10; /* CRITIQUE: Au-dessus du ::before */
         }
 
         .btn-action:hover {
@@ -1278,5 +1282,3 @@
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
-
-
