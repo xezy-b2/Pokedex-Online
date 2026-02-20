@@ -1459,6 +1459,76 @@
     </div>
 </div>
 
+        <div id="battle-page" class="page-section">
+    <!-- Header avec stats -->
+    <div style="background: linear-gradient(135deg, rgba(52, 40, 32, 0.7) 0%, rgba(42, 31, 26, 0.8) 100%); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 2px solid rgba(255, 154, 108, 0.2);">
+        <h2 style="color: var(--accent-warm); margin: 0 0 15px 0; text-align: center;">⚔️ Arène de Combat</h2>
+        
+        <!-- Stats de combat -->
+        <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <div style="font-size: 2em; color: var(--accent-nature);">🏆</div>
+                <div style="font-size: 1.5em; font-weight: 700; color: var(--accent-warm);" id="battle-victories">0</div>
+                <div style="color: var(--text-secondary); font-size: 0.9em;">Victoires</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 2em;">⚔️</div>
+                <div style="font-size: 1.5em; font-weight: 700; color: var(--text-primary);" id="battle-total">0</div>
+                <div style="color: var(--text-secondary); font-size: 0.9em;">Combats</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 2em; color: var(--accent-lavender);">📊</div>
+                <div style="font-size: 1.5em; font-weight: 700; color: var(--accent-warm);" id="battle-winrate">0%</div>
+                <div style="color: var(--text-secondary); font-size: 0.9em;">Taux de victoire</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="battle-tabs" style="display: flex; gap: 10px; margin-bottom: 25px; justify-content: center; flex-wrap: wrap;">
+        <button id="tab-battle-opponents" onclick="switchBattleTab('opponents')" class="battle-tab active">
+            ⚔️ Défier
+        </button>
+        <button id="tab-battle-pending" onclick="switchBattleTab('pending')" class="battle-tab">
+            📬 Défis Reçus <span id="badge-pending-battles" class="notification-badge" style="display:none;"></span>
+        </button>
+        <button id="tab-battle-history" onclick="switchBattleTab('history')" class="battle-tab">
+            📜 Historique
+        </button>
+    </div>
+
+    <!-- Conteneurs des tabs -->
+    <div id="opponents-content" class="battle-content active">
+        <div id="opponents-grid" class="battle-grid"></div>
+    </div>
+
+    <div id="pending-content" class="battle-content" style="display:none;">
+        <div id="pending-battles-grid" class="battle-grid"></div>
+    </div>
+
+    <div id="history-content" class="battle-content" style="display:none;">
+        <div id="battle-history-grid" class="battle-grid"></div>
+    </div>
+</div>
+
+<!-- ==========================================
+     MODAL RÉSULTAT DE COMBAT
+     ========================================== -->
+<div id="battle-result-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close-modal" onclick="closeBattleResultModal()">&times;</span>
+        
+        <div id="battle-result-content" style="text-align: center;">
+            <!-- Contenu généré par JavaScript -->
+        </div>
+        
+        <div style="text-align: center; margin-top: 25px;">
+            <button class="cta-button" onclick="closeBattleResultModal()" style="padding: 12px 40px;">
+                ✅ Fermer
+            </button>
+        </div>
+    </div>
+</div>
         <div id="gallery-page" class="page-section">
             <div class="stat-box" style="text-align: center;">
                 <h2 style="color: var(--accent-warm); font-family: 'Caveat', cursive; font-size: 2.5em; margin-bottom: 15px;">🎨 Partager mon Équipe</h2>
@@ -1475,9 +1545,11 @@
     <script src="script.js"></script>
     <script src="trade.js"></script>
     <script src="missions-script.js"></script>
+    <script src="battle-script.js"></script>
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
+
 
 
 
