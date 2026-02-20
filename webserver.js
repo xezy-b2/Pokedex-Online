@@ -5,6 +5,7 @@ const axios = require('axios');
 const User = require('./models/User.js');
 const TradeOffer = require('./models/TradeOffer.js');
 const DailyMissions = require('./models/DailyMissions.js');
+const Battle = require('./models/Battle.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,14 +14,407 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
 const statsCache = {}; 
-
-
 const MAX_POKEDEX_ID_GEN_1 = 151; 
 const MAX_POKEDEX_ID_GEN_2 = 251; 
 const MAX_POKEDEX_ID_GEN_3 = 386;
 const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
 const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
+
+function calculatePower(pokemon, baseStats = []) {
+    const level = pokemon.level || 5;
+    const ivs = pokemon.ivs || {};
+    
+    // Moyenne des IVs (0-31)
+    const avgIV = (
+        (ivs.hp || 0) +
+        (ivs.attack || 0) +
+        (ivs.defense || 0) +
+        (ivs.spAttack || 0) +
+        (ivs.spDefense || 0) +
+        (ivs.speed || 0)
+    ) / 6;
+    
+    // Base stats moyenne (si disponible)
+    let avgBaseStat = 75; // Valeur par défaut
+    if (baseStats && baseStats.length > 0) {
+        avgBaseStat = baseStats.reduce((sum, stat) => sum + stat.base_stat, 0) / baseStats.length;
+    }
+    
+    // Bonus pour Shiny et Méga
+    const shinyBonus = pokemon.isShiny ? 1.1 : 1.0; // +10%
+    const megaBonus = pokemon.isMega ? 1.3 : 1.0; // +30%
+    
+    // Formule de puissance
+    const power = Math.floor(
+        (level * 2) + 
+        (avgIV * 1.5) + 
+        (avgBaseStat * 0.5)
+    ) * shinyBonus * megaBonus;
+    
+    return power;
+}
+
+// ==========================================
+// SIMULER UN COMBAT
+// ==========================================
+function simulateBattle(p1, p2) {
+    const battleLog = [];
+    
+    battleLog.push(`⚔️ ${p1.username}'s ${p1.pokemon.name} (Lv.${p1.pokemon.level}) VS ${p2.username}'s ${p2.pokemon.name} (Lv.${p2.pokemon.level})`);
+    battleLog.push(`💪 Puissance : ${p1.power} VS ${p2.power}`);
+    
+    // Bonus aléatoire (chance) : ±15%
+    const p1Roll = p1.power * (0.85 + Math.random() * 0.3);
+    const p2Roll = p2.power * (0.85 + Math.random() * 0.3);
+    
+    battleLog.push(`🎲 Avec le facteur chance : ${Math.floor(p1Roll)} VS ${Math.floor(p2Roll)}`);
+    
+    // Calcul des dégâts
+    const p1Damage = Math.floor(p1Roll * (1 + Math.random() * 0.5));
+    const p2Damage = Math.floor(p2Roll * (1 + Math.random() * 0.5));
+    
+    battleLog.push(`💥 ${p1.username} inflige ${p1Damage} dégâts !`);
+    battleLog.push(`💥 ${p2.username} inflige ${p2Damage} dégâts !`);
+    
+    // Déterminer le gagnant
+    let winner;
+    if (p1Damage > p2Damage) {
+        winner = p1.userId;
+        battleLog.push(`🏆 ${p1.username}'s ${p1.pokemon.name} remporte le combat !`);
+    } else if (p2Damage > p1Damage) {
+        winner = p2.userId;
+        battleLog.push(`🏆 ${p2.username}'s ${p2.pokemon.name} remporte le combat !`);
+    } else {
+        // Égalité → tirage au sort
+        winner = Math.random() > 0.5 ? p1.userId : p2.userId;
+        battleLog.push(`⚖️ Match nul ! Victoire aléatoire pour ${winner === p1.userId ? p1.username : p2.username} !`);
+    }
+    
+    // Récompenses
+    const rewards = {
+        winner: {
+            money: 200 + Math.floor(Math.random() * 100), // 200-300💰
+            xp: 100 + Math.floor(Math.random() * 50) // 100-150 XP
+        },
+        loser: {
+            money: 50 + Math.floor(Math.random() * 50), // 50-100💰
+            xp: 25 + Math.floor(Math.random() * 25) // 25-50 XP
+        }
+    };
+    
+    return {
+        winner,
+        battleLog,
+        rewards,
+        p1Damage,
+        p2Damage
+    };
+}
+
+// ==========================================
+// 1. DÉFIER UN JOUEUR
+// ==========================================
+app.post('/api/battle/challenge', async (req, res) => {
+    const { challengerId, opponentId } = req.body;
+
+    if (!challengerId || !opponentId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    if (challengerId === opponentId) {
+        return res.status(400).json({ error: "Tu ne peux pas te défier toi-même !" });
+    }
+
+    try {
+        // Récupérer les deux joueurs
+        const challenger = await User.findOne({ userId: challengerId });
+        const opponent = await User.findOne({ userId: opponentId });
+
+        if (!challenger || !opponent) {
+            return res.status(404).json({ error: "Joueur introuvable" });
+        }
+
+        // Vérifier que les deux ont un compagnon
+        if (!challenger.companionPokemonId) {
+            return res.status(400).json({ error: "Tu n'as pas de compagnon !" });
+        }
+
+        if (!opponent.companionPokemonId) {
+            return res.status(400).json({ error: "L'adversaire n'a pas de compagnon !" });
+        }
+
+        // Récupérer les compagnons
+        const p1Pokemon = challenger.pokemons.id(challenger.companionPokemonId);
+        const p2Pokemon = opponent.pokemons.id(opponent.companionPokemonId);
+
+        if (!p1Pokemon || !p2Pokemon) {
+            return res.status(404).json({ error: "Compagnon introuvable" });
+        }
+
+        // Calculer les puissances
+        const p1Power = calculatePower(p1Pokemon);
+        const p2Power = calculatePower(p2Pokemon);
+
+        // Créer le défi
+        const battle = new Battle({
+            player1: {
+                userId: challengerId,
+                username: challenger.username,
+                pokemon: {
+                    _id: p1Pokemon._id,
+                    name: p1Pokemon.name,
+                    pokedexId: p1Pokemon.pokedexId,
+                    level: p1Pokemon.level,
+                    isShiny: p1Pokemon.isShiny,
+                    isMega: p1Pokemon.isMega,
+                    ivs: p1Pokemon.ivs
+                },
+                power: p1Power
+            },
+            player2: {
+                userId: opponentId,
+                username: opponent.username,
+                pokemon: {
+                    _id: p2Pokemon._id,
+                    name: p2Pokemon.name,
+                    pokedexId: p2Pokemon.pokedexId,
+                    level: p2Pokemon.level,
+                    isShiny: p2Pokemon.isShiny,
+                    isMega: p2Pokemon.isMega,
+                    ivs: p2Pokemon.ivs
+                },
+                power: p2Power
+            },
+            status: 'pending'
+        });
+
+        await battle.save();
+
+        res.json({ 
+            success: true, 
+            message: `Défi envoyé à ${opponent.username} !`,
+            battleId: battle._id
+        });
+
+    } catch (e) {
+        console.error("Erreur défi:", e);
+        res.status(500).json({ error: "Erreur lors de la création du défi" });
+    }
+});
+
+// ==========================================
+// 2. ACCEPTER UN DÉFI
+// ==========================================
+app.post('/api/battle/accept', async (req, res) => {
+    const { userId, battleId } = req.body;
+
+    if (!userId || !battleId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const battle = await Battle.findById(battleId);
+        if (!battle) {
+            return res.status(404).json({ error: "Combat introuvable" });
+        }
+
+        if (battle.player2.userId !== userId) {
+            return res.status(403).json({ error: "Ce n'est pas ton combat" });
+        }
+
+        if (battle.status !== 'pending') {
+            return res.status(400).json({ error: "Ce combat n'est plus disponible" });
+        }
+
+        // Simuler le combat
+        const result = simulateBattle(battle.player1, battle.player2);
+
+        // Mettre à jour le combat
+        battle.winner = result.winner;
+        battle.battleLog = result.battleLog;
+        battle.rewards = result.rewards;
+        battle.player1.damage = result.p1Damage;
+        battle.player2.damage = result.p2Damage;
+        battle.status = 'completed';
+        battle.completedAt = new Date();
+
+        await battle.save();
+
+        // Donner les récompenses
+        const winner = await User.findOne({ userId: result.winner });
+        const loser = await User.findOne({ 
+            userId: result.winner === battle.player1.userId ? battle.player2.userId : battle.player1.userId 
+        });
+
+        if (winner) {
+            winner.money += result.rewards.winner.money;
+            await winner.save();
+        }
+
+        if (loser) {
+            loser.money += result.rewards.loser.money;
+            await loser.save();
+        }
+
+        // Mettre à jour les missions (si système XP activé)
+        if (typeof updateMissionProgress === 'function') {
+            await updateMissionProgress(result.winner, 'battle_win', 1);
+        }
+
+        res.json({ 
+            success: true, 
+            battle: {
+                winner: result.winner,
+                battleLog: result.battleLog,
+                rewards: result.rewards
+            }
+        });
+
+    } catch (e) {
+        console.error("Erreur acceptation:", e);
+        res.status(500).json({ error: "Erreur lors de l'acceptation du défi" });
+    }
+});
+
+// ==========================================
+// 3. REFUSER UN DÉFI
+// ==========================================
+app.post('/api/battle/decline', async (req, res) => {
+    const { userId, battleId } = req.body;
+
+    if (!userId || !battleId) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const battle = await Battle.findById(battleId);
+        if (!battle) {
+            return res.status(404).json({ error: "Combat introuvable" });
+        }
+
+        if (battle.player2.userId !== userId) {
+            return res.status(403).json({ error: "Ce n'est pas ton combat" });
+        }
+
+        battle.status = 'declined';
+        await battle.save();
+
+        res.json({ success: true, message: "Défi refusé" });
+
+    } catch (e) {
+        console.error("Erreur refus:", e);
+        res.status(500).json({ error: "Erreur lors du refus" });
+    }
+});
+
+// ==========================================
+// 4. MES COMBATS (en cours + historique)
+// ==========================================
+app.get('/api/battle/my-battles/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Défis reçus (en attente)
+        const pendingChallenges = await Battle.find({
+            'player2.userId': userId,
+            status: 'pending'
+        }).sort({ createdAt: -1 });
+
+        // Défis envoyés (en attente)
+        const sentChallenges = await Battle.find({
+            'player1.userId': userId,
+            status: 'pending'
+        }).sort({ createdAt: -1 });
+
+        // Historique (complétés)
+        const battleHistory = await Battle.find({
+            $or: [
+                { 'player1.userId': userId },
+                { 'player2.userId': userId }
+            ],
+            status: 'completed'
+        })
+        .sort({ completedAt: -1 })
+        .limit(20);
+
+        // Statistiques
+        const totalBattles = await Battle.countDocuments({
+            $or: [
+                { 'player1.userId': userId },
+                { 'player2.userId': userId }
+            ],
+            status: 'completed'
+        });
+
+        const victories = await Battle.countDocuments({
+            winner: userId,
+            status: 'completed'
+        });
+
+        const winRate = totalBattles > 0 ? Math.floor((victories / totalBattles) * 100) : 0;
+
+        res.json({ 
+            pendingChallenges,
+            sentChallenges,
+            battleHistory,
+            stats: {
+                totalBattles,
+                victories,
+                defeats: totalBattles - victories,
+                winRate
+            }
+        });
+
+    } catch (e) {
+        console.error("Erreur récupération combats:", e);
+        res.status(500).json({ error: "Erreur lors de la récupération des combats" });
+    }
+});
+
+// ==========================================
+// 5. LISTE DES JOUEURS DISPONIBLES POUR COMBAT
+// ==========================================
+app.get('/api/battle/available-opponents/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Récupérer les joueurs avec un compagnon (sauf soi-même)
+        const opponents = await User.find({
+            userId: { $ne: userId },
+            companionPokemonId: { $ne: null }
+        })
+        .select('userId username companionPokemonId pokemons')
+        .limit(20);
+
+        // Enrichir avec les infos du compagnon
+        const enrichedOpponents = opponents.map(opp => {
+            const companion = opp.pokemons.id(opp.companionPokemonId);
+            if (!companion) return null;
+
+            return {
+                userId: opp.userId,
+                username: opp.username,
+                companion: {
+                    name: companion.name,
+                    pokedexId: companion.pokedexId,
+                    level: companion.level,
+                    isShiny: companion.isShiny,
+                    isMega: companion.isMega
+                },
+                power: calculatePower(companion)
+            };
+        }).filter(Boolean);
+
+        res.json({ opponents: enrichedOpponents });
+
+    } catch (e) {
+        console.error("Erreur liste adversaires:", e);
+        res.status(500).json({ error: "Erreur lors de la récupération des adversaires" });
+    }
+});
+
+console.log("✅ Système de combats PvP chargé");
 
 function generateDailyMissions() {
     // Pool de missions possibles
@@ -1605,3 +1999,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
