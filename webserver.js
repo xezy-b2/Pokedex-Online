@@ -79,6 +79,9 @@ function generateBot(difficulty) {
     };
 }
 
+// Cache temporaire des bots générés par preview (userId → bot)
+const botPreviewCache = new Map();
+
 // ==========================================
 // ROUTE : COMBATTRE UN BOT
 // ==========================================
@@ -109,8 +112,10 @@ app.post('/api/battle/bot', async (req, res) => {
             return res.status(404).json({ error: "Compagnon introuvable" });
         }
 
-        // Générer le bot
-        const bot = generateBot(difficulty);
+        // Utiliser le bot du preview si disponible, sinon en générer un nouveau
+        const cachedBot = botPreviewCache.get(userId);
+        const bot = (cachedBot && cachedBot.difficulty === difficulty) ? cachedBot.bot : generateBot(difficulty);
+        botPreviewCache.delete(userId); // Consommer le cache
 
         // Calculer les puissances
         const playerPower = calculatePower(playerPokemon);
@@ -211,6 +216,7 @@ app.post('/api/battle/bot', async (req, res) => {
 // ==========================================
 app.get('/api/battle/bot-preview/:difficulty', async (req, res) => {
     const { difficulty } = req.params;
+    const { userId } = req.query;
 
     const validDifficulties = ['easy', 'medium', 'hard', 'expert'];
     if (!validDifficulties.includes(difficulty)) {
@@ -220,6 +226,13 @@ app.get('/api/battle/bot-preview/:difficulty', async (req, res) => {
     try {
         const bot = generateBot(difficulty);
         const power = calculatePower(bot.pokemon);
+
+        // Stocker le bot en cache si un userId est fourni
+        if (userId) {
+            botPreviewCache.set(userId, { bot, difficulty });
+            // Expirer le cache après 5 minutes
+            setTimeout(() => botPreviewCache.delete(userId), 5 * 60 * 1000);
+        }
 
         res.json({ 
             bot: {
@@ -2215,5 +2228,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
