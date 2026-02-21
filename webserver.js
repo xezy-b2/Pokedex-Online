@@ -79,9 +79,6 @@ function generateBot(difficulty) {
     };
 }
 
-// Cache temporaire des bots générés par preview (userId → bot)
-const botPreviewCache = new Map();
-
 // ==========================================
 // ROUTE : COMBATTRE UN BOT
 // ==========================================
@@ -112,10 +109,8 @@ app.post('/api/battle/bot', async (req, res) => {
             return res.status(404).json({ error: "Compagnon introuvable" });
         }
 
-        // Utiliser le bot du preview si disponible, sinon en générer un nouveau
-        const cachedBot = botPreviewCache.get(userId);
-        const bot = (cachedBot && cachedBot.difficulty === difficulty) ? cachedBot.bot : generateBot(difficulty);
-        botPreviewCache.delete(userId); // Consommer le cache
+        // Générer le bot
+        const bot = generateBot(difficulty);
 
         // Calculer les puissances
         const playerPower = calculatePower(playerPokemon);
@@ -172,8 +167,8 @@ app.post('/api/battle/bot', async (req, res) => {
 
         // Sauvegarder le combat dans l'historique (optionnel)
         const battle = new Battle({
-            player1: player,
-            player2: botPlayer,
+            player1: { ...player, damage: result.p1Damage },
+            player2: { ...botPlayer, damage: result.p2Damage },
             winner: result.winner,
             battleLog: result.battleLog,
             rewards: {
@@ -216,7 +211,6 @@ app.post('/api/battle/bot', async (req, res) => {
 // ==========================================
 app.get('/api/battle/bot-preview/:difficulty', async (req, res) => {
     const { difficulty } = req.params;
-    const { userId } = req.query;
 
     const validDifficulties = ['easy', 'medium', 'hard', 'expert'];
     if (!validDifficulties.includes(difficulty)) {
@@ -226,13 +220,6 @@ app.get('/api/battle/bot-preview/:difficulty', async (req, res) => {
     try {
         const bot = generateBot(difficulty);
         const power = calculatePower(bot.pokemon);
-
-        // Stocker le bot en cache si un userId est fourni
-        if (userId) {
-            botPreviewCache.set(userId, { bot, difficulty });
-            // Expirer le cache après 5 minutes
-            setTimeout(() => botPreviewCache.delete(userId), 5 * 60 * 1000);
-        }
 
         res.json({ 
             bot: {
