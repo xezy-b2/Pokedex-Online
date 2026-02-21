@@ -1388,7 +1388,33 @@
     font-weight: 600;
     font-size: 0.9em;
 }
-    </style>
+.bot-difficulty-btn {
+    background: linear-gradient(135deg, rgba(52, 40, 32, 0.7) 0%, rgba(42, 31, 26, 0.8) 100%);
+    border: 2px solid rgba(255, 154, 108, 0.25);
+    border-radius: 15px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+    font-family: 'Quicksand', sans-serif;
+}
+
+.bot-difficulty-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 154, 108, 0.3);
+    border-color: rgba(255, 154, 108, 0.5);
+}
+
+.bot-difficulty-btn.selected {
+    background: linear-gradient(135deg, var(--accent-nature) 0%, rgba(168, 197, 160, 0.8) 100%);
+    border-color: var(--accent-nature);
+    color: var(--bg-primary);
+}
+
+.bot-difficulty-btn.selected:hover {
+    transform: translateY(-3px);
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -1711,6 +1737,69 @@
 
     <!-- Conteneurs des tabs -->
     <div id="opponents-content" class="battle-content active">
+        
+        <!-- 🤖 MODE BOT - NOUVEAU -->
+        <div style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, rgba(168, 197, 160, 0.2) 0%, rgba(52, 40, 32, 0.7) 100%); padding: 25px; border-radius: 20px; border: 2px solid var(--accent-nature);">
+                <h3 style="color: var(--accent-nature); margin: 0 0 15px 0; text-align: center;">
+                    🤖 Mode Entraînement
+                </h3>
+                <p style="color: var(--text-secondary); text-align: center; margin-bottom: 20px;">
+                    Affronte un bot pour t'entraîner et gagner des récompenses !
+                </p>
+                
+                <!-- Sélecteur de difficulté -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <button class="bot-difficulty-btn" data-difficulty="easy" onclick="selectBotDifficulty('easy')">
+                        <div style="font-size: 1.5em; margin-bottom: 5px;">😊</div>
+                        <div style="font-weight: 700;">Facile</div>
+                        <div style="font-size: 0.8em; color: var(--text-secondary);">Niv. 10-30</div>
+                        <div style="font-size: 0.85em; color: var(--accent-warm); margin-top: 5px;">×0.5 récompenses</div>
+                    </button>
+                    
+                    <button class="bot-difficulty-btn" data-difficulty="medium" onclick="selectBotDifficulty('medium')">
+                        <div style="font-size: 1.5em; margin-bottom: 5px;">🙂</div>
+                        <div style="font-weight: 700;">Moyen</div>
+                        <div style="font-size: 0.8em; color: var(--text-secondary);">Niv. 30-50</div>
+                        <div style="font-size: 0.85em; color: var(--accent-warm); margin-top: 5px;">×1.0 récompenses</div>
+                    </button>
+                    
+                    <button class="bot-difficulty-btn" data-difficulty="hard" onclick="selectBotDifficulty('hard')">
+                        <div style="font-size: 1.5em; margin-bottom: 5px;">😤</div>
+                        <div style="font-weight: 700;">Difficile</div>
+                        <div style="font-size: 0.8em; color: var(--text-secondary);">Niv. 50-70</div>
+                        <div style="font-size: 0.85em; color: var(--accent-warm); margin-top: 5px;">×1.5 récompenses</div>
+                    </button>
+                    
+                    <button class="bot-difficulty-btn" data-difficulty="expert" onclick="selectBotDifficulty('expert')">
+                        <div style="font-size: 1.5em; margin-bottom: 5px;">💀</div>
+                        <div style="font-weight: 700;">Expert</div>
+                        <div style="font-size: 0.8em; color: var(--text-secondary);">Niv. 70-100</div>
+                        <div style="font-size: 0.85em; color: var(--accent-warm); margin-top: 5px;">×2.0 récompenses</div>
+                    </button>
+                </div>
+                
+                <!-- Aperçu du bot -->
+                <div id="bot-preview" style="display: none; background: rgba(26, 20, 16, 0.6); padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
+                    <div style="color: var(--accent-warm); font-weight: 700; font-size: 1.1em; margin-bottom: 10px;" id="bot-preview-name"></div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+                        <img id="bot-preview-img" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
+                        <div style="text-align: left;">
+                            <div style="color: var(--text-primary); font-weight: 700;" id="bot-preview-pokemon"></div>
+                            <div style="color: var(--text-secondary); font-size: 0.9em;" id="bot-preview-level"></div>
+                            <div style="color: var(--accent-warm); font-size: 0.9em; font-weight: 600;" id="bot-preview-power"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="btn-fight-bot" class="cta-button" onclick="fightBot()" disabled style="width: 100%; max-width: 300px; margin: 0 auto; display: block; opacity: 0.5;">
+                    ⚔️ Combattre
+                </button>
+            </div>
+        </div>
+
+        <h3 style="color: var(--accent-warm); margin: 20px 0 15px 0;">👥 Défier des Joueurs</h3>
+
         <div id="opponents-grid" class="battle-grid"></div>
     </div>
 
@@ -1741,6 +1830,7 @@
         </div>
     </div>
 </div>
+        
         <div id="gallery-page" class="page-section">
             <div class="stat-box" style="text-align: center;">
                 <h2 style="color: var(--accent-warm); font-family: 'Caveat', cursive; font-size: 2.5em; margin-bottom: 15px;">🎨 Partager mon Équipe</h2>
@@ -1758,9 +1848,11 @@
     <script src="./script/trade.js"></script>
     <script src="./script/missions-script.js"></script>
     <script src="./script/battle-script.js"></script>
+    <script src=".script/bot-battle-script.js"></script>
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
+
 
 
 
