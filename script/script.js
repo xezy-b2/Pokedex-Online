@@ -496,7 +496,7 @@ compHtml = `<div class="is-companion">
     <img data-src="${getPokemonSprite(cp)}" class="poke-sprite" onerror="this.onerror=null; this.src=\'${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png\';" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));" loading="lazy">
     <p style="color:var(--accent-soft); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
     <p style="font-size:0.8em; margin:2px 0;">⭐ Niveau ${cp.level}</p>
-    <div style="width:120px; background:rgba(255,255,255,0.1); border-radius:999px; height:5px; margin-top:5px; overflow:hidden;">
+    <div style="width:120px; background:rgba(255,255,255,0.1); border-radius:999px; height:5px; margin:5px auto 0; overflow:hidden;">
         <div style="width:${Math.min((cp.xp / (cp.level * 100)) * 100, 100)}%; background:linear-gradient(90deg, var(--accent-soft), var(--accent-pink)); height:100%; border-radius:999px; transition:width 0.4s ease;"></div>
     </div>
     <p style="font-size:0.65em; color:var(--text-secondary); margin:2px 0 0 0;">${cp.xp} / ${cp.level * 100} XP</p>
