@@ -21,6 +21,222 @@ const MAX_POKEDEX_ID_GEN_4 = 493; // Sinnoh
 const MAX_POKEDEX_ID_GEN_5 = 649; // Unys
 const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 
+function generateBot(difficulty) {
+    const botNames = [
+        "Dresseur Novice", "Montagnard Pierre", "Scout Martin", "Campeur Alex",
+        "Fillette Sophie", "Topdresseur Marc", "Kinésiste Luna", "Champion Léo",
+        "Maître Karaté", "Sage Chen", "Expert Dragon", "Champion d'Arène"
+    ];
+    
+    const difficultySettings = {
+        easy: { levelRange: [10, 30], ivRange: [0, 15], shinyChance: 0.01, megaChance: 0 },
+        medium: { levelRange: [30, 50], ivRange: [15, 25], shinyChance: 0.05, megaChance: 0.02 },
+        hard: { levelRange: [50, 70], ivRange: [20, 30], shinyChance: 0.1, megaChance: 0.1 },
+        expert: { levelRange: [70, 100], ivRange: [25, 31], shinyChance: 0.2, megaChance: 0.3 }
+    };
+    
+    const settings = difficultySettings[difficulty] || difficultySettings.medium;
+    const name = botNames[Math.floor(Math.random() * botNames.length)];
+    
+    // Pokémon aléatoire
+    const pokedexId = Math.floor(Math.random() * 151) + 1; // Gen 1 uniquement pour les bots
+    const level = Math.floor(Math.random() * (settings.levelRange[1] - settings.levelRange[0] + 1)) + settings.levelRange[0];
+    
+    // IVs aléatoires
+    const ivs = {
+        hp: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0],
+        attack: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0],
+        defense: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0],
+        spAttack: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0],
+        spDefense: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0],
+        speed: Math.floor(Math.random() * (settings.ivRange[1] - settings.ivRange[0] + 1)) + settings.ivRange[0]
+    };
+    
+    const isShiny = Math.random() < settings.shinyChance;
+    const isMega = Math.random() < settings.megaChance;
+    
+    // Nom du Pokémon (à récupérer depuis l'API ou hardcodé)
+    const pokemonNames = {
+        1: "Bulbizarre", 4: "Salamèche", 7: "Carapuce", 25: "Pikachu",
+        6: "Dracaufeu", 9: "Tortank", 3: "Florizarre", 150: "Mewtwo",
+        151: "Mew", 94: "Ectoplasma", 65: "Alakazam", 68: "Mackogneur",
+        130: "Léviator", 143: "Ronflex", 149: "Dracolosse"
+    };
+    
+    const pokemonName = pokemonNames[pokedexId] || `Pokémon #${pokedexId}`;
+    
+    return {
+        name,
+        pokemon: {
+            _id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: pokemonName,
+            pokedexId,
+            level,
+            isShiny,
+            isMega,
+            ivs
+        }
+    };
+}
+
+// ==========================================
+// ROUTE : COMBATTRE UN BOT
+// ==========================================
+app.post('/api/battle/bot', async (req, res) => {
+    const { userId, difficulty } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: "UserId manquant" });
+    }
+
+    const validDifficulties = ['easy', 'medium', 'hard', 'expert'];
+    if (!validDifficulties.includes(difficulty)) {
+        return res.status(400).json({ error: "Difficulté invalide" });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        if (!user.companionPokemonId) {
+            return res.status(400).json({ error: "Tu n'as pas de compagnon !" });
+        }
+
+        const playerPokemon = user.pokemons.id(user.companionPokemonId);
+        if (!playerPokemon) {
+            return res.status(404).json({ error: "Compagnon introuvable" });
+        }
+
+        // Générer le bot
+        const bot = generateBot(difficulty);
+
+        // Calculer les puissances
+        const playerPower = calculatePower(playerPokemon);
+        const botPower = calculatePower(bot.pokemon);
+
+        const player = {
+            userId,
+            username: user.username,
+            pokemon: {
+                _id: playerPokemon._id,
+                name: playerPokemon.name,
+                pokedexId: playerPokemon.pokedexId,
+                level: playerPokemon.level,
+                isShiny: playerPokemon.isShiny,
+                isMega: playerPokemon.isMega,
+                ivs: playerPokemon.ivs
+            },
+            power: playerPower
+        };
+
+        const botPlayer = {
+            userId: 'bot',
+            username: bot.name,
+            pokemon: bot.pokemon,
+            power: botPower
+        };
+
+        // Simuler le combat
+        const result = simulateBattle(player, botPlayer);
+
+        // Récompenses basées sur la difficulté
+        const difficultyMultipliers = {
+            easy: 0.5,
+            medium: 1.0,
+            hard: 1.5,
+            expert: 2.0
+        };
+
+        const multiplier = difficultyMultipliers[difficulty];
+        const isWinner = result.winner === userId;
+
+        const rewards = {
+            money: isWinner 
+                ? Math.floor((150 + Math.random() * 100) * multiplier) 
+                : Math.floor((30 + Math.random() * 30) * multiplier),
+            xp: isWinner 
+                ? Math.floor((80 + Math.random() * 40) * multiplier) 
+                : Math.floor((20 + Math.random() * 20) * multiplier)
+        };
+
+        // Donner les récompenses
+        user.money += rewards.money;
+        await user.save();
+
+        // Sauvegarder le combat dans l'historique (optionnel)
+        const battle = new Battle({
+            player1: player,
+            player2: botPlayer,
+            winner: result.winner,
+            battleLog: result.battleLog,
+            rewards: {
+                winner: { money: rewards.money, xp: rewards.xp },
+                loser: { money: 0, xp: 0 }
+            },
+            status: 'completed',
+            completedAt: new Date()
+        });
+
+        await battle.save();
+
+        // Mettre à jour les missions (si système activé)
+        if (isWinner && typeof updateMissionProgress === 'function') {
+            await updateMissionProgress(userId, 'battle_win', 1);
+        }
+
+        res.json({ 
+            success: true, 
+            isWinner,
+            battle: {
+                bot: bot.name,
+                botPokemon: bot.pokemon.name,
+                botLevel: bot.pokemon.level,
+                botPower: botPower,
+                winner: result.winner,
+                battleLog: result.battleLog,
+                rewards
+            }
+        });
+
+    } catch (e) {
+        console.error("Erreur combat bot:", e);
+        res.status(500).json({ error: "Erreur lors du combat contre le bot" });
+    }
+});
+
+// ==========================================
+// ROUTE : OBTENIR UN APERÇU D'UN BOT (sans combattre)
+// ==========================================
+app.get('/api/battle/bot-preview/:difficulty', async (req, res) => {
+    const { difficulty } = req.params;
+
+    const validDifficulties = ['easy', 'medium', 'hard', 'expert'];
+    if (!validDifficulties.includes(difficulty)) {
+        return res.status(400).json({ error: "Difficulté invalide" });
+    }
+
+    try {
+        const bot = generateBot(difficulty);
+        const power = calculatePower(bot.pokemon);
+
+        res.json({ 
+            bot: {
+                name: bot.name,
+                pokemon: bot.pokemon,
+                power
+            }
+        });
+
+    } catch (e) {
+        console.error("Erreur aperçu bot:", e);
+        res.status(500).json({ error: "Erreur lors de la génération du bot" });
+    }
+});
+
+console.log("✅ Système de combat contre bot chargé");
+
 function calculatePower(pokemon, baseStats = []) {
     const level = pokemon.level || 5;
     const ivs = pokemon.ivs || {};
@@ -1999,4 +2215,5 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
