@@ -163,12 +163,27 @@ app.post('/api/battle/bot', async (req, res) => {
 
         // Donner les récompenses
         user.money += rewards.money;
+
+        // Donner l'XP au compagnon
+        if (user.companionPokemonId) {
+            const companion = user.pokemons.id(user.companionPokemonId);
+            if (companion) {
+                companion.xp = (companion.xp || 0) + rewards.xp;
+                const nextLevelXP = companion.level * 100;
+                if (companion.xp >= nextLevelXP) {
+                    companion.level += 1;
+                    companion.xp = 0;
+                    console.log(`[Battle] ${companion.name} monte au niveau ${companion.level} !`);
+                }
+            }
+        }
+
         await user.save();
 
         // Sauvegarder le combat dans l'historique (optionnel)
         const battle = new Battle({
-            player1: { ...player, damage: result.p1Damage },
-            player2: { ...botPlayer, damage: result.p2Damage },
+            player1: player,
+            player2: botPlayer,
             winner: result.winner,
             battleLog: result.battleLog,
             rewards: {
