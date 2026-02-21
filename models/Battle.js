@@ -7,7 +7,7 @@ const battleSchema = new mongoose.Schema({
         userId: { type: String, required: true },
         username: { type: String, required: true },
         pokemon: {
-            _id: { type: mongoose.Schema.Types.ObjectId, required: true },
+            _id: { type: mongoose.Schema.Types.Mixed, required: true },
             name: { type: String, required: true },
             pokedexId: { type: Number, required: true },
             level: { type: Number, required: true },
@@ -29,7 +29,7 @@ const battleSchema = new mongoose.Schema({
         userId: { type: String, required: true },
         username: { type: String, required: true },
         pokemon: {
-            _id: { type: mongoose.Schema.Types.ObjectId, required: true },
+            _id: { type: mongoose.Schema.Types.Mixed, required: true },
             name: { type: String, required: true },
             pokedexId: { type: Number, required: true },
             level: { type: Number, required: true },
