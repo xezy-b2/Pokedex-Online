@@ -19,7 +19,7 @@ async function selectBotDifficulty(difficulty) {
     
     // Charger un aperçu du bot
     try {
-        const res = await fetch(`${API_BASE_URL}/api/battle/bot-preview/${difficulty}`);
+        const res = await fetch(`${API_BASE_URL}/api/battle/bot-preview/${difficulty}?userId=${currentUserId}`);
         const data = await res.json();
         
         if (data.bot) {
