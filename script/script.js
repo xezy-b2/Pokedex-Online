@@ -493,7 +493,7 @@ async function loadProfile() {
         if(user.companionPokemon) {
             const cp = user.companionPokemon;
 compHtml = `<div class="is-companion">
-    <img data-src="${getPokemonSprite(cp)}" class="poke-sprite" onerror="this.onerror=null; this.src='${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png';" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));" loading="lazy">
+    <img data-src="${getPokemonSprite(cp)}" class="poke-sprite" onerror="this.onerror=null; this.src=\'${POKEAPI_URL}${cp.isShiny ? 'shiny/' : ''}${cp.pokedexId}.png\';" style="width:120px; filter: drop-shadow(0 0 10px rgba(163, 51, 200, 0.5));" loading="lazy">
     <p style="color:var(--accent-soft); font-weight:bold; margin:0;">${cp.isShiny ? '✨ ' : ''}${cp.name}</p>
     <p style="font-size:0.8em; margin:2px 0;">⭐ Niveau ${cp.level}</p>
     <div style="width:120px; background:rgba(255,255,255,0.1); border-radius:999px; height:5px; margin-top:5px; overflow:hidden;">
@@ -809,8 +809,3 @@ console.log("- refreshPokedexCache:", typeof window.refreshPokedexCache);
 console.log("- logout:", typeof window.logout);
 console.log("- showPage:", typeof window.showPage);
 console.log("- closeTradeModal:", typeof window.closeTradeModal);
-
-
-
-
-
