@@ -501,6 +501,7 @@ compHtml = `<div class="is-companion">
     </div>
     <p style="font-size:0.65em; color:var(--text-secondary); margin:2px 0 0 0;">${cp.xp} / ${cp.level * 100} XP</p>
 </div>`;
+        }
 
         const cooldownText = getCooldownTime(user.lastDaily);
         const isOff = cooldownText !== null;
