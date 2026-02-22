@@ -1484,6 +1484,7 @@
                 <button onclick="filterGen(7)">🌺 Gen 7 <br><small>Alola</small></button>
                 <button onclick="filterGen(8)">🏔️ Gen 8 <br><small>Galar</small></button>
                 <button onclick="filterGen(9)">🌄 Gen 9 <br><small>Paldea</small></button>
+                <button onclick="filterGen(10)">⭐ Gen 10 <br><small>Gen X</small></button>
             </div>
 
             <div id="pokedex-pagination" class="pagination-container">
@@ -1505,7 +1506,9 @@
         </div>
 
         <div id="collection-page" class="page-section">
-            <h3 style="color: var(--accent-soft);">✨ Pokémon Chromatiques</h3>
+            <h3 style="color: var(--accent-warm);">🎒 Pokémon Classiques</h3>
+            <div id="normal-grid" class="pokedex-grid"></div>
+            <h3 style="color: var(--accent-soft); margin-top:35px;">✨ Pokémon Chromatiques</h3>
             <div id="shiny-grid" class="pokedex-grid"></div>
             <h3 style="color: var(--accent-lavender); margin-top:35px;">🧬 Formes Méga</h3>
             <div id="mega-grid" class="pokedex-grid"></div>
@@ -1859,4 +1862,3 @@
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
-
