@@ -337,7 +337,8 @@ async function loadPokedex() {
 
         document.querySelectorAll('#gen-tabs button').forEach((btn, i) => {
             const g = i + 1;
-            btn.innerHTML = `Gen ${g} (${genNames[g]}) <br><small>${counts[g]}/${totals[g]}</small>`;
+            const small = btn.querySelector('small');
+            if (small) small.textContent = `${counts[g] || 0}/${totals[g] || 0}`;
         });
 
         // Affiche la grille principale (le Pokédex de 1 à 721)
