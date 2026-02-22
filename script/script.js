@@ -144,10 +144,25 @@ function changePage(step) {
 function renderPokedexGrid() {
     if (!cachedPokedexData) return;
 
-    const genPokes = cachedPokedexData.fullPokedex.filter(p => {
-        // Exclure les shinies, mégas et customs de l'encyclopédie
-        if (p.isShiny || p.isMega || p.isCustom) return false;
+    // Dédupliquer par pokedexId : garder une seule entrée par Pokémon
+    // Priorité : version normale > shiny > méga > custom
+    const seenIds = new Map();
+    cachedPokedexData.fullPokedex.forEach(p => {
+        const id = p.pokedexId;
+        if (!seenIds.has(id)) {
+            seenIds.set(id, p);
+        } else {
+            const existing = seenIds.get(id);
+            // Remplacer par la version normale si l'existante est spéciale
+            const existingIsSpecial = existing.isShiny || existing.isMega || existing.isCustom;
+            const currentIsNormal = !p.isShiny && !p.isMega && !p.isCustom;
+            if (existingIsSpecial && currentIsNormal) {
+                seenIds.set(id, p);
+            }
+        }
+    });
 
+    const genPokes = Array.from(seenIds.values()).filter(p => {
         if (currentGen === 1) return p.pokedexId <= 151;
         if (currentGen === 2) return p.pokedexId > 151 && p.pokedexId <= 251;
         if (currentGen === 3) return p.pokedexId > 251 && p.pokedexId <= 386;
