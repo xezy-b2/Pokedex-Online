@@ -6,7 +6,7 @@ const missionSchema = new mongoose.Schema({
     type: { 
         type: String, 
         required: true,
-        enum: ['capture', 'trade', 'login_streak', 'gallery_post', 'spend_money', 'sell_pokemon']
+        enum: ['capture', 'trade', 'login_streak', 'gallery_post', 'spend_money', 'sell_pokemon', 'battle', 'battle_bot']
     },
     title: { type: String, required: true },
     description: { type: String, required: true },
