@@ -23,6 +23,7 @@ const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 const MAX_POKEDEX_ID_GEN_7 = 809; // Alola
 const MAX_POKEDEX_ID_GEN_8 = 905; // Galar
 const MAX_POKEDEX_ID_GEN_9 = 1025; // Paldea
+const MAX_POKEDEX_ID_GEN_10 = 1200; // Gen X (placeholder)
 
 function generateBot(difficulty) {
     const botNames = [
@@ -1563,7 +1564,7 @@ async function generateRandomPokemon() {
         pokedexId = MEGA_IDS[Math.floor(Math.random() * MEGA_IDS.length)];
         isMega = true;
     } else {
-        pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_9);
+        pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_10);
     }
 
     // Statistiques et Shiny
@@ -1749,7 +1750,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         });
         const fullPokedexMap = new Map();
 
-        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_9; id++) {
+        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_10; id++) {
             fullPokedexMap.set(id, {
                 pokedexId: id,
                 name: `[${id.toString().padStart(3, '0')}] Inconnu`, 
@@ -1778,7 +1779,7 @@ res.json({
     fullPokedex,
     capturedPokemonsList: capturedPokemons,
     uniquePokedexCount: capturedPokedexIds.size,
-    maxPokedexId: MAX_POKEDEX_ID_GEN_9,
+    maxPokedexId: MAX_POKEDEX_ID_GEN_10,
     maxGen1Id: MAX_POKEDEX_ID_GEN_1, 
     maxGen2Id: MAX_POKEDEX_ID_GEN_2,
     maxGen3Id: MAX_POKEDEX_ID_GEN_3,
@@ -1788,7 +1789,7 @@ res.json({
     maxGen7Id: MAX_POKEDEX_ID_GEN_7,
     maxGen8Id: MAX_POKEDEX_ID_GEN_8,
     maxGen9Id: MAX_POKEDEX_ID_GEN_9,
-    maxGen10Id: MAX_POKEDEX_ID_GEN_9
+    maxGen10Id: MAX_POKEDEX_ID_GEN_10
 });
 
     } catch (error) {
@@ -2064,23 +2065,25 @@ app.post('/api/sell/duplicates', async (req, res) => {
         const pokemonsToKeepIds = new Set();
         let totalSalePrice = 0;
         const pokemonsToSell = [];
-        const nonShinies = user.pokemons.filter(p => !p.isShiny);
-        const nonShiniesSortedForDuplicationCheck = [...nonShinies].sort((a, b) => 
-            {
+
+        // Garder le meilleur classique par espèce, indépendamment des versions spéciales
+        const normalPokemons = user.pokemons.filter(p => !p.isShiny && !p.isMega && !p.isCustom);
+        const normalSorted = [...normalPokemons].sort((a, b) => {
             if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
             return b.level - a.level;
         });
+
         const keepersMap = new Map();
-        nonShiniesSortedForDuplicationCheck.forEach(p => 
-            {
+        normalSorted.forEach(p => {
             if (!keepersMap.has(p.pokedexId)) {
                 keepersMap.set(p.pokedexId, p._id.toString());
                 pokemonsToKeepIds.add(p._id.toString());
             }
         });
 
+        // Toujours garder le compagnon
         if (user.companionPokemonId) {
-             pokemonsToKeepIds.add(user.companionPokemonId.toString());
+            pokemonsToKeepIds.add(user.companionPokemonId.toString());
         }
 
         const remainingPokemons = [];
