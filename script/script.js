@@ -387,14 +387,15 @@ async function loadPokedex() {
             else if (p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'))) {
                 if(mGrid) mGrid.innerHTML += createCard(p, 'collection');
             } 
-            // 3. Catégorie SHINY (Uniquement si p.isShiny est vrai)
+            // 3. Catégorie SHINY
             else if (p.isShiny === true) {
                 if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
             } 
             // 4. Catégorie DOUBLONS / RESTE
             else {
-                // Si on a déjà ce Pokémon en stock ET qu'il n'est pas en favori -> Doublon
-                if (keepers.has(p.pokedexId) && !isFav) {
+                const isCompanion = p._id === currentCompanionId;
+                // Doublon uniquement si on a déjà un autre classique de cette espèce
+                if (keepers.has(p.pokedexId) && !isFav && !isCompanion) {
                     if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
                 } else {
                     keepers.add(p.pokedexId);
