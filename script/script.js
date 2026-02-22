@@ -145,6 +145,9 @@ function renderPokedexGrid() {
     if (!cachedPokedexData) return;
 
     const genPokes = cachedPokedexData.fullPokedex.filter(p => {
+        // Exclure les shinies, mégas et customs de l'encyclopédie
+        if (p.isShiny || p.isMega || p.isCustom) return false;
+
         if (currentGen === 1) return p.pokedexId <= 151;
         if (currentGen === 2) return p.pokedexId > 151 && p.pokedexId <= 251;
         if (currentGen === 3) return p.pokedexId > 251 && p.pokedexId <= 386;
