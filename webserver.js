@@ -23,7 +23,6 @@ const MAX_POKEDEX_ID_GEN_6 = 721; // Kalos
 const MAX_POKEDEX_ID_GEN_7 = 809; // Alola
 const MAX_POKEDEX_ID_GEN_8 = 905; // Galar
 const MAX_POKEDEX_ID_GEN_9 = 1025; // Paldea
-const MAX_POKEDEX_ID_GEN_10 = 1200; // Gen X (placeholder)
 
 function generateBot(difficulty) {
     const botNames = [
@@ -1564,7 +1563,7 @@ async function generateRandomPokemon() {
         pokedexId = MEGA_IDS[Math.floor(Math.random() * MEGA_IDS.length)];
         isMega = true;
     } else {
-        pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_10);
+        pokedexId = getRandomInt(1, MAX_POKEDEX_ID_GEN_9);
     }
 
     // Statistiques et Shiny
@@ -1750,7 +1749,7 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         });
         const fullPokedexMap = new Map();
 
-        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_10; id++) {
+        for (let id = 1; id <= MAX_POKEDEX_ID_GEN_9; id++) {
             fullPokedexMap.set(id, {
                 pokedexId: id,
                 name: `[${id.toString().padStart(3, '0')}] Inconnu`, 
@@ -1779,7 +1778,7 @@ res.json({
     fullPokedex,
     capturedPokemonsList: capturedPokemons,
     uniquePokedexCount: capturedPokedexIds.size,
-    maxPokedexId: MAX_POKEDEX_ID_GEN_10,
+    maxPokedexId: MAX_POKEDEX_ID_GEN_9,
     maxGen1Id: MAX_POKEDEX_ID_GEN_1, 
     maxGen2Id: MAX_POKEDEX_ID_GEN_2,
     maxGen3Id: MAX_POKEDEX_ID_GEN_3,
@@ -1789,7 +1788,7 @@ res.json({
     maxGen7Id: MAX_POKEDEX_ID_GEN_7,
     maxGen8Id: MAX_POKEDEX_ID_GEN_8,
     maxGen9Id: MAX_POKEDEX_ID_GEN_9,
-    maxGen10Id: MAX_POKEDEX_ID_GEN_10
+    maxGen10Id: MAX_POKEDEX_ID_GEN_9
 });
 
     } catch (error) {
