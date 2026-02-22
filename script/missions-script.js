@@ -57,7 +57,9 @@ function createMissionCard(mission) {
         'login_streak': '🔥',
         'gallery_post': '🎨',
         'spend_money': '💰',
-        'sell_pokemon': '💸'
+        'sell_pokemon': '💸',
+        'battle': '⚔️',
+        'battle_bot': '🤖'
     };
     
     const icon = icons[mission.type] || '⭐';
