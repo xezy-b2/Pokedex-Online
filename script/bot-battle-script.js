@@ -125,7 +125,7 @@ function showBotBattleResult(data) {
         <div class="battle-rewards">
             <h4>${isWinner ? '🎁 Récompenses de victoire' : '🎁 Récompenses de participation'}</h4>
             <span class="reward-item">+${rewards.money}💰</span>
-            ${rewards.xp ? `<span class="reward-item">+${rewards.xp} XP</span>` : ''}
+            ${rewards.xp ? `<span class="reward-item">+${rewards.xp} XP compagnon</span>` : ''}
         </div>
         
         <p style="color: var(--text-secondary); margin-top: 15px; font-size: 0.9em;">
