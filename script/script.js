@@ -364,11 +364,13 @@ async function loadPokedex() {
         renderPokedexGrid();
 
         // --- REMPLISSAGE DES GRILLES DE COLLECTION ---
+        const nGrid = document.getElementById('normal-grid');
         const wGrid = document.getElementById('wtf-grid'); 
         const sGrid = document.getElementById('shiny-grid');
         const mGrid = document.getElementById('mega-grid'); 
         const dGrid = document.getElementById('duplicate-grid');
 
+        if(nGrid) nGrid.innerHTML = '';
         if(wGrid) wGrid.innerHTML = ''; 
         if(sGrid) sGrid.innerHTML = ''; 
         if(mGrid) mGrid.innerHTML = ''; 
@@ -392,17 +394,21 @@ async function loadPokedex() {
             else if (p.isShiny === true) {
                 if(sGrid) sGrid.innerHTML += createCard(p, 'collection');
             } 
-            // 4. Catégorie DOUBLONS / RESTE
+            // 4. Classiques et doublons
             else {
                 const isCompanion = p._id === currentCompanionId;
-                // Doublon uniquement si on a déjà un autre classique de cette espèce
                 if (keepers.has(p.pokedexId) && !isFav && !isCompanion) {
+                    // Doublon
                     if(dGrid) dGrid.innerHTML += createCard(p, 'collection');
                 } else {
+                    // Classique keeper → affiché dans normal-grid
                     keepers.add(p.pokedexId);
+                    if(nGrid) nGrid.innerHTML += createCard(p, 'collection');
                 }
             }
         });
+
+        if(nGrid) nGrid.querySelectorAll('img[data-src]').forEach(img => imageObserver.observe(img));
 
         // OPTIMISATION: Observer toutes les images des grilles de collection
         if(wGrid) wGrid.querySelectorAll('img[data-src]').forEach(img => imageObserver.observe(img));
