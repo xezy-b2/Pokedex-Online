@@ -1729,7 +1729,12 @@ app.get('/api/pokedex/:userId', async (req, res) => {
             return res.status(404).json({ message: "Dresseur non trouvé." });
         }
 
-        const capturedPokemons = user.pokemons || [];
+        const capturedPokemons = (user.pokemons || []).sort((a, b) => {
+            // Les classiques (non shiny, non méga, non custom) passent en premier
+            const aIsSpecial = a.isShiny || a.isMega || a.isCustom ? 1 : 0;
+            const bIsSpecial = b.isShiny || b.isMega || b.isCustom ? 1 : 0;
+            return aIsSpecial - bIsSpecial;
+        });
         const capturedPokedexIds = new Set(capturedPokemons.map(p => p.pokedexId));
         const uniquePokedexIds = [...capturedPokedexIds];
         const statsPromises = uniquePokedexIds.map(id => fetchPokemonBaseStats(id));
@@ -2065,25 +2070,23 @@ app.post('/api/sell/duplicates', async (req, res) => {
         const pokemonsToKeepIds = new Set();
         let totalSalePrice = 0;
         const pokemonsToSell = [];
-
-        // Garder le meilleur classique par espèce, indépendamment des versions spéciales
-        const normalPokemons = user.pokemons.filter(p => !p.isShiny && !p.isMega && !p.isCustom);
-        const normalSorted = [...normalPokemons].sort((a, b) => {
+        const nonShinies = user.pokemons.filter(p => !p.isShiny);
+        const nonShiniesSortedForDuplicationCheck = [...nonShinies].sort((a, b) => 
+            {
             if (a.pokedexId !== b.pokedexId) return a.pokedexId - b.pokedexId;
             return b.level - a.level;
         });
-
         const keepersMap = new Map();
-        normalSorted.forEach(p => {
+        nonShiniesSortedForDuplicationCheck.forEach(p => 
+            {
             if (!keepersMap.has(p.pokedexId)) {
                 keepersMap.set(p.pokedexId, p._id.toString());
                 pokemonsToKeepIds.add(p._id.toString());
             }
         });
 
-        // Toujours garder le compagnon
         if (user.companionPokemonId) {
-            pokemonsToKeepIds.add(user.companionPokemonId.toString());
+             pokemonsToKeepIds.add(user.companionPokemonId.toString());
         }
 
         const remainingPokemons = [];
