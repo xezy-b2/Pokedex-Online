@@ -198,7 +198,7 @@ app.post('/api/battle/bot', async (req, res) => {
 
         // Mettre à jour les missions (si système activé)
         if (isWinner && typeof updateMissionProgress === 'function') {
-            await updateMissionProgress(userId, 'battle_win', 1);
+            await updateMissionProgress(userId, 'battle_bot', 1);
         }
 
         res.json({ 
@@ -490,7 +490,7 @@ app.post('/api/battle/accept', async (req, res) => {
 
         // Mettre à jour les missions (si système XP activé)
         if (typeof updateMissionProgress === 'function') {
-            await updateMissionProgress(result.winner, 'battle_win', 1);
+            await updateMissionProgress(result.winner, 'battle', 1);
         }
 
         res.json({ 
@@ -712,6 +712,48 @@ function generateDailyMissions() {
             description: 'Connecte-toi 7 jours de suite',
             target: 7,
             reward: { money: 5000, masterballs: 2, ultraballs: 5 }
+        },
+        {
+            type: 'battle',
+            title: 'Premier sang',
+            description: 'Remporte 1 combat contre un joueur',
+            target: 1,
+            reward: { money: 400, pokeballs: 2 }
+        },
+        {
+            type: 'battle',
+            title: 'Combattant',
+            description: 'Remporte 3 combats contre des joueurs',
+            target: 3,
+            reward: { money: 900, greatballs: 2 }
+        },
+        {
+            type: 'battle',
+            title: 'Champion de l\'arène',
+            description: 'Remporte 5 combats contre des joueurs',
+            target: 5,
+            reward: { money: 1800, ultraballs: 2 }
+        },
+        {
+            type: 'battle_bot',
+            title: 'Entraînement',
+            description: 'Bats 1 bot Pokémon',
+            target: 1,
+            reward: { money: 300, pokeballs: 2 }
+        },
+        {
+            type: 'battle_bot',
+            title: 'Chasseur de bots',
+            description: 'Bats 3 bots Pokémon',
+            target: 3,
+            reward: { money: 700, greatballs: 2 }
+        },
+        {
+            type: 'battle_bot',
+            title: 'Exterminateur',
+            description: 'Bats 5 bots Pokémon',
+            target: 5,
+            reward: { money: 1500, ultraballs: 1, greatballs: 2 }
         }
     ];
 
