@@ -144,60 +144,61 @@ function changePage(step) {
 function renderPokedexGrid() {
     if (!cachedPokedexData) return;
 
-    // Dédupliquer par pokedexId : garder une seule entrée par Pokémon
-    // Priorité : version normale > shiny > méga > custom
-    const seenIds = new Map();
+    // Construire un Set des pokedexId capturés en version CLASSIQUE uniquement
+    const capturedClassicIds = new Set(
+        cachedPokedexData.fullPokedex
+            .filter(p => p.isCaptured && !p.isShiny && !p.isMega && !p.isCustom)
+            .map(p => p.pokedexId)
+    );
+
+    // Construire une Map pokedexId → pokémon classique (pour afficher les infos si capturé)
+    const classicByPokedexId = new Map();
     cachedPokedexData.fullPokedex.forEach(p => {
-        const id = p.pokedexId;
-        if (!seenIds.has(id)) {
-            seenIds.set(id, p);
-        } else {
-            const existing = seenIds.get(id);
-            // Remplacer par la version normale si l'existante est spéciale
-            const existingIsSpecial = existing.isShiny || existing.isMega || existing.isCustom;
-            const currentIsNormal = !p.isShiny && !p.isMega && !p.isCustom;
-            if (existingIsSpecial && currentIsNormal) {
-                seenIds.set(id, p);
+        if (!p.isShiny && !p.isMega && !p.isCustom) {
+            if (!classicByPokedexId.has(p.pokedexId)) {
+                classicByPokedexId.set(p.pokedexId, p);
             }
         }
     });
 
-    const genPokes = Array.from(seenIds.values()).filter(p => {
-        if (currentGen === 1) return p.pokedexId <= 151;
-        if (currentGen === 2) return p.pokedexId > 151 && p.pokedexId <= 251;
-        if (currentGen === 3) return p.pokedexId > 251 && p.pokedexId <= 386;
-        if (currentGen === 4) return p.pokedexId > 386 && p.pokedexId <= 493;
-        if (currentGen === 5) return p.pokedexId > 493 && p.pokedexId <= 649;
-        if (currentGen === 6) return p.pokedexId > 649 && p.pokedexId <= 721;
-        if (currentGen === 7) return p.pokedexId > 721 && p.pokedexId <= 809;
-        if (currentGen === 8) return p.pokedexId > 809 && p.pokedexId <= 905;
-        if (currentGen === 9) return p.pokedexId > 905 && p.pokedexId <= 1025;
-        return false;
-    });
+    // Générer la liste des IDs à afficher selon la gen
+    const genRanges = {
+        1: [1, 151], 2: [152, 251], 3: [252, 386],
+        4: [387, 493], 5: [494, 649], 6: [650, 721],
+        7: [722, 809], 8: [810, 905], 9: [906, 1025]
+    };
+    const [minId, maxId] = genRanges[currentGen] || [1, 151];
 
-    const totalPages = Math.ceil(genPokes.length / itemsPerPage);
+    // Construire la liste complète des slots de la gen
+    const allIds = [];
+    for (let id = minId; id <= maxId; id++) allIds.push(id);
+
+    const totalPages = Math.ceil(allIds.length / itemsPerPage);
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-    const pokesToShow = genPokes.slice(start, end);
+    const idsToShow = allIds.slice(start, end);
 
     const grid = document.getElementById(`grid-${currentGen}`);
     if (grid) {
         grid.innerHTML = '';
-pokesToShow.forEach(p => {
-    if (p.isCaptured) {
-        p.isCompanion = (p._id === currentCompanionId);
-        grid.innerHTML += createCard(p, 'pokedex');
-    } else {
-        // Pokémon non capturé
-        grid.innerHTML += `
-            <div class="pokedex-card missing" style="opacity: 0.5; filter: grayscale(0.8);">
-                <div style="width: 96px; height: 96px; background: rgba(255, 154, 108, 0.1); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 3em;">❓</div>
-                <h3 style="color: var(--text-secondary);">#${p.pokedexId}</h3>
-                <p style="color: var(--text-secondary); font-style: italic;">Inconnu</p>
-            </div>
-        `;
-    }
-});
+        idsToShow.forEach(id => {
+            const isCaptured = capturedClassicIds.has(id);
+            const p = classicByPokedexId.get(id);
+
+            if (isCaptured && p) {
+                p.isCompanion = (p._id === currentCompanionId);
+                grid.innerHTML += createCard(p, 'pokedex');
+            } else {
+                // Slot non capturé (ou seulement en version spéciale)
+                grid.innerHTML += `
+                    <div class="pokedex-card missing" style="opacity: 0.5; filter: grayscale(0.8);">
+                        <div style="width: 96px; height: 96px; background: rgba(255, 154, 108, 0.1); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 3em;">❓</div>
+                        <h3 style="color: var(--text-secondary);">#${id}</h3>
+                        <p style="color: var(--text-secondary); font-style: italic;">Inconnu</p>
+                    </div>
+                `;
+            }
+        });
         
         // OPTIMISATION: Observer les images après insertion
         grid.querySelectorAll('img[data-src]').forEach(img => {
