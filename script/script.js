@@ -151,6 +151,10 @@ function renderPokedexGrid() {
         if (currentGen === 4) return p.pokedexId > 386 && p.pokedexId <= 493;
         if (currentGen === 5) return p.pokedexId > 493 && p.pokedexId <= 649;
         if (currentGen === 6) return p.pokedexId > 649 && p.pokedexId <= 721;
+        if (currentGen === 7) return p.pokedexId > 721 && p.pokedexId <= 809;
+        if (currentGen === 8) return p.pokedexId > 809 && p.pokedexId <= 905;
+        if (currentGen === 9) return p.pokedexId > 905 && p.pokedexId <= 1025;
+        if (currentGen === 10) return p.pokedexId > 1025 && p.pokedexId <= 1200;
         return false;
     });
 
