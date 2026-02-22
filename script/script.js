@@ -328,11 +328,11 @@ async function loadPokedex() {
 
         // --- ONGLETS GÉNÉRATIONS ---
         const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-        const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72 };
-        const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos' };
+        const totals = { 1: 151, 2: 100, 3: 135, 4: 107, 5: 156, 6: 72, 7: 88, 8: 96, 9: 120, 10: 0 };
+        const genNames = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Unys', 6: 'Kalos', 7: 'Alola', 8: 'Galar', 9: 'Paldea', 10: '???' };
         
         cachedPokedexData.fullPokedex.forEach(p => {
-            let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : 6;
+            let gen = (p.pokedexId <= 151) ? 1 : (p.pokedexId <= 251) ? 2 : (p.pokedexId <= 386) ? 3 : (p.pokedexId <= 493) ? 4 : (p.pokedexId <= 649) ? 5 : (p.pokedexId <= 721) ? 6 : (p.pokedexId <= 809) ? 7 : (p.pokedexId <= 905) ? 8 : (p.pokedexId <= 1025) ? 9 : 10;
             if (p.isCaptured) counts[gen]++;
         });
 
