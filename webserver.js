@@ -330,6 +330,20 @@ app.get('/api/profile/:username/wall', async (req, res) => {
     }
 });
 
+// ==========================================
+// 6. ROUTE INTERNE — DONNÉES UTILISATEUR PAR ID
+// ==========================================
+app.get('/api/user/:userId', async (req, res) => {
+    try {
+        const user = await User.findOne({ userId: req.params.userId });
+        if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
+        res.json(user);
+    } catch (e) {
+        console.error("Erreur /api/user/:userId :", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 console.log("✅ Système de profils publics chargé");
 
 function generateBot(difficulty) {
@@ -2629,4 +2643,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
