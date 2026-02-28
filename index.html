@@ -1903,6 +1903,40 @@
     <script src="./script/battle-script.js"></script>
     <script src="./script/bot-battle-script.js"></script>
     <script>window.onload = initializeApp;</script>
+
+    <!-- DEV LOCK BUTTON -->
+    <div id="dev-lock-btn" style="display:none; position:fixed; bottom:20px; right:20px; z-index:99999;">
+      <button id="dev-lock-toggle" onclick="devToggleLock()" style="
+        padding: 10px 16px;
+        border-radius: 50px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: #2ecc71;
+        color: white;
+        transition: background 0.3s;
+      ">🔓 Déverrouillé</button>
+    </div>
+    <script>
+      // Récupère le secret depuis l'URL (?_dev=...)
+      const _devSecret = new URLSearchParams(window.location.search).get('_dev');
+      if (_devSecret) {
+        document.getElementById('dev-lock-btn').style.display = 'block';
+      }
+      async function devToggleLock() {
+        const res = await fetch(`/dev-toggle-${_devSecret}`);
+        const data = await res.json();
+        const btn = document.getElementById('dev-lock-toggle');
+        if (data.lock) {
+          btn.textContent = '🔒 Verrouillé';
+          btn.style.background = '#e74c3c';
+        } else {
+          btn.textContent = '🔓 Déverrouillé';
+          btn.style.background = '#2ecc71';
+        }
+      }
+    </script>
 </body>
 </html>
-
