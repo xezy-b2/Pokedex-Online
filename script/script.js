@@ -410,6 +410,35 @@ function createCard(p, mode = 'pokedex') {
     const ballFileName = ballKey.replace('ball', '-ball') + '.png';
     const ballImgUrl = `${BALL_URL}${ballFileName}`;
     
+    // Calculer la puissance (si capturé)
+    let power = 0;
+    if (isCaptured && p.level) {
+        const ivs = p.ivs || {};
+        const avgIV = (
+            (ivs.hp || 0) +
+            (ivs.attack || 0) +
+            (ivs.defense || 0) +
+            (ivs.spAttack || 0) +
+            (ivs.spDefense || 0) +
+            (ivs.speed || 0)
+        ) / 6;
+        
+        const baseStats = p.baseStats || [];
+        let avgBaseStat = 75;
+        if (baseStats.length > 0) {
+            avgBaseStat = baseStats.reduce((sum, stat) => sum + stat.base_stat, 0) / baseStats.length;
+        }
+        
+        const shinyBonus = p.isShiny ? 1.1 : 1.0;
+        const megaBonus = isMega ? 1.3 : 1.0;
+        
+        power = Math.floor(
+            (p.level * 2) + 
+            (avgIV * 1.5) + 
+            (avgBaseStat * 0.5)
+        ) * shinyBonus * megaBonus;
+    }
+    
     let html = `
         <div class="pokedex-card ${!isCaptured ? 'missing' : ''} ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCompanion ? 'is-companion' : ''}">
             ${isCaptured ? `<button class="companion-btn ${isCompanion ? 'active' : ''}" onclick="setCompanion('${p._id}')" title="Définir comme compagnon">❤️</button>` : ''}
@@ -423,6 +452,48 @@ function createCard(p, mode = 'pokedex') {
                 ${isCaptured ? `<img src="${ballImgUrl}" style="width:20px; height:20px; margin:0;" title="${ballKey}" loading="lazy">` : ''}
             </div>
     `;
+
+    // NOUVEAU : Accordion Stats (uniquement si capturé)
+    if (isCaptured && mode === 'pokedex') {
+        const uniqueId = p._id || `pokemon-${p.pokedexId}`;
+        html += `
+            <button class="stats-toggle-btn" onclick="toggleStats('${uniqueId}')" style="width: 100%; padding: 8px; margin-top: 10px; background: rgba(255, 154, 108, 0.1); border: 1px solid rgba(255, 154, 108, 0.3); border-radius: 8px; color: var(--accent-warm); cursor: pointer; font-weight: 600; transition: all 0.3s ease; font-family: 'Quicksand', sans-serif;">
+                <span id="toggle-icon-${uniqueId}">▼</span> Stats
+            </button>
+            <div id="stats-${uniqueId}" class="stats-accordion" style="display: none; margin-top: 10px; padding: 12px; background: rgba(26, 20, 16, 0.6); border-radius: 10px; text-align: left;">
+                <div style="margin-bottom: 8px;">
+                    <span style="color: var(--accent-warm); font-weight: 700; font-size: 0.9em;">💪 Puissance</span>
+                    <span style="float: right; color: var(--text-primary); font-weight: 700;">${power}</span>
+                </div>
+                ${p.ivs ? `
+                <div style="margin-bottom: 10px; border-top: 1px solid rgba(255, 154, 108, 0.2); padding-top: 8px;">
+                    <div style="color: var(--accent-soft); font-weight: 700; font-size: 0.85em; margin-bottom: 5px;">📊 IVs (0-31)</div>
+                    <div style="font-size: 0.75em; line-height: 1.6;">
+                        <div><span style="color: var(--text-secondary);">HP:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.hp || 0}</span></div>
+                        <div><span style="color: var(--text-secondary);">Att:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.attack || 0}</span></div>
+                        <div><span style="color: var(--text-secondary);">Def:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.defense || 0}</span></div>
+                        <div><span style="color: var(--text-secondary);">Sp.Att:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.spAttack || 0}</span></div>
+                        <div><span style="color: var(--text-secondary);">Sp.Def:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.spDefense || 0}</span></div>
+                        <div><span style="color: var(--text-secondary);">Vit:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.speed || 0}</span></div>
+                    </div>
+                </div>
+                ` : ''}
+                ${p.baseStats && p.baseStats.length > 0 ? `
+                <div style="border-top: 1px solid rgba(255, 154, 108, 0.2); padding-top: 8px;">
+                    <div style="color: var(--accent-soft); font-weight: 700; font-size: 0.85em; margin-bottom: 5px;">⚡ Stats de Base</div>
+                    <div style="font-size: 0.75em; line-height: 1.6;">
+                        ${p.baseStats.map(stat => `
+                            <div>
+                                <span style="color: var(--text-secondary);">${stat.stat.name}:</span> 
+                                <span style="color: var(--text-primary); font-weight: 600;">${stat.base_stat}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
 
     if (mode === 'collection' && isCaptured) {
         html += `
@@ -779,6 +850,19 @@ function invalidatePokedexCache() {
     loadPokedex();
 }
 
+function toggleStats(pokemonId) {
+    const statsDiv = document.getElementById(`stats-${pokemonId}`);
+    const icon = document.getElementById(`toggle-icon-${pokemonId}`);
+    
+    if (statsDiv.style.display === 'none') {
+        statsDiv.style.display = 'block';
+        icon.textContent = '▲';
+    } else {
+        statsDiv.style.display = 'none';
+        icon.textContent = '▼';
+    }
+}
+
 function logout() { 
     console.log("🚪 logout appelée !");
     try {
@@ -809,9 +893,4 @@ window.postToGallery = postToGallery;
 window.likePost = likePost;
 window.deletePost = deletePost;
 window.claimDaily = claimDaily;
-
-console.log("✅ Fonctions exposées au scope global:");
-console.log("- refreshPokedexCache:", typeof window.refreshPokedexCache);
-console.log("- logout:", typeof window.logout);
-console.log("- showPage:", typeof window.showPage);
-console.log("- closeTradeModal:", typeof window.closeTradeModal);
+window.toggleStats = toggleStats;
