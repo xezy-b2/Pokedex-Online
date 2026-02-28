@@ -156,25 +156,19 @@ function checkProfileURL() {
 // PARTAGER SON PROFIL
 // ==========================================
 function shareMyProfile() {
-    if (!currentUserId) {
+    if (!currentUserId || !currentUsername) {
         alert("Tu dois être connecté !");
         return;
     }
-    
-    // Récupérer le username de l'utilisateur
-    fetch(`${API_BASE_URL}/api/user/${currentUserId}`)
-        .then(res => res.json())
-        .then(data => {
-            const profileURL = `${window.location.origin}${window.location.pathname}?profile=${data.username}`;
-            
-            // Copier dans le presse-papier
-            navigator.clipboard.writeText(profileURL).then(() => {
-                alert(`✅ Lien de profil copié !\n\n${profileURL}\n\nPartage-le à tes amis !`);
-            }).catch(() => {
-                // Fallback si clipboard API ne marche pas
-                prompt("Copie ce lien pour partager ton profil :", profileURL);
-            });
-        });
+
+    const profileURL = `${window.location.origin}${window.location.pathname}?profile=${currentUsername}`;
+
+    navigator.clipboard.writeText(profileURL).then(() => {
+        alert(`✅ Lien de profil copié !\n\n${profileURL}\n\nPartage-le à tes amis !`);
+    }).catch(() => {
+        // Fallback si clipboard API ne marche pas
+        prompt("Copie ce lien pour partager ton profil :", profileURL);
+    });
 }
 
 // ==========================================
