@@ -19,6 +19,7 @@ const DEV_SECRET = process.env.DEV_SECRET || 'monsecret123';
 
 app.use((req, res, next) => {
   if (!devLockEnabled) return next();
+  if (req.path === `/dev-toggle-${DEV_SECRET}`) return next(); // toujours accessible
   if (req.query._dev === DEV_SECRET || req.headers['x-dev-token'] === DEV_SECRET) return next();
   res.status(503).json({ error: 'Site en maintenance. Revenez bientôt !' });
 });
