@@ -249,7 +249,7 @@ async function loadPokedex() {
 
     try {
         // 1. Récupération du Profil (Argent et Compagnon)
-        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const profRes = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
         const userProfile = await profRes.json();
 
         if (userProfile.favorites) {
@@ -637,7 +637,7 @@ async function loadShop() {
     const shopMoneySpan = document.getElementById('shop-money');
     if(!container) return;
     try {
-        const profRes = await fetch(`${API_BASE_URL}/api/profile/${currentUserId}`);
+        const profRes = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
         const user = await profRes.json();
         if (shopMoneySpan) shopMoneySpan.innerText = user.money.toLocaleString();
         const res = await fetch(`${API_BASE_URL}/api/shop`);
