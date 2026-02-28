@@ -482,12 +482,16 @@ function createCard(p, mode = 'pokedex') {
                 <div style="border-top: 1px solid rgba(255, 154, 108, 0.2); padding-top: 8px;">
                     <div style="color: var(--accent-soft); font-weight: 700; font-size: 0.85em; margin-bottom: 5px;">⚡ Stats de Base</div>
                     <div style="font-size: 0.75em; line-height: 1.6;">
-                        ${p.baseStats.map(stat => `
+                        ${p.baseStats.map(stat => {
+                            const statName = stat.stat?.name || stat.name || 'stat';
+                            const statValue = stat.base_stat || stat.value || 0;
+                            return `
                             <div>
-                                <span style="color: var(--text-secondary);">${stat.stat.name}:</span> 
-                                <span style="color: var(--text-primary); font-weight: 600;">${stat.base_stat}</span>
+                                <span style="color: var(--text-secondary);">${statName}:</span> 
+                                <span style="color: var(--text-primary); font-weight: 600;">${statValue}</span>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
                 ` : ''}
