@@ -1920,13 +1920,13 @@
       ">🔓 Déverrouillé</button>
     </div>
     <script>
-      // Récupère le secret depuis l'URL (?_dev=...)
       const _devSecret = new URLSearchParams(window.location.search).get('_dev');
+      const _backendURL = 'https://pokedex-online-pxmg.onrender.com';
       if (_devSecret) {
         document.getElementById('dev-lock-btn').style.display = 'block';
       }
       async function devToggleLock() {
-        const res = await fetch(`/dev-toggle-${_devSecret}`);
+        const res = await fetch(`${_backendURL}/dev-toggle-${_devSecret}`);
         const data = await res.json();
         const btn = document.getElementById('dev-lock-toggle');
         if (data.lock) {
