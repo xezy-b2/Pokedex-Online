@@ -230,30 +230,58 @@ async function choosePokemonAvatar() {
         const data = await res.json();
         const captured = data.capturedPokemonsList || [];
         
-        if (captured.length === 0) {
-            return alert("❌ Tu n'as aucun Pokémon capturé !");
-        }
+        if (captured.length === 0) return alert("❌ Tu n'as aucun Pokémon capturé !");
         
         const modal = document.getElementById('pokemon-avatar-modal');
         const grid = document.getElementById('pokemon-avatar-grid');
-        
-        grid.innerHTML = captured.map(p => `
-            <div class="pokedex-card ${p.isShiny ? 'is-shiny' : ''}" onclick="selectPokemonAvatar(${p.pokedexId}, ${p.isShiny})">
-                <img src="${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png" 
-                     class="poke-sprite" loading="lazy" 
-                     style="width: 80px; height: 80px; object-fit: contain; margin: 0 auto;">
-                <span class="pokemon-name">${p.isShiny ? '✨ ' : ''}${p.name}</span>
-                <div style="color: var(--accent-warm); font-size: 0.85em;">Lv.${p.level}</div>
-            </div>
-        `).join('');
-        
+
+        // Ajoute la barre de recherche au-dessus de la grille si pas déjà là
+        let searchBar = document.getElementById('pokemon-avatar-search');
+        if (!searchBar) {
+            searchBar = document.createElement('input');
+            searchBar.id = 'pokemon-avatar-search';
+            searchBar.type = 'text';
+            searchBar.placeholder = '🔍 Rechercher un Pokémon...';
+            searchBar.style.cssText = `
+                width: 100%; padding: 10px 14px; margin-bottom: 12px;
+                border-radius: 8px; border: 1px solid var(--border-color, #ccc);
+                background: var(--bg-secondary, #1a1a2e); color: var(--text-primary, #fff);
+                font-size: 1em; box-sizing: border-box;
+            `;
+            grid.parentNode.insertBefore(searchBar, grid);
+        }
+        searchBar.value = '';
+
+        // Fonction de rendu filtrée
+        function renderGrid(filter = '') {
+            const filtered = filter
+                ? captured.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
+                : captured;
+
+            grid.innerHTML = filtered.length > 0
+                ? filtered.map(p => `
+                    <div class="pokedex-card ${p.isShiny ? 'is-shiny' : ''}" onclick="selectPokemonAvatar(${p.pokedexId}, ${p.isShiny})">
+                        <img src="${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png" 
+                             class="poke-sprite" loading="lazy" 
+                             style="width: 80px; height: 80px; object-fit: contain; margin: 0 auto;">
+                        <span class="pokemon-name">${p.isShiny ? '✨ ' : ''}${p.name}</span>
+                        <div style="color: var(--accent-warm); font-size: 0.85em;">Lv.${p.level}</div>
+                    </div>`).join('')
+                : `<div style="color:var(--text-secondary);text-align:center;padding:20px;width:100%;">Aucun Pokémon trouvé 😔</div>`;
+        }
+
+        searchBar.oninput = (e) => renderGrid(e.target.value);
+        renderGrid();
         modal.classList.add('active');
+
+        // Focus automatique sur la recherche
+        setTimeout(() => searchBar.focus(), 100);
+
     } catch (e) {
         console.error("Erreur chargement Pokémon:", e);
         alert("❌ Erreur lors du chargement de ta collection");
     }
 }
-
 async function selectPokemonAvatar(pokedexId, isShiny) {
     const avatarUrl = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${pokedexId}.png`;
     
