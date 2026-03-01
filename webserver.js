@@ -2331,10 +2331,26 @@ app.get('/api/profile/:username', async (req, res) => {
     const { viewerId } = req.query; // Optionnel : qui regarde le profil
 
     try {
-        // Trouver l'utilisateur
-        const user = await User.findOne({ 
+        // Trouver l'utilisateur en cherchant aussi avec __
+        // Discord ajoute parfois __ à la fin des pseudos
+        let user = await User.findOne({ 
             username: new RegExp(`^${username}$`, 'i') // Case insensitive
         });
+        
+        // Si pas trouvé, essayer avec __ à la fin
+        if (!user) {
+            user = await User.findOne({ 
+                username: new RegExp(`^${username}__+$`, 'i') // Avec underscores à la fin
+            });
+        }
+        
+        // Si toujours pas trouvé, essayer de retirer les __ du username cherché et rechercher
+        if (!user && username.endsWith('__')) {
+            const cleanUsername = username.replace(/__+$/, '');
+            user = await User.findOne({ 
+                username: new RegExp(`^${cleanUsername}$`, 'i')
+            });
+        }
 
         if (!user) {
             return res.status(404).json({ error: "Utilisateur introuvable" });
