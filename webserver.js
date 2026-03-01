@@ -1838,6 +1838,39 @@ app.get('/api/profile/:userId', async (req, res) => {
     }
 });
 
+app.get('/api/debug/check-username/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    try {
+        const user = await User.findOne({ userId });
+        
+        if (!user) {
+            return res.json({ 
+                found: false, 
+                message: "Utilisateur pas trouvé par userId" 
+            });
+        }
+        
+        res.json({
+            found: true,
+            userId: user.userId,
+            username: user.username,
+            usernameLength: user.username.length,
+            usernameChars: user.username.split('').map((char, i) => ({
+                index: i,
+                char: char,
+                charCode: char.charCodeAt(0)
+            })),
+            message: `Username trouvé: "${user.username}"`
+        });
+        
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+console.log("✅ Route de debug ajoutée: /api/debug/check-username/:userId");
+
 app.get('/api/shop', (req, res) => {
     res.json(SHOP_ITEMS);
 });
@@ -2657,3 +2690,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
