@@ -76,6 +76,8 @@ const userSchema = new mongoose.Schema({
     }],
     
     discordAvatar: String,
+    profileAvatar: { type: String, default: null },
+    avatarSource: { type: String, enum: ['discord', 'pokemon', 'custom', null], default: null },
     createdAt: { type: Date, default: Date.now }
 });
 
