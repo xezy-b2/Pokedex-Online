@@ -2359,9 +2359,12 @@ app.get('/ping', (req, res) => {
 // ==========================================
 // 1. RÉCUPÉRER UN PROFIL PUBLIC
 // ==========================================
-app.get('/api/profile/:username', async (req, res) => {
-    const { username } = req.params;
-    const { viewerId } = req.query; // Optionnel : qui regarde le profil
+app.get('/api/profile', async (req, res) => {
+    const { username, viewerId } = req.query;
+
+    if (!username) {
+        return res.status(400).json({ error: "Username manquant" });
+    }
 
     try {
         // 1. Recherche exacte (la plus fiable, évite tout problème de regex)
@@ -2655,8 +2658,8 @@ app.post('/api/profile/wall/post', async (req, res) => {
 // ==========================================
 // 5. RÉCUPÉRER LES MESSAGES DU MUR
 // ==========================================
-app.get('/api/profile/:username/wall', async (req, res) => {
-    const { username } = req.params;
+app.get('/api/profile/wall', async (req, res) => {
+    const { username } = req.query;
 
     try {
         const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
