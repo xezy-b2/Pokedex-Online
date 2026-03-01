@@ -12,7 +12,7 @@ async function loadPublicProfile(username) {
         
         if (!res.ok) {
             if (res.status === 404) {
-                alert("❌ Utilisateur introuvable");
+                alert(`❌ Utilisateur introuvable : "${username}"\n\nVérifie que le pseudo est exact (majuscules, underscores…)`);
                 showPage('home');
                 return;
             }
