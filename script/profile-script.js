@@ -9,7 +9,7 @@
 async function loadPublicProfile(username) {
     try {
         // Le serveur gère maintenant les underscores Discord automatiquement
-        const res = await fetch(`${API_BASE_URL}/api/profile/${username}?viewerId=${currentUserId}`);
+        const res = await fetch(`${API_BASE_URL}/api/profile/${encodeURIComponent(username)}?viewerId=${currentUserId}`);
         
         if (!res.ok) {
             if (res.status === 404) {
@@ -182,7 +182,7 @@ function shareMyProfile() {
 // VOIR LE PROFIL D'UN JOUEUR
 // ==========================================
 function viewPlayerProfile(username) {
-    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${username}`;
+    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${encodeURIComponent(username)}`;
 }
 
 // ==========================================
