@@ -1918,10 +1918,60 @@
                 <h2 id="profile-username" style="color: var(--accent-warm); font-family: 'Caveat', cursive; font-size: 2em; margin: 0;"></h2>
                 <div id="profile-member-since" style="color: var(--text-secondary); font-size: 0.85em; margin-top: 4px;"></div>
             </div>
-            <button onclick="shareMyProfile()" style="
-                background: var(--accent-warm); color: #1a1410; border: none;
-                padding: 8px 16px; border-radius: 20px; cursor: pointer;
-                font-family: inherit; font-weight: bold; font-size: 0.85em;">🔗 Partager</button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="profile-share-btn" style="
+                    background: var(--accent-warm); color: #1a1410; border: none;
+                    padding: 8px 16px; border-radius: 20px; cursor: pointer;
+                    font-family: inherit; font-weight: bold; font-size: 0.85em;">🔗 Partager</button>
+                <button id="profile-edit-btn" onclick="document.getElementById('profile-edit-panel').style.display = document.getElementById('profile-edit-panel').style.display === 'none' ? 'block' : 'none'" style="
+                    background: var(--bg-secondary); color: var(--accent-soft); border: 1px solid var(--accent-soft);
+                    padding: 8px 16px; border-radius: 20px; cursor: pointer;
+                    font-family: inherit; font-weight: bold; font-size: 0.85em; display: none;">✏️ Modifier</button>
+            </div>
+        </div>
+
+        <!-- Panneau d'édition du profil (visible uniquement pour le proprio) -->
+        <div id="profile-edit-panel" class="stat-box" style="margin-top: 16px; display: none; border: 1px solid var(--accent-soft);">
+            <h3 style="color: var(--accent-soft); margin-bottom: 16px;">✏️ Modifier mon profil</h3>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="color: var(--text-secondary); font-size: 0.85em; display: block; margin-bottom: 4px;">👁️ Visibilité du profil</label>
+                    <select id="edit-visibility" style="width: 100%; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--bg-card); border-radius: 8px; padding: 8px; font-family: inherit;">
+                        <option value="public">🌍 Public</option>
+                        <option value="friends_only">👥 Amis seulement</option>
+                        <option value="private">🔒 Privé</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: var(--text-secondary); font-size: 0.85em; display: block; margin-bottom: 4px;">📦 Visibilité de la collection</label>
+                    <select id="edit-collection-visibility" style="width: 100%; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--bg-card); border-radius: 8px; padding: 8px; font-family: inherit;">
+                        <option value="public">🌍 Publique</option>
+                        <option value="friends_only">👥 Amis seulement</option>
+                        <option value="hidden">🙈 Cachée</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="edit-combat-visible" style="width: 18px; height: 18px; accent-color: var(--accent-warm);">
+                    <label for="edit-combat-visible" style="color: var(--text-secondary); font-size: 0.9em; cursor: pointer;">⚔️ Afficher mes stats de combat</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="edit-wall-enabled" style="width: 18px; height: 18px; accent-color: var(--accent-warm);">
+                    <label for="edit-wall-enabled" style="color: var(--text-secondary); font-size: 0.9em; cursor: pointer;">📝 Activer le mur de messages</label>
+                </div>
+                <div>
+                    <label style="color: var(--text-secondary); font-size: 0.85em; display: block; margin-bottom: 4px;">💬 Message du compagnon <span style="color: var(--text-secondary); font-size: 0.8em;">(max 100 caractères)</span></label>
+                    <input type="text" id="edit-companion-message" maxlength="100" placeholder="Ce que dit ton compagnon..." style="
+                        width: 100%; background: var(--bg-secondary); color: var(--text-primary);
+                        border: 1px solid var(--bg-card); border-radius: 8px; padding: 8px;
+                        font-family: inherit; font-size: 0.9em;">
+                </div>
+                <button id="profile-save-btn" onclick="saveProfileSettings()" style="
+                    background: var(--accent-nature); color: #1a1410; border: none;
+                    padding: 10px 20px; border-radius: 20px; cursor: pointer;
+                    font-family: inherit; font-weight: bold; font-size: 0.95em; width: 100%;">
+                    💾 Sauvegarder
+                </button>
+            </div>
         </div>
 
         <!-- Stats Collection -->
