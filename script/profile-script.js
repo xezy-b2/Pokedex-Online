@@ -22,8 +22,11 @@ async function loadPublicProfile(username) {
 function renderPublicProfile(profile) {
     document.getElementById('profile-username').textContent = profile.username;
     
+    const avatarEl = document.getElementById('profile-avatar');
     if (profile.avatar) {
-        document.getElementById('profile-avatar').innerHTML = `<img src="${profile.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        avatarEl.innerHTML = `<img src="${profile.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">`;
+    } else {
+        avatarEl.textContent = '🎮';
     }
     
     const memberDate = new Date(profile.memberSince);
