@@ -2499,7 +2499,7 @@ app.get('/api/profile', async (req, res) => {
         const profile = {
             username: user.username,
             userId: user.userId, // Pour identifier si c'est son propre profil
-            avatar: user.discordAvatar || null,
+            avatar: user.profileAvatar || user.discordAvatar || null,
             memberSince: user.createdAt,
             
             stats: {
@@ -2684,6 +2684,40 @@ app.get('/api/profile/wall', async (req, res) => {
 });
 
 console.log("✅ Système de profils publics chargé");
+
+
+// ==========================================
+// 📸 ROUTES AVATAR
+// ==========================================
+
+app.post('/api/profile/set-avatar', async (req, res) => {
+    const { userId, avatar, source } = req.body;
+    
+    if (!userId || !avatar) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+    
+    try {
+        const user = await User.findOne({ userId });
+        
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+        
+        user.profileAvatar = avatar;
+        user.avatarSource = source || 'custom';
+        
+        await user.save();
+        
+        res.json({ success: true, avatar, source, message: "Avatar mis à jour" });
+        
+    } catch (e) {
+        console.error("Erreur sauvegarde avatar:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+console.log("✅ Route set-avatar configurée");
 
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
