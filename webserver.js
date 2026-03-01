@@ -2719,7 +2719,24 @@ app.post('/api/profile/set-avatar', async (req, res) => {
 
 console.log("✅ Route set-avatar configurée");
 
+app.get('/api/user/:userId', async (req, res) => {
+    try {
+        const user = await User.findOne({ userId: req.params.userId });
+        if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
+        res.json({
+            userId: user.userId,
+            username: user.username,
+            discordAvatar: user.discordAvatar || null,
+            profileAvatar: user.profileAvatar || null,
+            avatarSource: user.avatarSource || null
+        });
+    } catch (e) {
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
