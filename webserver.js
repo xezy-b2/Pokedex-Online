@@ -2317,6 +2317,323 @@ app.get('/ping', (req, res) => {
     });
 });
 
+
+// ==========================================
+// 👤 SYSTÈME DE PROFILS PUBLICS
+// À ajouter dans webserver.js AVANT app.listen()
+// ==========================================
+
+// ==========================================
+// 1. RÉCUPÉRER UN PROFIL PUBLIC
+// ==========================================
+app.get('/api/profile/:username', async (req, res) => {
+    const { username } = req.params;
+    const { viewerId } = req.query; // Optionnel : qui regarde le profil
+
+    try {
+        // Trouver l'utilisateur
+        const user = await User.findOne({ 
+            username: new RegExp(`^${username}$`, 'i') // Case insensitive
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        // Vérifier la confidentialité
+        const settings = user.profileSettings || {};
+        const visibility = settings.visibility || 'public';
+
+        // Si privé et pas le proprio
+        if (visibility === 'private' && viewerId !== user.userId) {
+            return res.status(403).json({ error: "Ce profil est privé" });
+        }
+
+        // Si friends_only et pas ami (à implémenter plus tard)
+        // if (visibility === 'friends_only' && !isFriend(viewerId, user.userId)) {
+        //     return res.status(403).json({ error: "Ce profil est réservé aux amis" });
+        // }
+
+        // Stats de collection
+        const totalCaptured = user.pokemons.length;
+        const shinies = user.pokemons.filter(p => p.isShiny).length;
+        const megas = user.pokemons.filter(p => p.isMega).length;
+        const customs = user.pokemons.filter(p => p.isCustom).length;
+
+        // Pokédex par génération
+        const gen1Complete = user.pokemons.filter(p => p.pokedexId <= 151).length;
+
+        // Stats de combat
+        const battleStats = await Battle.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { 'player1.userId': user.userId },
+                        { 'player2.userId': user.userId }
+                    ],
+                    status: 'completed'
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalBattles: { $sum: 1 },
+                    victories: {
+                        $sum: {
+                            $cond: [{ $eq: ['$winner', user.userId] }, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const combatStats = battleStats[0] || { totalBattles: 0, victories: 0 };
+        const winRate = combatStats.totalBattles > 0 
+            ? Math.floor((combatStats.victories / combatStats.totalBattles) * 100)
+            : 0;
+
+        // Compagnon actuel
+        let companion = null;
+        if (user.companionPokemonId) {
+            const comp = user.pokemons.id(user.companionPokemonId);
+            if (comp) {
+                companion = {
+                    name: comp.name,
+                    pokedexId: comp.pokedexId,
+                    level: comp.level,
+                    isShiny: comp.isShiny,
+                    isMega: comp.isMega,
+                    customMessage: user.companionMessage || null
+                };
+            }
+        }
+
+        // Équipe favorite
+        const favoriteTeam = (user.favoritePokemons || [])
+            .map(id => user.pokemons.id(id))
+            .filter(Boolean)
+            .map(p => ({
+                name: p.name,
+                pokedexId: p.pokedexId,
+                level: p.level,
+                isShiny: p.isShiny,
+                isMega: p.isMega
+            }));
+
+        // Badges (à calculer selon tes règles)
+        const badges = [];
+        if (totalCaptured >= 721) badges.push({ id: 'master', name: 'Maître Pokédex', icon: '🌟' });
+        if (shinies >= 10) badges.push({ id: 'shiny_hunter', name: 'Shiny Hunter', icon: '✨' });
+        if (combatStats.totalBattles >= 50) badges.push({ id: 'fighter', name: 'Combattant', icon: '⚔️' });
+        if (user.money >= 100000) badges.push({ id: 'millionaire', name: 'Millionnaire', icon: '💰' });
+
+        // Activité récente (dernières actions)
+        const recentActivity = user.activityLog?.slice(-10).reverse() || [];
+
+        // Collection (si publique)
+        let collection = null;
+        const collectionVisibility = settings.collectionVisibility || 'public';
+        if (collectionVisibility === 'public' || viewerId === user.userId) {
+            collection = user.pokemons.map(p => ({
+                pokedexId: p.pokedexId,
+                name: p.name,
+                level: p.level,
+                isShiny: p.isShiny,
+                isMega: p.isMega,
+                isCustom: p.isCustom
+            }));
+        }
+
+        // Construire la réponse
+        const profile = {
+            username: user.username,
+            userId: user.userId, // Pour identifier si c'est son propre profil
+            avatar: user.discordAvatar || null,
+            memberSince: user.createdAt,
+            
+            stats: {
+                collection: {
+                    total: totalCaptured,
+                    percentage: Math.floor((totalCaptured / 1200) * 100),
+                    shinies,
+                    megas,
+                    customs,
+                    gen1Complete
+                },
+                combat: {
+                    totalBattles: combatStats.totalBattles,
+                    victories: combatStats.victories,
+                    defeats: combatStats.totalBattles - combatStats.victories,
+                    winRate
+                },
+                money: user.money
+            },
+            
+            companion,
+            favoriteTeam,
+            badges,
+            recentActivity,
+            collection, // null si privé
+            
+            settings: {
+                visibility,
+                collectionVisibility,
+                combatStatsVisible: settings.combatStatsVisible !== false,
+                wallEnabled: settings.wallEnabled !== false
+            }
+        };
+
+        res.json(profile);
+
+    } catch (e) {
+        console.error("Erreur profil public:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ==========================================
+// 2. METTRE À JOUR LES PARAMÈTRES DU PROFIL
+// ==========================================
+app.post('/api/profile/settings', async (req, res) => {
+    const { userId, settings } = req.body;
+
+    if (!userId || !settings) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        // Mettre à jour les paramètres
+        user.profileSettings = {
+            visibility: settings.visibility || 'public',
+            collectionVisibility: settings.collectionVisibility || 'public',
+            combatStatsVisible: settings.combatStatsVisible !== false,
+            wallEnabled: settings.wallEnabled !== false
+        };
+
+        await user.save();
+
+        res.json({ success: true, settings: user.profileSettings });
+
+    } catch (e) {
+        console.error("Erreur update settings:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ==========================================
+// 3. DÉFINIR UN MESSAGE PERSONNALISÉ POUR LE COMPAGNON
+// ==========================================
+app.post('/api/profile/companion-message', async (req, res) => {
+    const { userId, message } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ error: "UserId manquant" });
+    }
+
+    try {
+        const user = await User.findOne({ userId });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        // Limiter à 100 caractères
+        user.companionMessage = message ? message.substring(0, 100) : null;
+        await user.save();
+
+        res.json({ success: true, message: user.companionMessage });
+
+    } catch (e) {
+        console.error("Erreur message compagnon:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ==========================================
+// 4. POSTER UN MESSAGE SUR LE MUR (optionnel)
+// ==========================================
+app.post('/api/profile/wall/post', async (req, res) => {
+    const { authorId, targetUsername, message } = req.body;
+
+    if (!authorId || !targetUsername || !message) {
+        return res.status(400).json({ error: "Paramètres manquants" });
+    }
+
+    try {
+        const author = await User.findOne({ userId: authorId });
+        const target = await User.findOne({ username: new RegExp(`^${targetUsername}$`, 'i') });
+
+        if (!author || !target) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        // Vérifier que le mur est activé
+        const wallEnabled = target.profileSettings?.wallEnabled !== false;
+        if (!wallEnabled) {
+            return res.status(403).json({ error: "Le mur est désactivé" });
+        }
+
+        // Créer le message
+        const wallPost = {
+            _id: new mongoose.Types.ObjectId(),
+            authorId: author.userId,
+            authorUsername: author.username,
+            message: message.substring(0, 200), // Max 200 chars
+            likes: [],
+            createdAt: new Date()
+        };
+
+        // Ajouter au mur (max 50 messages)
+        if (!target.wallPosts) target.wallPosts = [];
+        target.wallPosts.push(wallPost);
+        if (target.wallPosts.length > 50) {
+            target.wallPosts = target.wallPosts.slice(-50);
+        }
+
+        await target.save();
+
+        res.json({ success: true, post: wallPost });
+
+    } catch (e) {
+        console.error("Erreur wall post:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ==========================================
+// 5. RÉCUPÉRER LES MESSAGES DU MUR
+// ==========================================
+app.get('/api/profile/:username/wall', async (req, res) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
+        if (!user) {
+            return res.status(404).json({ error: "Utilisateur introuvable" });
+        }
+
+        const wallEnabled = user.profileSettings?.wallEnabled !== false;
+        if (!wallEnabled) {
+            return res.json({ posts: [], enabled: false });
+        }
+
+        res.json({ 
+            posts: (user.wallPosts || []).reverse(), // Plus récents en premier
+            enabled: true 
+        });
+
+    } catch (e) {
+        console.error("Erreur wall get:", e);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+console.log("✅ Système de profils publics chargé");
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
