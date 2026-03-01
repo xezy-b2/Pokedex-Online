@@ -9,7 +9,7 @@
 async function loadPublicProfile(username) {
     try {
         // Le serveur gère maintenant les underscores Discord automatiquement
-        const res = await fetch(`${API_BASE_URL}/api/profile/${encodeURIComponent(username)}?viewerId=${currentUserId}`);
+        const res = await fetch(`${API_BASE_URL}/api/profile?username=${encodeURIComponent(username)}&viewerId=${currentUserId}`);
         
         if (!res.ok) {
             if (res.status === 404) {
