@@ -924,9 +924,8 @@ function viewMyPublicProfile() {
         alert("Erreur : Pseudo introuvable");
         return;
     }
-    // Nettoyer le username des underscores en trop (bug Discord)
-    const cleanUsername = currentUsername.replace(/__+$/, '');
-    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${cleanUsername}`;
+    // Le serveur gère maintenant les underscores Discord automatiquement
+    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${currentUsername}`;
 }
 
 window.viewMyPublicProfile = viewMyPublicProfile;
