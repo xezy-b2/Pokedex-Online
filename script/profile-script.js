@@ -9,7 +9,7 @@
 async function loadPublicProfile(username) {
     try {
         // Le serveur gère maintenant les underscores Discord automatiquement
-        const res = await fetch(`${API_BASE_URL}/api/profile?username=${encodeURIComponent(username)}&viewerId=${currentUserId}`);
+        const res = await fetch(`${API_BASE_URL}/api/profile/${username}?viewerId=${currentUserId}`);
         
         if (!res.ok) {
             if (res.status === 404) {
@@ -49,6 +49,42 @@ function renderPublicProfile(profile) {
     const memberDate = new Date(profile.memberSince);
     document.getElementById('profile-member-since').textContent = 
         `Membre depuis ${memberDate.toLocaleDateString('fr-FR')}`;
+
+    // Bouton Partager : utilise le username déjà chargé
+    const shareBtn = document.getElementById('profile-share-btn');
+    if (shareBtn) {
+        shareBtn.onclick = () => {
+            const profileURL = `${window.location.origin}${window.location.pathname}?profile=${encodeURIComponent(profile.username)}`;
+            navigator.clipboard.writeText(profileURL).then(() => {
+                shareBtn.textContent = '✅ Copié !';
+                setTimeout(() => shareBtn.textContent = '🔗 Partager', 2000);
+            }).catch(() => {
+                prompt("Copie ce lien :", profileURL);
+            });
+        };
+    }
+
+    // Bouton "Modifier mon profil" visible uniquement si c'est son propre profil
+    const isOwnProfile = currentUserId && profile.userId === currentUserId;
+    const editBtn = document.getElementById('profile-edit-btn');
+    if (editBtn) editBtn.style.display = isOwnProfile ? 'inline-block' : 'none';
+    const editPanel = document.getElementById('profile-edit-panel');
+    if (editPanel) editPanel.style.display = 'none';
+
+    // Pré-remplir le formulaire d'édition
+    if (isOwnProfile && profile.settings) {
+        const s = profile.settings;
+        const vis = document.getElementById('edit-visibility');
+        const col = document.getElementById('edit-collection-visibility');
+        const combat = document.getElementById('edit-combat-visible');
+        const wall = document.getElementById('edit-wall-enabled');
+        const msg = document.getElementById('edit-companion-message');
+        if (vis) vis.value = s.visibility || 'public';
+        if (col) col.value = s.collectionVisibility || 'public';
+        if (combat) combat.checked = s.combatStatsVisible !== false;
+        if (wall) wall.checked = s.wallEnabled !== false;
+        if (msg && profile.companion) msg.value = profile.companion.customMessage || '';
+    }
     
     // Stats Collection
     document.getElementById('profile-total-captured').textContent = 
@@ -156,41 +192,55 @@ function checkProfileURL() {
 // ==========================================
 // PARTAGER SON PROFIL
 // ==========================================
-function shareMyProfile() {
-    if (!currentUserId) {
-        alert("Tu dois être connecté !");
-        return;
-    }
-    
-    // Récupérer le username de l'utilisateur
-    fetch(`${API_BASE_URL}/api/user/${currentUserId}`)
-        .then(res => res.json())
-        .then(data => {
-            const profileURL = `${window.location.origin}${window.location.pathname}?profile=${data.username}`;
-            
-            // Copier dans le presse-papier
-            navigator.clipboard.writeText(profileURL).then(() => {
-                alert(`✅ Lien de profil copié !\n\n${profileURL}\n\nPartage-le à tes amis !`);
-            }).catch(() => {
-                // Fallback si clipboard API ne marche pas
-                prompt("Copie ce lien pour partager ton profil :", profileURL);
-            });
+async function saveProfileSettings() {
+    if (!currentUserId) return;
+    const btn = document.getElementById('profile-save-btn');
+    if (btn) { btn.textContent = '⏳ Sauvegarde...'; btn.disabled = true; }
+
+    const settings = {
+        visibility: document.getElementById('edit-visibility')?.value || 'public',
+        collectionVisibility: document.getElementById('edit-collection-visibility')?.value || 'public',
+        combatStatsVisible: document.getElementById('edit-combat-visible')?.checked !== false,
+        wallEnabled: document.getElementById('edit-wall-enabled')?.checked !== false,
+    };
+
+    const companionMessage = document.getElementById('edit-companion-message')?.value || '';
+
+    try {
+        await fetch(`${API_BASE_URL}/api/profile/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, settings })
         });
+        await fetch(`${API_BASE_URL}/api/profile/companion-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId, message: companionMessage })
+        });
+        if (btn) { btn.textContent = '✅ Sauvegardé !'; btn.disabled = false; }
+        setTimeout(() => {
+            if (btn) btn.textContent = '💾 Sauvegarder';
+            document.getElementById('profile-edit-panel').style.display = 'none';
+        }, 1500);
+    } catch(e) {
+        console.error(e);
+        if (btn) { btn.textContent = '❌ Erreur'; btn.disabled = false; }
+    }
 }
 
 // ==========================================
 // VOIR LE PROFIL D'UN JOUEUR
 // ==========================================
 function viewPlayerProfile(username) {
-    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${encodeURIComponent(username)}`;
+    window.location.href = `${window.location.origin}${window.location.pathname}?profile=${username}`;
 }
 
 // ==========================================
 // EXPOSITION AU SCOPE GLOBAL
 // ==========================================
 window.loadPublicProfile = loadPublicProfile;
-window.shareMyProfile = shareMyProfile;
 window.viewPlayerProfile = viewPlayerProfile;
+window.saveProfileSettings = saveProfileSettings;
 
 // ==========================================
 // INIT - Vérifier URL au chargement
