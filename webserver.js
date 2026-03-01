@@ -12,11 +12,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Échappe les caractères spéciaux regex (ex: "xezy__", "user.name")
-function escapeRegex(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 const POKEAPI_BASE_URL = 'https://pokeapi.co/api/v2/pokemon/';
 const statsCache = {}; 
 const MAX_POKEDEX_ID_GEN_1 = 151; 
@@ -1709,19 +1704,10 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
         
-        // Construire l'URL de l'avatar Discord
-        const avatarUrl = discordUser.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=128`
-            : null;
-
         await User.findOneAndUpdate(
             { userId: discordUser.id },
-            { $set: {
-                username: discordUser.username,
-                discordUsername: discordUser.username,
-                discordAvatar: avatarUrl
-            }},
-            { upsert: true, new: true }
+            { $set: { username: discordUser.username } },
+            { upsert: true, new: true } 
         );
 
         const redirectUrl = `${GITHUB_PAGES_URL}?discordId=${discordUser.id}&username=${encodeURIComponent(discordUser.username)}`;
@@ -2345,19 +2331,12 @@ app.get('/api/profile/:username', async (req, res) => {
     const { viewerId } = req.query; // Optionnel : qui regarde le profil
 
     try {
-        // Trouver l'utilisateur (regex sécurisée + fallback discordUsername)
-        const safeUsername = escapeRegex(username);
-        const usernameRegex = new RegExp(`^${safeUsername}$`, 'i');
-
-        const user = await User.findOne({
-            $or: [
-                { username: usernameRegex },
-                { discordUsername: usernameRegex }
-            ]
+        // Trouver l'utilisateur
+        const user = await User.findOne({ 
+            username: new RegExp(`^${username}$`, 'i') // Case insensitive
         });
 
         if (!user) {
-            console.warn(`[PROFIL 404] Aucun user trouvé pour : "${username}"`);
             return res.status(404).json({ error: "Utilisateur introuvable" });
         }
 
@@ -2586,13 +2565,7 @@ app.post('/api/profile/wall/post', async (req, res) => {
 
     try {
         const author = await User.findOne({ userId: authorId });
-        const safeTarget = escapeRegex(targetUsername);
-        const target = await User.findOne({
-            $or: [
-                { username: new RegExp(`^${safeTarget}$`, 'i') },
-                { discordUsername: new RegExp(`^${safeTarget}$`, 'i') }
-            ]
-        });
+        const target = await User.findOne({ username: new RegExp(`^${targetUsername}$`, 'i') });
 
         if (!author || !target) {
             return res.status(404).json({ error: "Utilisateur introuvable" });
@@ -2638,13 +2611,7 @@ app.get('/api/profile/:username/wall', async (req, res) => {
     const { username } = req.params;
 
     try {
-        const safeUsername = escapeRegex(username);
-        const user = await User.findOne({
-            $or: [
-                { username: new RegExp(`^${safeUsername}$`, 'i') },
-                { discordUsername: new RegExp(`^${safeUsername}$`, 'i') }
-            ]
-        });
+        const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
         if (!user) {
             return res.status(404).json({ error: "Utilisateur introuvable" });
         }
@@ -2662,27 +2629,6 @@ app.get('/api/profile/:username/wall', async (req, res) => {
     } catch (e) {
         console.error("Erreur wall get:", e);
         res.status(500).json({ error: "Erreur serveur" });
-    }
-});
-
-// 🔍 DEBUG : Vérifier un utilisateur par son Discord ID
-// Exemple : GET /api/debug/user/123456789012345678
-app.get('/api/debug/user/:userId', async (req, res) => {
-    try {
-        const user = await User.findOne({ userId: req.params.userId })
-            .select('username discordUsername userId discordAvatar createdAt');
-        if (!user) {
-            return res.status(404).json({ error: "Introuvable", userId: req.params.userId });
-        }
-        res.json({
-            userId: user.userId,
-            username: user.username,
-            discordUsername: user.discordUsername,
-            discordAvatar: user.discordAvatar,
-            memberSince: user.createdAt
-        });
-    } catch (e) {
-        res.status(500).json({ error: "Erreur serveur", detail: e.message });
     }
 });
 
