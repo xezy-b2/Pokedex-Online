@@ -1704,14 +1704,9 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
         
-        // Construire l'URL de l'avatar Discord
-        const avatarUrl = discordUser.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=128`
-            : `https://cdn.discordapp.com/embed/avatars/${parseInt(discordUser.discriminator || 0) % 5}.png`;
-
         await User.findOneAndUpdate(
             { userId: discordUser.id },
-            { $set: { username: discordUser.username, discordAvatar: avatarUrl } },
+            { $set: { username: discordUser.username } },
             { upsert: true, new: true } 
         );
 
@@ -2364,33 +2359,32 @@ app.get('/ping', (req, res) => {
 // ==========================================
 // 1. RÉCUPÉRER UN PROFIL PUBLIC
 // ==========================================
-app.get('/api/profile/:username', async (req, res) => {
-    const { username } = req.params;
-    const { viewerId } = req.query; // Optionnel : qui regarde le profil
+app.get('/api/profile', async (req, res) => {
+    const { username, viewerId } = req.query;
+
+    if (!username) {
+        return res.status(400).json({ error: "Username manquant" });
+    }
 
     try {
-        // Échapper les caractères spéciaux pour la regex (notamment les _)
-        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const escapedUsername = escapeRegex(username);
+        // 1. Recherche exacte (la plus fiable, évite tout problème de regex)
+        let user = await User.findOne({ username: username });
         
-        // Trouver l'utilisateur - recherche insensible à la casse
-        let user = await User.findOne({ 
-            username: new RegExp(`^${escapedUsername}$`, 'i')
-        });
-        
-        // Si pas trouvé, essayer avec __ à la fin
+        // 2. Recherche insensible à la casse
         if (!user) {
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedUsername = escapeRegex(username);
             user = await User.findOne({ 
-                username: new RegExp(`^${escapedUsername}__+$`, 'i')
+                username: new RegExp(`^${escapedUsername}$`, 'i')
             });
         }
         
-        // Si toujours pas trouvé, essayer sans les __ à la fin
-        if (!user && username.includes('_')) {
-            const cleanUsername = escapeRegex(username.replace(/__+$/, ''));
-            user = await User.findOne({ 
-                username: new RegExp(`^${cleanUsername}$`, 'i')
-            });
+        // 3. Essayer le username décodé (au cas où encodeURIComponent côté client)
+        if (!user) {
+            const decoded = decodeURIComponent(username);
+            if (decoded !== username) {
+                user = await User.findOne({ username: decoded });
+            }
         }
 
         if (!user) {
@@ -2664,8 +2658,8 @@ app.post('/api/profile/wall/post', async (req, res) => {
 // ==========================================
 // 5. RÉCUPÉRER LES MESSAGES DU MUR
 // ==========================================
-app.get('/api/profile/:username/wall', async (req, res) => {
-    const { username } = req.params;
+app.get('/api/profile/wall', async (req, res) => {
+    const { username } = req.query;
 
     try {
         const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
