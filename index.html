@@ -1896,6 +1896,122 @@
         </div>
     </div>
 
+    <!-- ==========================================
+         PAGE : PROFIL PUBLIC
+    =========================================== -->
+    <div id="public-profile-page" class="page-section" style="max-width: 800px; margin: 0 auto;">
+
+        <button onclick="history.back()" style="
+            background: var(--bg-card); border: 1px solid var(--accent-warm);
+            color: var(--accent-warm); padding: 8px 18px; border-radius: 20px;
+            cursor: pointer; font-family: inherit; font-size: 0.9em; margin-bottom: 20px;
+        ">← Retour</button>
+
+        <!-- Header profil -->
+        <div class="stat-box" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div id="profile-avatar" style="
+                width: 80px; height: 80px; border-radius: 50%;
+                background: var(--bg-secondary); border: 3px solid var(--accent-warm);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2.5em; flex-shrink: 0;">🎮</div>
+            <div style="flex: 1; min-width: 0;">
+                <h2 id="profile-username" style="color: var(--accent-warm); font-family: 'Caveat', cursive; font-size: 2em; margin: 0;"></h2>
+                <div id="profile-member-since" style="color: var(--text-secondary); font-size: 0.85em; margin-top: 4px;"></div>
+            </div>
+            <button onclick="shareMyProfile()" style="
+                background: var(--accent-warm); color: #1a1410; border: none;
+                padding: 8px 16px; border-radius: 20px; cursor: pointer;
+                font-family: inherit; font-weight: bold; font-size: 0.85em;">🔗 Partager</button>
+        </div>
+
+        <!-- Stats Collection -->
+        <div class="stat-box" style="margin-top: 16px;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">📦 Collection</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: var(--text-secondary); font-size: 0.9em;">Pokémon capturés</span>
+                <span id="profile-total-captured" style="color: var(--accent-warm); font-weight: bold;"></span>
+            </div>
+            <div style="background: var(--bg-secondary); border-radius: 10px; height: 8px; overflow: hidden; margin-bottom: 14px;">
+                <div id="profile-collection-progress" style="height: 100%; background: linear-gradient(90deg, var(--accent-warm), var(--accent-soft)); border-radius: 10px; width: 0%; transition: width 0.6s ease;"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 1.3em;">✨</div>
+                    <div id="profile-shinies" style="font-weight: bold; color: var(--accent-warm);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Shiny</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 1.3em;">💥</div>
+                    <div id="profile-megas" style="font-weight: bold; color: var(--accent-warm);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Méga</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 1.3em;">🎨</div>
+                    <div id="profile-customs" style="font-weight: bold; color: var(--accent-warm);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Custom</div>
+                </div>
+            </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bg-secondary); display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary); font-size: 0.9em;">💰 Argent</span>
+                <span id="profile-money" style="color: var(--accent-soft); font-weight: bold;"></span>
+            </div>
+        </div>
+
+        <!-- Stats Combat -->
+        <div id="profile-combat-stats" class="stat-box" style="margin-top: 16px;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">⚔️ Combats</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px;">
+                    <div id="profile-victories" style="font-size: 1.4em; font-weight: bold; color: var(--accent-nature);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Victoires</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px;">
+                    <div id="profile-total-battles" style="font-size: 1.4em; font-weight: bold; color: var(--accent-warm);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Total combats</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 10px; padding: 10px;">
+                    <div id="profile-winrate" style="font-size: 1.4em; font-weight: bold; color: var(--accent-pink);"></div>
+                    <div style="font-size: 0.75em; color: var(--text-secondary);">Win rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="stat-box" style="margin-top: 16px;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">🏅 Badges</h3>
+            <div id="profile-badges" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+        </div>
+
+        <!-- Compagnon -->
+        <div id="profile-companion-section" class="stat-box" style="margin-top: 16px; display: none;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">🐾 Compagnon</h3>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <img id="profile-companion-img" src="" alt="Compagnon" style="width: 80px; height: 80px; image-rendering: pixelated;">
+                <div>
+                    <div id="profile-companion-name" style="font-weight: bold; font-size: 1.1em; color: var(--accent-warm);"></div>
+                    <div id="profile-companion-level" style="color: var(--text-secondary); font-size: 0.9em;"></div>
+                    <div id="profile-companion-message" style="margin-top: 6px; color: var(--accent-lavender); font-style: italic; font-size: 0.9em; display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Équipe Favorite -->
+        <div id="profile-team-section" class="stat-box" style="margin-top: 16px; display: none;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">⭐ Équipe Favorite</h3>
+            <div id="profile-favorite-team" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+        </div>
+
+        <!-- Collection complète -->
+        <div id="profile-collection-section" class="stat-box" style="margin-top: 16px; display: none;">
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">📖 Collection complète</h3>
+            <div id="profile-collection-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px;"></div>
+        </div>
+        <div id="profile-collection-private" class="stat-box" style="margin-top: 16px; display: none; text-align: center; color: var(--text-secondary);">
+            🔒 Collection privée
+        </div>
+
+    </div>
+
     <script src="./script/script.js"></script>
     <script src="./script/trade.js"></script>
     <script src="./script/missions-script.js"></script>
@@ -1905,6 +2021,3 @@
     <script>window.onload = initializeApp;</script>
 </body>
 </html>
-
-
-
