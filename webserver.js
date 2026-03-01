@@ -2331,22 +2331,25 @@ app.get('/api/profile/:username', async (req, res) => {
     const { viewerId } = req.query; // Optionnel : qui regarde le profil
 
     try {
-        // Trouver l'utilisateur en cherchant aussi avec __
-        // Discord ajoute parfois __ à la fin des pseudos
+        // Échapper les caractères spéciaux pour la regex (notamment les _)
+        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedUsername = escapeRegex(username);
+        
+        // Trouver l'utilisateur - recherche insensible à la casse
         let user = await User.findOne({ 
-            username: new RegExp(`^${username}$`, 'i') // Case insensitive
+            username: new RegExp(`^${escapedUsername}$`, 'i')
         });
         
         // Si pas trouvé, essayer avec __ à la fin
         if (!user) {
             user = await User.findOne({ 
-                username: new RegExp(`^${username}__+$`, 'i') // Avec underscores à la fin
+                username: new RegExp(`^${escapedUsername}__+$`, 'i')
             });
         }
         
-        // Si toujours pas trouvé, essayer de retirer les __ du username cherché et rechercher
-        if (!user && username.endsWith('__')) {
-            const cleanUsername = username.replace(/__+$/, '');
+        // Si toujours pas trouvé, essayer sans les __ à la fin
+        if (!user && username.includes('_')) {
+            const cleanUsername = escapeRegex(username.replace(/__+$/, ''));
             user = await User.findOne({ 
                 username: new RegExp(`^${cleanUsername}$`, 'i')
             });
