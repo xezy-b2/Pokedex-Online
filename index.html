@@ -1458,6 +1458,103 @@
     background: linear-gradient(90deg, var(--accent-warm), var(--accent-soft));
     transition: width 0.5s ease;
 }
+
+/* 🎨 FIX CENTRAGE DES IMAGES POKÉMON */
+.profile-collection-grid .pokedex-card,
+#profile-collection-grid .pokedex-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+}
+
+.profile-collection-grid .pokedex-card img,
+#profile-collection-grid .pokedex-card img {
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+.profile-team-pokemon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100px;
+}
+
+.profile-team-pokemon img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 8px auto;
+}
+
+#profile-companion-section img {
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+#profile-collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.pokedex-card img.poke-sprite {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 10px auto;
+}
+
+#profile-favorite-team {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 15px;
+}
+
+/* Modal Pokémon Avatar */
+#pokemon-avatar-modal {
+    display: none;
+}
+
+#pokemon-avatar-modal.active {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+#pokemon-avatar-grid .pokedex-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#pokemon-avatar-grid .pokedex-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 154, 108, 0.5);
+}
+
+#pokemon-avatar-grid .pokedex-card.selected {
+    border: 3px solid var(--accent-warm);
+    box-shadow: 0 0 20px rgba(255, 154, 108, 0.8);
+}
 </style>
 </head>
 <body>
@@ -1958,6 +2055,27 @@
                     <input type="checkbox" id="edit-wall-enabled" style="width: 18px; height: 18px; accent-color: var(--accent-warm);">
                     <label for="edit-wall-enabled" style="color: var(--text-secondary); font-size: 0.9em; cursor: pointer;">📝 Activer le mur de messages</label>
                 </div>
+                
+                <!-- 🖼️ SÉLECTEUR DE PHOTO DE PROFIL -->
+                <div style="border-top: 1px solid var(--bg-card); padding-top: 14px; margin-top: 10px;">
+                    <h4 style="color: var(--accent-soft); margin-bottom: 12px; font-size: 0.95em;">🖼️ Photo de profil</h4>
+                    
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <div id="profile-avatar-preview" style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-warm), var(--accent-soft)); margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 2.5em; border: 3px solid rgba(255, 154, 108, 0.3); overflow: hidden;">
+                            👤
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button onclick="useDiscordAvatar()" style="padding: 10px; background: rgba(114, 137, 218, 0.2); border: 1px solid rgba(114, 137, 218, 0.4); border-radius: 8px; cursor: pointer; color: var(--text-primary); font-family: inherit; font-size: 0.9em;">
+                            🎮 Utiliser mon avatar Discord
+                        </button>
+                        <button onclick="choosePokemonAvatar()" style="padding: 10px; background: rgba(255, 154, 108, 0.2); border: 1px solid rgba(255, 154, 108, 0.4); border-radius: 8px; cursor: pointer; color: var(--text-primary); font-family: inherit; font-size: 0.9em;">
+                            🎨 Choisir un Pokémon
+                        </button>
+                    </div>
+                </div>
+                
                 <div>
                     <label style="color: var(--text-secondary); font-size: 0.85em; display: block; margin-bottom: 4px;">💬 Message du compagnon <span style="color: var(--text-secondary); font-size: 0.8em;">(max 100 caractères)</span></label>
                     <input type="text" id="edit-companion-message" maxlength="100" placeholder="Ce que dit ton compagnon..." style="
@@ -2069,5 +2187,25 @@
     <script src="./script/bot-battle-script.js"></script>
     <script src="./script/profile-script.js"></script>
     <script>window.onload = initializeApp;</script>
+<!-- 🖼️ MODAL SÉLECTION POKÉMON AVATAR -->
+<div id="pokemon-avatar-modal">
+    <div style="background: var(--bg-dark); padding: 30px; border-radius: 20px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; border: 2px solid var(--accent-warm);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--accent-warm); margin: 0;">Choisis ton avatar Pokémon</h2>
+            <button onclick="closePokemonAvatarModal()" style="background: none; border: none; font-size: 2em; cursor: pointer; color: var(--text-secondary);">&times;</button>
+        </div>
+        
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">Sélectionne un Pokémon de ta collection :</p>
+        
+        <div id="pokemon-avatar-grid" class="pokedex-grid" style="max-height: 400px; overflow-y: auto;">
+            <!-- Pokémon générés ici -->
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="closePokemonAvatarModal()" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--bg-card); border-radius: 8px; cursor: pointer; color: var(--text-primary); font-family: inherit;">Annuler</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
