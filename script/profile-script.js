@@ -8,7 +8,10 @@
 // ==========================================
 async function loadPublicProfile(username) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/${username}?viewerId=${currentUserId}`);
+        // FIX: Nettoyer le username des underscores en trop (bug Discord OAuth)
+        const cleanUsername = username.replace(/__+$/g, ''); // Retire les __ à la fin
+        
+        const res = await fetch(`${API_BASE_URL}/api/profile/${cleanUsername}?viewerId=${currentUserId}`);
         
         if (!res.ok) {
             if (res.status === 404) {
