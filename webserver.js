@@ -2364,28 +2364,24 @@ app.get('/api/profile/:username', async (req, res) => {
     const { viewerId } = req.query; // Optionnel : qui regarde le profil
 
     try {
-        // Échapper les caractères spéciaux pour la regex (notamment les _)
-        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const escapedUsername = escapeRegex(username);
+        // 1. Recherche exacte (la plus fiable, évite tout problème de regex)
+        let user = await User.findOne({ username: username });
         
-        // Trouver l'utilisateur - recherche insensible à la casse
-        let user = await User.findOne({ 
-            username: new RegExp(`^${escapedUsername}$`, 'i')
-        });
-        
-        // Si pas trouvé, essayer avec __ à la fin
+        // 2. Recherche insensible à la casse
         if (!user) {
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedUsername = escapeRegex(username);
             user = await User.findOne({ 
-                username: new RegExp(`^${escapedUsername}__+$`, 'i')
+                username: new RegExp(`^${escapedUsername}$`, 'i')
             });
         }
         
-        // Si toujours pas trouvé, essayer sans les __ à la fin
-        if (!user && username.includes('_')) {
-            const cleanUsername = escapeRegex(username.replace(/__+$/, ''));
-            user = await User.findOne({ 
-                username: new RegExp(`^${cleanUsername}$`, 'i')
-            });
+        // 3. Essayer le username décodé (au cas où encodeURIComponent côté client)
+        if (!user) {
+            const decoded = decodeURIComponent(username);
+            if (decoded !== username) {
+                user = await User.findOne({ username: decoded });
+            }
         }
 
         if (!user) {
@@ -2690,4 +2686,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
