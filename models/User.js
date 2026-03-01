@@ -37,7 +37,46 @@ const userSchema = new mongoose.Schema({
     lastDaily: { type: Date, default: null }, 
     dailyNotified: { type: Boolean, default: false },
     companionPokemonId: { type: mongoose.Schema.Types.ObjectId, default: null },
-    favorites: { type: [String], default: [] }
+    favorites: { type: [String], default: [] },
+    
+    // 👤 PROFILS PUBLICS
+    profileSettings: {
+        visibility: { 
+            type: String, 
+            enum: ['public', 'friends_only', 'private'], 
+            default: 'public' 
+        },
+        collectionVisibility: { 
+            type: String, 
+            enum: ['public', 'friends_only', 'hidden'], 
+            default: 'public' 
+        },
+        combatStatsVisible: { type: Boolean, default: true },
+        wallEnabled: { type: Boolean, default: true }
+    },
+    
+    companionMessage: { type: String, maxlength: 100, default: null },
+    
+    wallPosts: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+        authorId: String,
+        authorUsername: String,
+        message: { type: String, maxlength: 200 },
+        likes: [String],
+        createdAt: { type: Date, default: Date.now }
+    }],
+    
+    activityLog: [{
+        type: { 
+            type: String, 
+            enum: ['capture', 'capture_shiny', 'battle_win', 'trade', 'gallery_post', 'evolution']
+        },
+        description: String,
+        timestamp: { type: Date, default: Date.now }
+    }],
+    
+    discordAvatar: String,
+    createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('User', userSchema);
