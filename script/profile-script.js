@@ -196,3 +196,97 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log("✅ Système de profils publics chargé côté client");
+
+// ==========================================
+// 🖼️ SYSTÈME DE PHOTO DE PROFIL
+// ==========================================
+
+async function useDiscordAvatar() {
+    if (!currentUserId) return alert("Connecte-toi d'abord !");
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/user/${currentUserId}`);
+        const user = await res.json();
+        
+        if (user.discordAvatar) {
+            await saveProfileAvatar(user.discordAvatar, 'discord');
+            document.getElementById('profile-avatar-preview').innerHTML = 
+                `<img src="${user.discordAvatar}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            alert("✅ Avatar Discord activé !");
+        } else {
+            alert("❌ Aucun avatar Discord trouvé");
+        }
+    } catch (e) {
+        console.error("Erreur avatar Discord:", e);
+        alert("❌ Erreur lors de la récupération de l'avatar");
+    }
+}
+
+async function choosePokemonAvatar() {
+    if (!currentUserId) return alert("Connecte-toi d'abord !");
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+        const data = await res.json();
+        const captured = data.capturedPokemonsList || [];
+        
+        if (captured.length === 0) {
+            return alert("❌ Tu n'as aucun Pokémon capturé !");
+        }
+        
+        const modal = document.getElementById('pokemon-avatar-modal');
+        const grid = document.getElementById('pokemon-avatar-grid');
+        
+        grid.innerHTML = captured.map(p => `
+            <div class="pokedex-card ${p.isShiny ? 'is-shiny' : ''}" onclick="selectPokemonAvatar(${p.pokedexId}, ${p.isShiny})">
+                <img src="${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png" 
+                     class="poke-sprite" loading="lazy" 
+                     style="width: 80px; height: 80px; object-fit: contain; margin: 0 auto;">
+                <span class="pokemon-name">${p.isShiny ? '✨ ' : ''}${p.name}</span>
+                <div style="color: var(--accent-warm); font-size: 0.85em;">Lv.${p.level}</div>
+            </div>
+        `).join('');
+        
+        modal.classList.add('active');
+    } catch (e) {
+        console.error("Erreur chargement Pokémon:", e);
+        alert("❌ Erreur lors du chargement de ta collection");
+    }
+}
+
+async function selectPokemonAvatar(pokedexId, isShiny) {
+    const avatarUrl = `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${pokedexId}.png`;
+    
+    try {
+        await saveProfileAvatar(avatarUrl, 'pokemon');
+        document.getElementById('profile-avatar-preview').innerHTML = 
+            `<img src="${avatarUrl}" style="width: 100%; height: 100%; object-fit: contain;">`;
+        closePokemonAvatarModal();
+        alert("✅ Avatar Pokémon activé !");
+    } catch (e) {
+        console.error("Erreur sauvegarde avatar:", e);
+        alert("❌ Erreur lors de la sauvegarde de l'avatar");
+    }
+}
+
+async function saveProfileAvatar(avatarUrl, source) {
+    const res = await fetch(`${API_BASE_URL}/api/profile/set-avatar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, avatar: avatarUrl, source })
+    });
+    
+    if (!res.ok) throw new Error("Échec de la sauvegarde");
+    return res.json();
+}
+
+function closePokemonAvatarModal() {
+    document.getElementById('pokemon-avatar-modal').classList.remove('active');
+}
+
+window.useDiscordAvatar = useDiscordAvatar;
+window.choosePokemonAvatar = choosePokemonAvatar;
+window.selectPokemonAvatar = selectPokemonAvatar;
+window.closePokemonAvatarModal = closePokemonAvatarModal;
+
+console.log("✅ Système de photo de profil chargé");
