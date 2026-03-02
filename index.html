@@ -1460,20 +1460,28 @@
 }
 
 /* 🎨 FIX CENTRAGE DES IMAGES POKÉMON */
-.profile-collection-grid .pokedex-card,
 #profile-collection-grid .pokedex-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    text-align: center;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 10px !important;
 }
 
-.profile-collection-grid .pokedex-card img,
-#profile-collection-grid .pokedex-card img {
-    display: block;
-    margin: 0 auto;
-    object-fit: contain;
+#profile-collection-grid .pokedex-card img,
+#profile-collection-grid .pokedex-card img.poke-sprite {
+    display: block !important;
+    margin: 0 auto 8px auto !important;
+    object-fit: contain !important;
+    width: 70px !important;
+    height: 70px !important;
+}
+
+#profile-collection-grid .pokemon-name {
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
 }
 
 .profile-team-pokemon {
@@ -1486,17 +1494,17 @@
 }
 
 .profile-team-pokemon img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto 8px auto;
+    width: 70px !important;
+    height: 70px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto 8px auto !important;
 }
 
 #profile-companion-section img {
-    display: block;
-    margin: 0 auto;
-    object-fit: contain;
+    display: block !important;
+    margin: 0 auto !important;
+    object-fit: contain !important;
 }
 
 #profile-collection-grid {
@@ -1506,20 +1514,19 @@
     padding: 20px;
 }
 
-.pokedex-card img.poke-sprite {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto 10px auto;
-}
-
 #profile-favorite-team {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
     gap: 20px;
     padding: 15px;
+}
+
+#profile-favorite-team .profile-team-pokemon {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 /* Modal Pokémon Avatar */
@@ -2152,10 +2159,10 @@
 
         <!-- Compagnon -->
         <div id="profile-companion-section" class="stat-box" style="margin-top: 16px; display: none;">
-            <h3 style="color: var(--accent-soft); margin-bottom: 14px;">🐾 Compagnon</h3>
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <img id="profile-companion-img" src="" alt="Compagnon" style="width: 80px; height: 80px; image-rendering: pixelated;">
-                <div>
+            <h3 style="color: var(--accent-soft); margin-bottom: 14px; text-align: center;">🐾 Compagnon</h3>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px;">
+                <img id="profile-companion-img" src="" alt="Compagnon" style="width: 100px; height: 100px; image-rendering: pixelated; display: block; object-fit: contain;">
+                <div style="display: flex; flex-direction: column; align-items: center;">
                     <div id="profile-companion-name" style="font-weight: bold; font-size: 1.1em; color: var(--accent-warm);"></div>
                     <div id="profile-companion-level" style="color: var(--text-secondary); font-size: 0.9em;"></div>
                     <div id="profile-companion-message" style="margin-top: 6px; color: var(--accent-lavender); font-style: italic; font-size: 0.9em; display: none;"></div>
