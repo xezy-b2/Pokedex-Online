@@ -1,21 +1,22 @@
 // 👤 SYSTÈME DE PROFILS PUBLICS
 // ==========================================
 async function loadPublicProfile(username) {
-try {
-const res = await fetch(${API_BASE_URL}/api/profile?username=${encodeURIComponent(username)}&viewerId=${currentUserId});
-if (!res.ok) {
-if (res.status === 404) { alert("❌ Utilisateur introuvable"); showPage('home'); return; }
-if (res.status === 403) { alert("🔒 Ce profil est privé"); showPage('home'); return; }
-throw new Error("Erreur chargement profil");
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/profile?username=${encodeURIComponent(username)}&viewerId=${currentUserId}`);
+        if (!res.ok) {
+            if (res.status === 404) { alert("❌ Utilisateur introuvable"); showPage('home'); return; }
+            if (res.status === 403) { alert("🔒 Ce profil est privé"); showPage('home'); return; }
+            throw new Error("Erreur chargement profil");
+        }
+        const profile = await res.json();
+        renderPublicProfile(profile);
+    } catch (e) {
+        console.error("Erreur chargement profil:", e);
+        alert("Erreur lors du chargement du profil");
+        showPage('home');
+    }
 }
-const profile = await res.json();
-renderPublicProfile(profile);
-} catch (e) {
-console.error("Erreur chargement profil:", e);
-alert("Erreur lors du chargement du profil");
-showPage('home');
-}
-}
+
 function renderPublicProfile(profile) {
 document.getElementById('profile-username').textContent = profile.username;
 if (profile.avatar) {
