@@ -1704,9 +1704,18 @@ app.get('/api/auth/discord/callback', async (req, res) => {
 
         const discordUser = userResponse.data;
         
+        // Construire l'URL de l'avatar Discord
+        let discordAvatar = null;
+        if (discordUser.avatar) {
+            discordAvatar = `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png?size=256`;
+        }
+        
         await User.findOneAndUpdate(
             { userId: discordUser.id },
-            { $set: { username: discordUser.username } },
+            { $set: { 
+                username: discordUser.username,
+                discordAvatar: discordAvatar  // Sauvegarder l'avatar !
+            } },
             { upsert: true, new: true } 
         );
 
@@ -2739,4 +2748,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
