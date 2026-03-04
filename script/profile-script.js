@@ -172,30 +172,124 @@ function renderPublicProfile(profile) {
         document.getElementById('profile-team-section').style.display = 'none';
     }
     
-    // Collection
+    // ==========================================
+    // 📦 COLLECTION — avec filtres Tous / Shiny / Méga / WTF + recherche
+    // ==========================================
     if (profile.collection) {
         document.getElementById('profile-collection-section').style.display = 'block';
         document.getElementById('profile-collection-private').style.display = 'none';
-        document.getElementById('profile-collection-grid').innerHTML = profile.collection.map(p => {
-            const sprite   = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : _getProfileSprite(p);
-            const isMega   = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
-            const isCustom = p.isCustom === true;
-            let label = '';
-            if (p.isShiny) label += '✨ ';
-            if (isMega)    label += '🔮 ';
-            if (isCustom)  label += '🌀 ';
-            label += p.name;
-            return `
-            <div class="pokedex-card ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCustom ? 'is-custom' : ''}">
-                ${isMega   ? `<span style="position:absolute;top:6px;left:6px;background:#ff00ff;color:white;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">MÉGA</span>` : ''}
-                ${isCustom ? `<span style="position:absolute;top:6px;left:6px;background:#00cfff;color:#1a1a2e;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">WTF</span>` : ''}
-                <img src="${sprite}" class="poke-sprite" loading="lazy"
-                     onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
-                     style="${isMega ? 'width:100px;height:100px;' : ''}object-fit:contain;">
-                <span class="pokemon-name">${label}</span>
-                <div style="color:var(--accent-warm);font-size:0.85em;font-weight:bold;">Lv.${p.level}</div>
-            </div>`;
-        }).join('');
+
+        const collectionData = profile.collection;
+        const grid = document.getElementById('profile-collection-grid');
+        const section = document.getElementById('profile-collection-section');
+
+        // --- Barre de filtre (injectée une seule fois) ---
+        if (!document.getElementById('profile-collection-filters')) {
+            const controlsDiv = document.createElement('div');
+            controlsDiv.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:14px;';
+
+            // Filtres
+            const filterBar = document.createElement('div');
+            filterBar.id = 'profile-collection-filters';
+            filterBar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+            filterBar.innerHTML = `
+                <button data-filter="all"    onclick="setCollectionFilter('all')">Tous</button>
+                <button data-filter="shiny"  onclick="setCollectionFilter('shiny')">✨ Shiny</button>
+                <button data-filter="mega"   onclick="setCollectionFilter('mega')">🔮 Méga</button>
+                <button data-filter="custom" onclick="setCollectionFilter('custom')">🌀 WTF</button>
+            `;
+
+            // Recherche
+            const searchInput = document.createElement('input');
+            searchInput.id = 'profile-collection-search';
+            searchInput.type = 'text';
+            searchInput.placeholder = '🔍 Rechercher dans la collection...';
+            searchInput.style.cssText = `
+                width:100%;padding:9px 14px;border-radius:8px;
+                border:1px solid var(--border-color,#ccc);
+                background:var(--bg-secondary,#1a1a2e);color:var(--text-primary,#fff);
+                font-size:0.95em;box-sizing:border-box;
+            `;
+            searchInput.oninput = (e) => {
+                window._collectionNameFilter = e.target.value;
+                renderCollectionGrid(window._collectionNameFilter, window._collectionTypeFilter);
+            };
+
+            controlsDiv.appendChild(filterBar);
+            controlsDiv.appendChild(searchInput);
+            section.insertBefore(controlsDiv, grid);
+        }
+
+        // Styles des boutons filtre collection
+        function collectionBtnStyle(filter, isActive) {
+            const palette = {
+                all:    { bg: '#555555', fg: '#ffffff' },
+                shiny:  { bg: '#f0c040', fg: '#1a1a2e' },
+                mega:   { bg: '#ff00ff', fg: '#ffffff' },
+                custom: { bg: '#00cfff', fg: '#1a1a2e' },
+            };
+            const c = palette[filter] || palette.all;
+            return `padding:5px 14px;border-radius:20px;border:none;cursor:pointer;font-size:0.85em;font-weight:bold;
+                    background:${isActive ? c.bg : 'var(--bg-secondary,#333)'};
+                    color:${isActive ? c.fg : 'var(--text-secondary,#aaa)'};
+                    transition:all 0.2s;`;
+        }
+
+        function renderCollectionGrid(nameFilter = '', typeFilter = 'all') {
+            // Mettre à jour les styles des boutons
+            const filterBar = document.getElementById('profile-collection-filters');
+            if (filterBar) {
+                filterBar.querySelectorAll('button').forEach(btn => {
+                    btn.style.cssText = collectionBtnStyle(btn.dataset.filter, btn.dataset.filter === typeFilter);
+                });
+            }
+
+            let list = collectionData;
+            if (nameFilter) {
+                list = list.filter(p => p.name.toLowerCase().includes(nameFilter.toLowerCase()));
+            }
+            if (typeFilter === 'shiny')  list = list.filter(p => p.isShiny === true);
+            if (typeFilter === 'mega')   list = list.filter(p => p.isMega === true || (p.name && p.name.toLowerCase().includes('méga')));
+            if (typeFilter === 'custom') list = list.filter(p => p.isCustom === true);
+
+            if (list.length === 0) {
+                grid.innerHTML = `<div style="color:var(--text-secondary);text-align:center;padding:30px;width:100%;">Aucun Pokémon trouvé 😔</div>`;
+                return;
+            }
+
+            grid.innerHTML = list.map(p => {
+                const sprite   = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : _getProfileSprite(p);
+                const isMega   = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
+                const isCustom = p.isCustom === true;
+                let label = '';
+                if (p.isShiny) label += '✨ ';
+                if (isMega)    label += '🔮 ';
+                if (isCustom)  label += '🌀 ';
+                label += p.name;
+                return `
+                <div class="pokedex-card ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCustom ? 'is-custom' : ''}">
+                    ${isMega   ? `<span style="position:absolute;top:6px;left:6px;background:#ff00ff;color:white;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">MÉGA</span>` : ''}
+                    ${isCustom ? `<span style="position:absolute;top:6px;left:6px;background:#00cfff;color:#1a1a2e;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">WTF</span>` : ''}
+                    <img src="${sprite}" class="poke-sprite" loading="lazy"
+                         onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                         style="${isMega ? 'width:100px;height:100px;' : ''}object-fit:contain;">
+                    <span class="pokemon-name">${label}</span>
+                    <div style="color:var(--accent-warm);font-size:0.85em;font-weight:bold;">Lv.${p.level}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // Init état des filtres
+        window._collectionTypeFilter = 'all';
+        window._collectionNameFilter = '';
+        window._renderCollectionGrid = renderCollectionGrid;
+
+        // Reset la recherche à chaque chargement de profil
+        const searchInput = document.getElementById('profile-collection-search');
+        if (searchInput) searchInput.value = '';
+
+        renderCollectionGrid();
+
     } else {
         document.getElementById('profile-collection-section').style.display = 'none';
         document.getElementById('profile-collection-private').style.display = 'block';
@@ -515,6 +609,15 @@ function closePokemonAvatarModal() {
     document.getElementById('pokemon-avatar-modal').classList.remove('active');
 }
 
+// Filtre collection profil public (appelé depuis les boutons HTML)
+function setCollectionFilter(filter) {
+    window._collectionTypeFilter = filter;
+    if (window._renderCollectionGrid) {
+        window._renderCollectionGrid(window._collectionNameFilter || '', filter);
+    }
+}
+
+window.setCollectionFilter     = setCollectionFilter;
 window.useDiscordAvatar        = useDiscordAvatar;
 window.choosePokemonAvatar     = choosePokemonAvatar;
 window.selectPokemonAvatar     = selectPokemonAvatar;
