@@ -224,17 +224,15 @@ app.post('/api/battle/bot', async (req, res) => {
         // Donner les récompenses
         user.money += rewards.money;
 
-        // Donner l'XP au compagnon
-        if (user.companionPokemonId) {
-            const companion = user.pokemons.id(user.companionPokemonId);
-            if (companion) {
-                companion.xp = (companion.xp || 0) + rewards.xp;
-                const nextLevelXP = companion.level * 100;
-                if (companion.xp >= nextLevelXP) {
-                    companion.level += 1;
-                    companion.xp = 0;
-                    console.log(`[Battle] ${companion.name} monte au niveau ${companion.level} !`);
-                }
+        // Donner l'XP au Pokémon qui a combattu
+        const fighter = user.pokemons.id(targetId);
+        if (fighter) {
+            fighter.xp = (fighter.xp || 0) + rewards.xp;
+            const nextLevelXP = fighter.level * 100;
+            if (fighter.xp >= nextLevelXP) {
+                fighter.level += 1;
+                fighter.xp = 0;
+                console.log(`[Battle] ${fighter.name} monte au niveau ${fighter.level} !`);
             }
         }
 
@@ -570,13 +568,40 @@ app.post('/api/battle/accept', async (req, res) => {
             userId: result.winner === battle.player1.userId ? battle.player2.userId : battle.player1.userId 
         });
 
+        // Fonction utilitaire pour donner XP au Pokémon combattant
+        async function giveXpToFighter(userDoc, pokemonId, xpAmount) {
+            if (!userDoc || !xpAmount) return;
+            // Utiliser le pokemonId du combat stocké dans battle, sinon compagnon
+            const fighterId = pokemonId || userDoc.companionPokemonId;
+            if (!fighterId) return;
+            const fighter = userDoc.pokemons.id(fighterId);
+            if (!fighter) return;
+            fighter.xp = (fighter.xp || 0) + xpAmount;
+            const nextLevelXP = fighter.level * 100;
+            if (fighter.xp >= nextLevelXP) {
+                fighter.level += 1;
+                fighter.xp = 0;
+                console.log(`[Battle PVP] ${fighter.name} monte au niveau ${fighter.level} !`);
+            }
+        }
+
         if (winner) {
             winner.money += result.rewards.winner.money;
+            // XP au Pokémon gagnant
+            const winnerPokemonId = result.winner === battle.player1.userId
+                ? battle.player1.pokemon._id
+                : battle.player2.pokemon._id;
+            await giveXpToFighter(winner, winnerPokemonId, result.rewards.winner.xp || 50);
             await winner.save();
         }
 
         if (loser) {
             loser.money += result.rewards.loser.money;
+            // XP au Pokémon perdant (consolation)
+            const loserPokemonId = result.winner === battle.player1.userId
+                ? battle.player2.pokemon._id
+                : battle.player1.pokemon._id;
+            await giveXpToFighter(loser, loserPokemonId, result.rewards.loser.xp || 15);
             await loser.save();
         }
 
