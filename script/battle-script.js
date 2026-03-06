@@ -1,9 +1,192 @@
 // ==========================================
 // ⚔️ SYSTÈME DE COMBATS PVP
-// JavaScript à ajouter dans script.js
 // ==========================================
 
 let battleData = null;
+
+// ==========================================
+// 🎯 SÉLECTEUR DE POKÉMON PVP (modal partagé)
+// Utilisé pour "Défier" et "Accepter"
+// ==========================================
+let _pvpPokemonCallback = null; // fonction appelée après sélection
+
+async function openPvpPokemonModal(titleText, callback) {
+    if (!currentUserId) return alert("Connecte-toi d'abord !");
+
+    _pvpPokemonCallback = callback;
+
+    try {
+        const res      = await fetch(`${API_BASE_URL}/api/pokedex/${currentUserId}`);
+        const data     = await res.json();
+        const captured = data.capturedPokemonsList || [];
+
+        if (captured.length === 0) return alert("❌ Tu n'as aucun Pokémon capturé !");
+
+        const modal = document.getElementById('pvp-pokemon-modal');
+        const grid  = document.getElementById('pvp-pokemon-grid');
+
+        // Titre
+        const titleEl = document.getElementById('pvp-pokemon-modal-title');
+        if (titleEl) titleEl.textContent = titleText;
+
+        // ---- Filtres ----
+        let filterBar = document.getElementById('pvp-pokemon-filters');
+        if (!filterBar) {
+            filterBar = document.createElement('div');
+            filterBar.id = 'pvp-pokemon-filters';
+            filterBar.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
+            grid.parentNode.insertBefore(filterBar, grid);
+        }
+
+        function pvpBtnStyle(filter, isActive) {
+            const palette = {
+                all:    { bg: '#555', fg: '#fff' },
+                shiny:  { bg: '#f0c040', fg: '#1a1a2e' },
+                mega:   { bg: '#ff00ff', fg: '#fff' },
+                custom: { bg: '#00cfff', fg: '#1a1a2e' },
+            };
+            const c = palette[filter] || palette.all;
+            return `padding:5px 14px;border-radius:20px;border:none;cursor:pointer;font-size:0.85em;font-weight:bold;
+                    background:${isActive ? c.bg : 'var(--bg-secondary,#2a1f1a)'};
+                    color:${isActive ? c.fg : 'var(--text-secondary,#aaa)'};
+                    transition:all 0.2s;`;
+        }
+
+        filterBar.innerHTML = `
+            <button data-filter="all"    onclick="setPvpFilter('all')">Tous</button>
+            <button data-filter="shiny"  onclick="setPvpFilter('shiny')">✨ Shiny</button>
+            <button data-filter="mega"   onclick="setPvpFilter('mega')">🔮 Méga</button>
+            <button data-filter="custom" onclick="setPvpFilter('custom')">🌀 WTF</button>
+        `;
+
+        // ---- Recherche ----
+        let searchBar = document.getElementById('pvp-pokemon-search');
+        if (!searchBar) {
+            searchBar = document.createElement('input');
+            searchBar.id = 'pvp-pokemon-search';
+            searchBar.type = 'text';
+            searchBar.placeholder = '🔍 Rechercher un Pokémon...';
+            searchBar.style.cssText = `
+                width:100%;padding:10px 14px;margin-bottom:12px;
+                border-radius:8px;border:1px solid var(--border-color,#ccc);
+                background:var(--bg-secondary,#1a1a2e);color:var(--text-primary,#fff);
+                font-size:1em;box-sizing:border-box;
+            `;
+            grid.parentNode.insertBefore(searchBar, grid);
+        }
+        searchBar.value = '';
+
+        // ---- Rendu grille ----
+        function renderPvpGrid(nameFilter = '', typeFilter = 'all') {
+            filterBar.querySelectorAll('button').forEach(btn => {
+                btn.style.cssText = pvpBtnStyle(btn.dataset.filter, btn.dataset.filter === typeFilter);
+            });
+
+            let list = captured;
+            if (nameFilter) list = list.filter(p => p.name.toLowerCase().includes(nameFilter.toLowerCase()));
+            if (typeFilter === 'shiny')  list = list.filter(p => p.isShiny === true);
+            if (typeFilter === 'mega')   list = list.filter(p => p.isMega === true || (p.name && p.name.toLowerCase().includes('méga')));
+            if (typeFilter === 'custom') list = list.filter(p => p.isCustom === true);
+
+            if (list.length === 0) {
+                grid.innerHTML = `<div style="color:var(--text-secondary);text-align:center;padding:30px;width:100%;">Aucun Pokémon trouvé 😔</div>`;
+                return;
+            }
+
+            grid.innerHTML = list.map(p => {
+                const sprite   = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : _getPvpSprite(p);
+                const isMega   = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
+                const isCustom = p.isCustom === true;
+                let label = '';
+                if (p.isShiny) label += '✨ ';
+                if (isMega)    label += '🔮 ';
+                if (isCustom)  label += '🌀 ';
+                label += p.name;
+
+                return `
+                <div class="pokedex-card pokemon-selectable ${p.isShiny ? 'is-shiny' : ''} ${isMega ? 'is-mega' : ''} ${isCustom ? 'is-custom' : ''}"
+                     onclick="confirmPvpPokemon(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                     style="cursor:pointer;position:relative;">
+                    ${isMega   ? `<span style="position:absolute;top:4px;left:4px;background:#ff00ff;color:white;font-size:0.55em;padding:1px 5px;border-radius:4px;font-weight:bold;z-index:10;">MÉGA</span>` : ''}
+                    ${isCustom ? `<span style="position:absolute;top:4px;left:4px;background:#00cfff;color:#1a1a2e;font-size:0.55em;padding:1px 5px;border-radius:4px;font-weight:bold;z-index:10;">WTF</span>` : ''}
+                    <img src="${sprite}" class="poke-sprite" loading="lazy"
+                         onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                         style="width:80px;height:80px;object-fit:contain;margin:0 auto;">
+                    <span class="pokemon-name">${label}</span>
+                    <div style="color:var(--accent-warm);font-size:0.85em;">Lv.${p.level}</div>
+                </div>`;
+            }).join('');
+        }
+
+        window._pvpTypeFilter    = 'all';
+        window._pvpNameFilter    = '';
+        window._renderPvpGrid    = renderPvpGrid;
+        window._pvpBtnStyleFn    = pvpBtnStyle;
+
+        searchBar.oninput = (e) => {
+            window._pvpNameFilter = e.target.value;
+            renderPvpGrid(window._pvpNameFilter, window._pvpTypeFilter);
+        };
+
+        renderPvpGrid();
+        modal.classList.add('active');
+        setTimeout(() => searchBar.focus(), 100);
+
+    } catch (e) {
+        console.error("Erreur chargement Pokémon:", e);
+        alert("❌ Erreur lors du chargement de ta collection");
+    }
+}
+
+function setPvpFilter(filter) {
+    window._pvpTypeFilter = filter;
+    if (window._renderPvpGrid) {
+        window._renderPvpGrid(window._pvpNameFilter || '', filter);
+    }
+}
+
+function confirmPvpPokemon(p) {
+    closePvpPokemonModal();
+    if (typeof _pvpPokemonCallback === 'function') {
+        _pvpPokemonCallback(p);
+    }
+}
+
+function closePvpPokemonModal() {
+    document.getElementById('pvp-pokemon-modal')?.classList.remove('active');
+    _pvpPokemonCallback = null;
+}
+
+// Fallback sprite local
+function _getPvpSprite(p) {
+    if (p.isCustom && p.customSprite) return `assets/sprites/custom/${p.customSprite}`;
+    const isShiny = p.isShiny;
+    const isMega  = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
+    if (isMega) {
+        let nameLower = p.name.toLowerCase();
+        let suffix = "";
+        if (nameLower.includes(' x')) suffix = "x";
+        if (nameLower.includes(' y')) suffix = "y";
+        let baseName = nameLower.replace(/[éèêë]/g, 'e').replace('méga-','').replace('mega-','').replace(' x','').replace(' y','').trim();
+        const tr = {
+            "florizarre":"venusaur","dracaufeu":"charizard","tortank":"blastoise","dardargnan":"beedrill",
+            "roucarnage":"pidgeot","alakazam":"alakazam","flagadoss":"slowbro","ectoplasma":"gengar",
+            "kangourex":"kangaskhan","scarabrute":"pinsir","leviator":"gyarados","ptera":"aerodactyl",
+            "mewtwo":"mewtwo","pharamp":"ampharos","steelix":"steelix","cizayox":"scizor",
+            "scarhino":"heracross","demolosse":"houndoom","tyranocif":"tyranitar","jungleko":"sceptile",
+            "brasegali":"blaziken","laggron":"swampert","gardevoir":"gardevoir","tenefix":"sableye",
+            "mysdibule":"mawhile","galeking":"aggron","charmina":"medicham","elecsprint":"manectric",
+            "sharpedo":"sharpedo","camerupt":"camerupt","altaria":"altaria","branette":"banette",
+            "absol":"absol","oniglali":"glalie","drattak":"salamence","metalosse":"metagross",
+            "latias":"latias","latios":"latios","rayquaza":"rayquaza","lockpin":"lopunny",
+            "carchacrok":"garchomp","lucario":"lucario","blizzaroi":"abomasnow","gallame":"gallade",
+            "nanmeouie":"audino","diancie":"diancie"
+        };
+        const en = tr[baseName] || baseName;
+        return `https://play.pokemonshowdown.com/sprites/ani${isShiny ? '-shiny' : ''}/${en}-${suffix ? 'mega'+suffix : 'mega'}.gif`;
+    }
+    return `${POKEAPI_URL}${isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
+}
 
 // ==========================================
 // CHARGER LA PAGE COMBAT
@@ -117,33 +300,43 @@ function createOpponentCard(opponent) {
 // DÉFIER UN ADVERSAIRE
 // ==========================================
 async function challengeOpponent(opponentId, opponentUsername) {
-    if (!confirm(`Défier ${opponentUsername} en combat ?\n\nTon compagnon combattra automatiquement !`)) {
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/battle/challenge`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                challengerId: currentUserId,
-                opponentId
-            })
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) {
-            alert(`✅ ${data.message}\n\nEn attente que ${opponentUsername} accepte le défi...`);
-            loadBattleStats();
-        } else {
-            alert("❌ " + data.error);
+    // Ouvrir le sélecteur de Pokémon d'abord
+    openPvpPokemonModal(`⚔️ Choisir ton Pokémon contre ${opponentUsername}`, async (pokemon) => {
+        const isMega   = pokemon.isMega === true || (pokemon.name && pokemon.name.toLowerCase().includes('méga'));
+        const isCustom = pokemon.isCustom === true;
+        let label = '';
+        if (pokemon.isShiny) label += '✨ ';
+        if (isMega)           label += '🔮 ';
+        if (isCustom)         label += '🌀 ';
+        label += pokemon.name;
+
+        if (!confirm(`Défier ${opponentUsername} avec ${label} (Niv.${pokemon.level}) ?`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/battle/challenge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    challengerId: currentUserId,
+                    opponentId,
+                    pokemonId: pokemon._id
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(`✅ ${data.message}\n\nEn attente que ${opponentUsername} accepte le défi...`);
+                loadBattleStats();
+            } else {
+                alert("❌ " + data.error);
+            }
+
+        } catch (e) {
+            console.error("Erreur défi:", e);
+            alert("Erreur lors de l'envoi du défi");
         }
-        
-    } catch (e) {
-        console.error("Erreur défi:", e);
-        alert("Erreur lors de l'envoi du défi");
-    }
+    });
 }
 
 // ==========================================
@@ -216,38 +409,49 @@ function createPendingBattleCard(battle) {
 // ACCEPTER UN COMBAT
 // ==========================================
 async function acceptBattle(battleId) {
-    if (!confirm("⚔️ Accepter le combat ?\n\nLe combat va se dérouler automatiquement !")) {
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/battle/accept`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: currentUserId,
-                battleId
-            })
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) {
-            // Afficher le résultat du combat
-            showBattleResult(data.battle);
-            
-            // Recharger les données
-            localStorage.removeItem('pokedex_data_cache');
-            loadBattleStats();
-            if (typeof loadProfile === 'function') loadProfile();
-        } else {
-            alert("❌ " + data.error);
+    // Trouver le nom du challenger depuis battleData
+    const battle = battleData?.pendingChallenges?.find(b => b._id === battleId);
+    const challengerName = battle?.player1?.username || 'l\'adversaire';
+
+    // Ouvrir le sélecteur de Pokémon
+    openPvpPokemonModal(`⚔️ Choisir ton Pokémon contre ${challengerName}`, async (pokemon) => {
+        const isMega   = pokemon.isMega === true || (pokemon.name && pokemon.name.toLowerCase().includes('méga'));
+        const isCustom = pokemon.isCustom === true;
+        let label = '';
+        if (pokemon.isShiny) label += '✨ ';
+        if (isMega)           label += '🔮 ';
+        if (isCustom)         label += '🌀 ';
+        label += pokemon.name;
+
+        if (!confirm(`⚔️ Accepter le combat avec ${label} (Niv.${pokemon.level}) ?\n\nLe combat va se dérouler automatiquement !`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/battle/accept`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: currentUserId,
+                    battleId,
+                    pokemonId: pokemon._id
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showBattleResult(data.battle);
+                localStorage.removeItem('pokedex_data_cache');
+                loadBattleStats();
+                if (typeof loadProfile === 'function') loadProfile();
+            } else {
+                alert("❌ " + data.error);
+            }
+
+        } catch (e) {
+            console.error("Erreur acceptation combat:", e);
+            alert("Erreur lors de l'acceptation du combat");
         }
-        
-    } catch (e) {
-        console.error("Erreur acceptation combat:", e);
-        alert("Erreur lors de l'acceptation du combat");
-    }
+    });
 }
 
 // ==========================================
@@ -433,13 +637,17 @@ async function viewBattleDetails(battleId) {
 // ==========================================
 // EXPOSITION AU SCOPE GLOBAL
 // ==========================================
-window.loadBattlePage = loadBattlePage;
-window.switchBattleTab = switchBattleTab;
-window.challengeOpponent = challengeOpponent;
-window.acceptBattle = acceptBattle;
-window.declineBattle = declineBattle;
+window.loadBattlePage         = loadBattlePage;
+window.switchBattleTab        = switchBattleTab;
+window.challengeOpponent      = challengeOpponent;
+window.acceptBattle           = acceptBattle;
+window.declineBattle          = declineBattle;
 window.closeBattleResultModal = closeBattleResultModal;
-window.viewBattleDetails = viewBattleDetails;
+window.viewBattleDetails      = viewBattleDetails;
+window.openPvpPokemonModal    = openPvpPokemonModal;
+window.closePvpPokemonModal   = closePvpPokemonModal;
+window.confirmPvpPokemon      = confirmPvpPokemon;
+window.setPvpFilter           = setPvpFilter;
 
 // ==========================================
 // AUTO-REFRESH DES DÉFIS (toutes les 30 secondes)
