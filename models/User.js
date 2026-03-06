@@ -78,7 +78,15 @@ const userSchema = new mongoose.Schema({
     discordAvatar: String,
     profileAvatar: { type: String, default: null },
     avatarSource: { type: String, enum: ['discord', 'pokemon', 'custom', null], default: null },
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+
+    // 🏆 STATS DE COMBAT (stockées pour éviter les countDocuments à chaque requête)
+    battleStats: {
+        totalBattles: { type: Number, default: 0 },
+        victories:    { type: Number, default: 0 },
+        defeats:      { type: Number, default: 0 },
+        winRate:      { type: Number, default: 0 },
+    }
 });
 
 module.exports = mongoose.model('User', userSchema);
