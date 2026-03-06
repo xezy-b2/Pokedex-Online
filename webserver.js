@@ -116,7 +116,7 @@ const botPreviewCache = new Map();
 // ROUTE : COMBATTRE UN BOT
 // ==========================================
 app.post('/api/battle/bot', async (req, res) => {
-    const { userId, difficulty } = req.body;
+    const { userId, difficulty, pokemonId } = req.body;
 
     if (!userId) {
         return res.status(400).json({ error: "UserId manquant" });
@@ -133,13 +133,15 @@ app.post('/api/battle/bot', async (req, res) => {
             return res.status(404).json({ error: "Utilisateur introuvable" });
         }
 
-        if (!user.companionPokemonId) {
-            return res.status(400).json({ error: "Tu n'as pas de compagnon !" });
+        // Utiliser le pokemonId envoyé par le client, sinon fallback sur le compagnon
+        const targetId = pokemonId || user.companionPokemonId;
+        if (!targetId) {
+            return res.status(400).json({ error: "Aucun Pokémon sélectionné et pas de compagnon !" });
         }
 
-        const playerPokemon = user.pokemons.id(user.companionPokemonId);
+        const playerPokemon = user.pokemons.id(targetId);
         if (!playerPokemon) {
-            return res.status(404).json({ error: "Compagnon introuvable" });
+            return res.status(404).json({ error: "Pokémon introuvable dans ta collection" });
         }
 
         // Utiliser le bot du preview si disponible, sinon en générer un nouveau
@@ -389,7 +391,7 @@ function simulateBattle(p1, p2) {
 // 1. DÉFIER UN JOUEUR
 // ==========================================
 app.post('/api/battle/challenge', async (req, res) => {
-    const { challengerId, opponentId } = req.body;
+    const { challengerId, opponentId, pokemonId } = req.body;
 
     if (!challengerId || !opponentId) {
         return res.status(400).json({ error: "Paramètres manquants" });
@@ -408,17 +410,18 @@ app.post('/api/battle/challenge', async (req, res) => {
             return res.status(404).json({ error: "Joueur introuvable" });
         }
 
-        // Vérifier que les deux ont un compagnon
-        if (!challenger.companionPokemonId) {
-            return res.status(400).json({ error: "Tu n'as pas de compagnon !" });
+        // Récupérer le Pokémon du challengeur (choisi ou compagnon par défaut)
+        const p1TargetId = pokemonId || challenger.companionPokemonId;
+        if (!p1TargetId) {
+            return res.status(400).json({ error: "Tu n'as pas de Pokémon sélectionné ni de compagnon !" });
         }
 
+        // L'adversaire utilise son compagnon (il choisira au moment d'accepter)
         if (!opponent.companionPokemonId) {
             return res.status(400).json({ error: "L'adversaire n'a pas de compagnon !" });
         }
 
-        // Récupérer les compagnons
-        const p1Pokemon = challenger.pokemons.id(challenger.companionPokemonId);
+        const p1Pokemon = challenger.pokemons.id(p1TargetId);
         const p2Pokemon = opponent.pokemons.id(opponent.companionPokemonId);
 
         if (!p1Pokemon || !p2Pokemon) {
@@ -480,7 +483,7 @@ app.post('/api/battle/challenge', async (req, res) => {
 // 2. ACCEPTER UN DÉFI
 // ==========================================
 app.post('/api/battle/accept', async (req, res) => {
-    const { userId, battleId } = req.body;
+    const { userId, battleId, pokemonId } = req.body;
 
     if (!userId || !battleId) {
         return res.status(400).json({ error: "Paramètres manquants" });
@@ -498,6 +501,27 @@ app.post('/api/battle/accept', async (req, res) => {
 
         if (battle.status !== 'pending') {
             return res.status(400).json({ error: "Ce combat n'est plus disponible" });
+        }
+
+        // Si un pokemonId est fourni, mettre à jour le Pokémon de player2 avant le combat
+        if (pokemonId) {
+            const accepter = await User.findOne({ userId });
+            if (accepter) {
+                const chosenPokemon = accepter.pokemons.id(pokemonId);
+                if (chosenPokemon) {
+                    battle.player2.pokemon = {
+                        _id: chosenPokemon._id,
+                        name: chosenPokemon.name,
+                        pokedexId: chosenPokemon.pokedexId,
+                        level: chosenPokemon.level,
+                        isShiny: chosenPokemon.isShiny,
+                        isMega: chosenPokemon.isMega,
+                        isCustom: chosenPokemon.isCustom,
+                        ivs: chosenPokemon.ivs
+                    };
+                    battle.player2.power = calculatePower(chosenPokemon);
+                }
+            }
         }
 
         // Simuler le combat
