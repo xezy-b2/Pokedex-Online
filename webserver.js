@@ -3,6 +3,29 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
 const User = require('./models/User.js');
+
+// ==========================================
+// 🏆 MISE À JOUR DES STATS DE COMBAT (User.battleStats)
+// ==========================================
+async function updateBattleStats(userId, isWinner) {
+    try {
+        await User.findOneAndUpdate(
+            { userId },
+            { $inc: {
+                'battleStats.totalBattles': 1,
+                'battleStats.victories': isWinner ? 1 : 0,
+                'battleStats.defeats':   isWinner ? 0 : 1,
+            }}
+        );
+        const u = await User.findOne({ userId }, 'battleStats');
+        if (u && u.battleStats && u.battleStats.totalBattles > 0) {
+            u.battleStats.winRate = Math.floor((u.battleStats.victories / u.battleStats.totalBattles) * 100);
+            await u.save();
+        }
+    } catch (e) {
+        console.error('[updateBattleStats] Erreur:', e);
+    }
+}
 const TradeOffer = require('./models/TradeOffer.js');
 const DailyMissions = require('./models/DailyMissions.js');
 const Battle = require('./models/Battle.js');
@@ -216,6 +239,9 @@ app.post('/api/battle/bot', async (req, res) => {
         }
 
         await user.save();
+
+        // Mettre à jour les stats de combat stockées sur le User
+        await updateBattleStats(userId, isWinner);
 
         // Sauvegarder le combat dans l'historique (optionnel)
         const battle = new Battle({
@@ -554,6 +580,11 @@ app.post('/api/battle/accept', async (req, res) => {
             await loser.save();
         }
 
+        // Mettre à jour les stats de combat stockées sur les deux joueurs
+        const loserId = result.winner === battle.player1.userId ? battle.player2.userId : battle.player1.userId;
+        await updateBattleStats(result.winner, true);
+        await updateBattleStats(loserId, false);
+
         // Mettre à jour les missions (si système XP activé)
         if (typeof updateMissionProgress === 'function') {
             await updateMissionProgress(result.winner, 'battle', 1);
@@ -635,32 +666,19 @@ app.get('/api/battle/my-battles/:userId', async (req, res) => {
         .sort({ completedAt: -1 })
         .limit(20);
 
-        // Statistiques
-        const totalBattles = await Battle.countDocuments({
-            $or: [
-                { 'player1.userId': userId },
-                { 'player2.userId': userId }
-            ],
-            status: 'completed'
-        });
-
-        const victories = await Battle.countDocuments({
-            winner: userId,
-            status: 'completed'
-        });
-
-        const winRate = totalBattles > 0 ? Math.floor((victories / totalBattles) * 100) : 0;
+        // Statistiques — lues depuis User.battleStats (plus rapide qu'un countDocuments)
+        const userDoc = await User.findOne({ userId }, 'battleStats');
+        const bs = userDoc?.battleStats || {};
+        const totalBattles = bs.totalBattles || 0;
+        const victories    = bs.victories    || 0;
+        const defeats      = bs.defeats      || 0;
+        const winRate      = bs.winRate      || 0;
 
         res.json({ 
             pendingChallenges,
             sentChallenges,
             battleHistory,
-            stats: {
-                totalBattles,
-                victories,
-                defeats: totalBattles - victories,
-                winRate
-            }
+            stats: { totalBattles, victories, defeats, winRate }
         });
 
     } catch (e) {
@@ -2765,6 +2783,37 @@ app.get('/api/user/:userId', async (req, res) => {
         });
     } catch (e) {
         res.status(500).json({ error: "Erreur serveur" });
+    }
+});
+
+// ==========================================
+// 🔧 MIGRATION : Recalculer battleStats depuis l'historique (UNE SEULE FOIS)
+// POST /api/admin/migrate-battle-stats
+// ==========================================
+app.post('/api/admin/migrate-battle-stats', async (req, res) => {
+    try {
+        const users = await User.find({}, 'userId');
+        let count = 0;
+        for (const u of users) {
+            const totalBattles = await Battle.countDocuments({
+                $or: [{ 'player1.userId': u.userId }, { 'player2.userId': u.userId }],
+                status: 'completed'
+            });
+            const victories = await Battle.countDocuments({ winner: u.userId, status: 'completed' });
+            const defeats   = totalBattles - victories;
+            const winRate   = totalBattles > 0 ? Math.floor((victories / totalBattles) * 100) : 0;
+            await User.findOneAndUpdate({ userId: u.userId }, {
+                'battleStats.totalBattles': totalBattles,
+                'battleStats.victories':    victories,
+                'battleStats.defeats':      defeats,
+                'battleStats.winRate':      winRate,
+            });
+            count++;
+        }
+        res.json({ success: true, message: `${count} joueurs migrés avec succès` });
+    } catch (e) {
+        console.error('Erreur migration:', e);
+        res.status(500).json({ error: 'Erreur lors de la migration' });
     }
 });
 
