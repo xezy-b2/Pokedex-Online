@@ -1548,6 +1548,24 @@
     overflow-y: auto;
 }
 
+#fighter-pokemon-modal.active {
+    display: flex !important;
+}
+
+#pvp-pokemon-modal.active {
+    display: flex !important;
+}
+
+#pvp-pokemon-grid .pokedex-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#pvp-pokemon-grid .pokedex-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-warm);
+}
+
 #pokemon-avatar-grid .pokedex-card {
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1947,7 +1965,32 @@
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Séparateur VS -->
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                    <div style="flex:1;height:1px;background:var(--border-color,#444);"></div>
+                    <span style="color:var(--text-secondary);font-size:0.85em;font-weight:600;letter-spacing:0.05em;">TON POKÉMON</span>
+                    <div style="flex:1;height:1px;background:var(--border-color,#444);"></div>
+                </div>
+
+                <!-- Sélecteur de Pokémon combattant -->
+                <div style="margin-bottom:20px;">
+                    <!-- Aperçu du Pokémon sélectionné -->
+                    <div id="selected-fighter-preview"
+                         style="display:none;align-items:center;gap:14px;background:rgba(26,20,16,0.6);
+                                padding:14px 18px;border-radius:14px;border:2px solid var(--accent-nature);margin-bottom:12px;">
+                    </div>
+                    <!-- Bouton pour ouvrir le modal -->
+                    <button onclick="openFighterPokemonModal()"
+                            style="width:100%;padding:12px;border-radius:12px;border:2px dashed var(--border-color,#555);
+                                   background:rgba(26,20,16,0.4);color:var(--text-secondary);cursor:pointer;
+                                   font-size:0.95em;font-weight:600;transition:all 0.2s;"
+                            onmouseover="this.style.borderColor='var(--accent-warm)';this.style.color='var(--accent-warm)';"
+                            onmouseout="this.style.borderColor='var(--border-color,#555)';this.style.color='var(--text-secondary)';">
+                        🎯 Choisir mon Pokémon combattant
+                    </button>
+                </div>
+
                 <button id="btn-fight-bot" class="cta-button" onclick="fightBot()" disabled style="width: 100%; max-width: 300px; margin: 0 auto; display: block; opacity: 0.5;">
                     ⚔️ Combattre
                 </button>
@@ -2210,6 +2253,60 @@
         
         <div style="text-align: center; margin-top: 20px;">
             <button onclick="closePokemonAvatarModal()" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--bg-card); border-radius: 8px; cursor: pointer; color: var(--text-primary); font-family: inherit;">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- ⚔️ MODAL SÉLECTION POKÉMON COMBATTANT (Bot Battle) -->
+<div id="fighter-pokemon-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
+            justify-content:center;align-items:center;padding:20px;">
+    <div style="background:var(--bg-dark);padding:30px;border-radius:20px;max-width:800px;
+                width:90%;max-height:85vh;overflow-y:auto;border:2px solid var(--accent-nature);
+                display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <h2 style="color:var(--accent-nature);margin:0;">⚔️ Choisir un combattant</h2>
+            <button onclick="closeFighterPokemonModal()"
+                    style="background:none;border:none;font-size:2em;cursor:pointer;color:var(--text-secondary);">&times;</button>
+        </div>
+        <p style="color:var(--text-secondary);margin:0 0 16px 0;">
+            Quel Pokémon envoies-tu au combat ?
+        </p>
+        <!-- Filtres et recherche injectés par JS ici -->
+        <div id="fighter-pokemon-grid" class="pokedex-grid" style="max-height:420px;overflow-y:auto;"></div>
+        <div style="text-align:center;margin-top:16px;">
+            <button onclick="closeFighterPokemonModal()"
+                    style="padding:10px 24px;background:var(--bg-secondary);border:1px solid var(--bg-card);
+                           border-radius:8px;cursor:pointer;color:var(--text-primary);font-family:inherit;">
+                Annuler
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ⚔️ MODAL SÉLECTION POKÉMON PVP (Défier / Accepter) -->
+<div id="pvp-pokemon-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
+            justify-content:center;align-items:center;padding:20px;">
+    <div style="background:var(--bg-dark);padding:30px;border-radius:20px;max-width:800px;
+                width:90%;max-height:85vh;overflow-y:auto;border:2px solid var(--accent-warm);
+                display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <h2 id="pvp-pokemon-modal-title" style="color:var(--accent-warm);margin:0;">⚔️ Choisir un combattant</h2>
+            <button onclick="closePvpPokemonModal()"
+                    style="background:none;border:none;font-size:2em;cursor:pointer;color:var(--text-secondary);">&times;</button>
+        </div>
+        <p style="color:var(--text-secondary);margin:0 0 16px 0;">
+            Quel Pokémon envoies-tu au combat ?
+        </p>
+        <!-- Filtres et recherche injectés par JS ici -->
+        <div id="pvp-pokemon-grid" class="pokedex-grid" style="max-height:420px;overflow-y:auto;"></div>
+        <div style="text-align:center;margin-top:16px;">
+            <button onclick="closePvpPokemonModal()"
+                    style="padding:10px 24px;background:var(--bg-secondary);border:1px solid var(--bg-card);
+                           border-radius:8px;cursor:pointer;color:var(--text-primary);font-family:inherit;">
+                Annuler
+            </button>
         </div>
     </div>
 </div>
