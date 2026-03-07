@@ -1594,7 +1594,7 @@ async function generateRandomPokemon() {
             { name: "Bulbizarre Magma", sprite: "bulbizarre-magma.png"},
             { name: "Carapuce Magma", sprite: "carapuce-magma.png"},
             { name: "Mew Magma", sprite: "mew-magma.png"},
-            { name: "Mewtwo Magma", sprite: "mewtwo-magma.png"}
+            { name: "Mewtwo Magma", sprite: "mewtow-magma.png"}
         ];
         const chosen = variants[Math.floor(Math.random() * variants.length)];
         const randomLevel = Math.floor(Math.random() * 31) + 70;
@@ -2530,6 +2530,8 @@ app.get('/api/profile', async (req, res) => {
                     level: comp.level,
                     isShiny: comp.isShiny,
                     isMega: comp.isMega,
+                    isCustom: comp.isCustom || false,
+                    customSprite: comp.customSprite || null,
                     customMessage: user.companionMessage || null
                 };
             }
@@ -2544,7 +2546,9 @@ app.get('/api/profile', async (req, res) => {
                 pokedexId: p.pokedexId,
                 level: p.level,
                 isShiny: p.isShiny,
-                isMega: p.isMega
+                isMega: p.isMega,
+                isCustom: p.isCustom || false,
+                customSprite: p.customSprite || null
             }));
 
         // Badges (à calculer selon tes règles)
@@ -2567,7 +2571,8 @@ app.get('/api/profile', async (req, res) => {
                 level: p.level,
                 isShiny: p.isShiny,
                 isMega: p.isMega,
-                isCustom: p.isCustom
+                isCustom: p.isCustom,
+                customSprite: p.customSprite || null
             }));
         }
 
@@ -2842,27 +2847,7 @@ app.post('/api/admin/migrate-battle-stats', async (req, res) => {
     }
 });
 
-app.post('/api/admin/fix-mewtwo-pokedexid', async (req, res) => {
-    try {
-        const result = await User.updateMany(
-            { 'pokemons.name': 'Mewtwo Magma', 'pokemons.pokedexId': 94 },
-            { $set: { 'pokemons.$[elem].pokedexId': 150 } },
-            { arrayFilters: [{ 'elem.name': 'Mewtwo Magma', 'elem.pokedexId': 94 }] }
-        );
-        res.json({ success: true, modifiedCount: result.modifiedCount });
-    } catch (e) {
-        console.error('Erreur fix mewtwo pokedexId:', e);
-        res.status(500).json({ error: e.message });
-    }
-});
-
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
-
-
-
-
