@@ -2842,32 +2842,25 @@ app.post('/api/admin/migrate-battle-stats', async (req, res) => {
     }
 });
 
-app.get('/api/admin/check-custom-sprites', async (req, res) => {
+app.post('/api/admin/fix-mewtwo-pokedexid', async (req, res) => {
     try {
-        const users = await User.find({ 'pokemons.isCustom': true }, 'username pokemons');
-        const result = [];
-        for (const u of users) {
-            const customs = u.pokemons.filter(p => p.isCustom);
-            customs.forEach(p => result.push({
-                user: u.username,
-                name: p.name,
-                customSprite: p.customSprite,
-                isMega: p.isMega,
-                pokedexId: p.pokedexId,
-                id: p._id
-            }));
-        }
-        res.json(result);
+        const result = await User.updateMany(
+            { 'pokemons.name': 'Mewtwo Magma', 'pokemons.pokedexId': 94 },
+            { $set: { 'pokemons.$[elem].pokedexId': 150 } },
+            { arrayFilters: [{ 'elem.name': 'Mewtwo Magma', 'elem.pokedexId': 94 }] }
+        );
+        res.json({ success: true, modifiedCount: result.modifiedCount });
     } catch (e) {
+        console.error('Erreur fix mewtwo pokedexId:', e);
         res.status(500).json({ error: e.message });
     }
 });
-
 
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
