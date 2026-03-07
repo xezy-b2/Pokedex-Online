@@ -2842,7 +2842,23 @@ app.post('/api/admin/migrate-battle-stats', async (req, res) => {
     }
 });
 
+app.post('/api/admin/fix-mewtwo-sprite', async (req, res) => {
+    try {
+        const result = await User.updateMany(
+            { 'pokemons.customSprite': 'mewtow-magma.png' },
+            { $set: { 'pokemons.$[elem].customSprite': 'mewtwo-magma.png' } },
+            { arrayFilters: [{ 'elem.customSprite': 'mewtow-magma.png' }] }
+        );
+        res.json({ success: true, modifiedCount: result.modifiedCount });
+    } catch (e) {
+        console.error('Erreur fix mewtwo:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
