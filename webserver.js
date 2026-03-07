@@ -2852,6 +2852,7 @@ app.get('/api/admin/check-custom-sprites', async (req, res) => {
                 user: u.username,
                 name: p.name,
                 customSprite: p.customSprite,
+                isMega: p.isMega,
                 id: p._id
             }));
         }
@@ -2866,6 +2867,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
 
 
 
