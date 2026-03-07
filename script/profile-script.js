@@ -162,7 +162,7 @@ function renderPublicProfile(profile) {
             return `
             <div class="profile-team-pokemon">
                 <img src="${sprite}" loading="lazy"
-                     onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                     onerror="this.onerror=null;this.src=`${POKEAPI_URL}${p.isShiny?'shiny/':''}${p.pokedexId}.png`;"
                      style="${isMega ? 'width:80px;height:80px;' : ''}object-fit:contain;">
                 <div class="profile-team-pokemon-name">${label}</div>
                 <div class="profile-team-pokemon-level">Niv. ${p.level}</div>
@@ -271,7 +271,7 @@ function renderPublicProfile(profile) {
                     ${isMega   ? `<span style="position:absolute;top:6px;left:6px;background:#ff00ff;color:white;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">MÉGA</span>` : ''}
                     ${isCustom ? `<span style="position:absolute;top:6px;left:6px;background:#00cfff;color:#1a1a2e;font-size:0.55em;padding:2px 5px;border-radius:4px;font-weight:bold;z-index:10;">WTF</span>` : ''}
                     <img src="${sprite}" class="poke-sprite" loading="lazy"
-                         onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                         onerror="this.onerror=null;this.src=`${POKEAPI_URL}${p.isShiny?'shiny/':''}${p.pokedexId}.png`;"
                          style="${isMega ? 'width:100px;height:100px;' : ''}object-fit:contain;">
                     <span class="pokemon-name">${label}</span>
                     <div style="color:var(--accent-warm);font-size:0.85em;font-weight:bold;">Lv.${p.level}</div>
@@ -529,7 +529,7 @@ async function choosePokemonAvatar() {
                     ${isCustom ? `<span style="position:absolute;top:4px;left:4px;background:#00cfff;color:#1a1a2e;font-size:0.55em;padding:1px 5px;border-radius:4px;font-weight:bold;z-index:10;">WTF</span>` : ''}
                     <img src="${sprite}"
                          class="poke-sprite" loading="lazy"
-                         onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                         onerror="this.onerror=null;this.src=`${POKEAPI_URL}${p.isShiny?'shiny/':''}${p.pokedexId}.png`;"
                          style="width:80px;height:80px;object-fit:contain;margin:0 auto;">
                     <span class="pokemon-name">${label}</span>
                     <div style="color:var(--accent-warm);font-size:0.85em;">Lv.${p.level}</div>
