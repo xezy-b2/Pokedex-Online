@@ -1954,16 +1954,17 @@
                 </div>
                 
                 <!-- Aperçu du bot -->
-                <div id="bot-preview" style="display: none; background: rgba(26, 20, 16, 0.6); padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
-                    <div style="color: var(--accent-warm); font-weight: 700; font-size: 1.1em; margin-bottom: 10px;" id="bot-preview-name"></div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-                        <img id="bot-preview-img" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
-                        <div style="text-align: left;">
-                            <div style="color: var(--text-primary); font-weight: 700;" id="bot-preview-pokemon"></div>
-                            <div style="color: var(--text-secondary); font-size: 0.9em;" id="bot-preview-level"></div>
-                            <div style="color: var(--accent-warm); font-size: 0.9em; font-weight: 600;" id="bot-preview-power"></div>
+                <div id="bot-preview" style="display:none;background:rgba(26,20,16,0.6);padding:16px;border-radius:15px;margin-bottom:20px;">
+                    <div style="color:var(--accent-warm);font-weight:700;font-size:1em;margin-bottom:10px;text-align:center;" id="bot-preview-name"></div>
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <img id="bot-preview-img" style="width:72px;height:72px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;">
+                        <div style="flex:1;text-align:left;">
+                            <div style="color:var(--text-primary);font-weight:700;" id="bot-preview-pokemon"></div>
+                            <div style="color:var(--text-secondary);font-size:0.88em;margin-top:2px;" id="bot-preview-level"></div>
+                            <div style="color:var(--accent-warm);font-size:0.85em;font-weight:600;margin-top:2px;" id="bot-preview-power"></div>
                         </div>
                     </div>
+                    <div id="bot-preview-stats"></div>
                 </div>
 
                 <!-- Séparateur VS -->
@@ -1975,9 +1976,9 @@
 
                 <!-- Sélecteur de Pokémon combattant -->
                 <div style="margin-bottom:20px;">
-                    <!-- Aperçu du Pokémon sélectionné -->
+                    <!-- Aperçu du Pokémon sélectionné (combat bot) -->
                     <div id="selected-fighter-preview"
-                         style="display:none;align-items:center;gap:14px;background:rgba(26,20,16,0.6);
+                         style="display:none;background:rgba(26,20,16,0.6);
                                 padding:14px 18px;border-radius:14px;border:2px solid var(--accent-nature);margin-bottom:12px;">
                     </div>
                     <!-- Bouton pour ouvrir le modal -->
@@ -1998,6 +1999,11 @@
         </div>
 
         <h3 style="color: var(--accent-warm); margin: 20px 0 15px 0;">👥 Défier des Joueurs</h3>
+        <!-- Preview Pokémon sélectionné pour PVP -->
+        <div id="selected-pvp-preview"
+             style="display:none;background:rgba(26,20,16,0.6);padding:14px 18px;
+                    border-radius:14px;border:2px solid rgba(255,154,108,0.4);margin-bottom:16px;">
+        </div>
 
         <div id="opponents-grid" class="battle-grid"></div>
     </div>
