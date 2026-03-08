@@ -30,6 +30,19 @@ async function selectBotDifficulty(difficulty) {
 
             const imgUrl = `${POKEAPI_URL}${data.bot.pokemon.isShiny ? 'shiny/' : ''}${data.bot.pokemon.pokedexId}.png`;
             document.getElementById('bot-preview-img').src = imgUrl;
+
+            // Stats du bot
+            const botStatsEl = document.getElementById('bot-preview-stats');
+            if (botStatsEl && typeof renderStatBarsMini === 'function') {
+                // Le bot n'a pas de baseStats depuis l'API, on construit un objet minimal
+                botStatsEl.innerHTML = renderStatBarsMini({
+                    level:    data.bot.pokemon.level,
+                    ivs:      data.bot.pokemon.ivs || {},
+                    baseStats: data.bot.pokemon.baseStats || [],
+                    isMega:   data.bot.pokemon.isMega,
+                    isShiny:  data.bot.pokemon.isShiny
+                });
+            }
         }
 
     } catch (e) {
@@ -216,25 +229,29 @@ function selectFighterPokemon(p) {
 
         const preview = document.getElementById('selected-fighter-preview');
         if (preview) {
-            preview.style.display = 'flex';
+            preview.style.display = 'block';
+            const statBarsHtml = (typeof renderStatBarsMini === 'function') ? renderStatBarsMini(p) : '';
             preview.innerHTML = `
-                <img src="${sprite}" 
-                     onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
-                     style="width:60px;height:60px;object-fit:contain;flex-shrink:0;">
-                <div style="text-align:left;">
-                    <div style="font-weight:700;color:var(--text-primary);">${label}</div>
-                    <div style="color:var(--text-secondary);font-size:0.85em;">Niv. ${p.level}</div>
-                    <div style="display:flex;gap:4px;margin-top:3px;">
-                        ${p.isShiny ? `<span style="background:#f0c040;color:#1a1a2e;font-size:0.65em;padding:1px 6px;border-radius:8px;font-weight:bold;">✨ SHINY</span>` : ''}
-                        ${isMega    ? `<span style="background:#ff00ff;color:#fff;font-size:0.65em;padding:1px 6px;border-radius:8px;font-weight:bold;">🔮 MÉGA</span>` : ''}
-                        ${isCustom  ? `<span style="background:#00cfff;color:#1a1a2e;font-size:0.65em;padding:1px 6px;border-radius:8px;font-weight:bold;">🌀 WTF</span>` : ''}
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <img src="${sprite}"
+                         onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                         style="width:64px;height:64px;object-fit:contain;flex-shrink:0;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;color:var(--text-primary);font-size:0.95em;">${label}</div>
+                        <div style="color:var(--text-secondary);font-size:0.82em;margin-top:2px;">Niv. ${p.level}</div>
+                        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+                            ${p.isShiny ? `<span style="background:#f0c040;color:#1a1a2e;font-size:0.6em;padding:1px 6px;border-radius:8px;font-weight:bold;">✨ SHINY</span>` : ''}
+                            ${isMega    ? `<span style="background:#ff00ff;color:#fff;font-size:0.6em;padding:1px 6px;border-radius:8px;font-weight:bold;">🔮 MÉGA</span>` : ''}
+                            ${isCustom  ? `<span style="background:#00cfff;color:#1a1a2e;font-size:0.6em;padding:1px 6px;border-radius:8px;font-weight:bold;">🌀 WTF</span>` : ''}
+                        </div>
                     </div>
+                    <button onclick="openFighterPokemonModal()"
+                            style="flex-shrink:0;background:transparent;border:1px solid var(--border-color,#555);
+                                   color:var(--text-secondary);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:0.8em;">
+                        Changer
+                    </button>
                 </div>
-                <button onclick="openFighterPokemonModal()" 
-                        style="margin-left:auto;background:transparent;border:1px solid var(--border-color,#555);
-                               color:var(--text-secondary);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:0.8em;">
-                    Changer
-                </button>
+                ${statBarsHtml}
             `;
         }
 
