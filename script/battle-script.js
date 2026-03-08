@@ -146,8 +146,36 @@ function setPvpFilter(filter) {
 }
 
 function confirmPvpPokemon(p) {
-    const cb = _pvpPokemonCallback; // Sauvegarder avant que closePvpPokemonModal le mette à null
+    const cb = _pvpPokemonCallback;
     closePvpPokemonModal();
+
+    // Afficher les stats du Pokémon choisi dans la zone de preview PVP
+    const pvpPreview = document.getElementById('selected-pvp-preview');
+    if (pvpPreview && typeof renderStatBarsMini === 'function') {
+        const sprite   = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : `${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png`;
+        const isMega   = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
+        const isCustom = p.isCustom === true;
+        let label = '';
+        if (p.isShiny) label += '✨ ';
+        if (isMega)    label += '🔮 ';
+        if (isCustom)  label += '🌀 ';
+        label += p.name;
+
+        pvpPreview.style.display = 'block';
+        pvpPreview.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px;">
+                <img src="${sprite}"
+                     onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
+                     style="width:64px;height:64px;object-fit:contain;flex-shrink:0;">
+                <div style="flex:1;">
+                    <div style="font-weight:700;color:var(--text-primary);">${label}</div>
+                    <div style="color:var(--text-secondary);font-size:0.82em;">Niv. ${p.level}</div>
+                </div>
+            </div>
+            ${renderStatBarsMini(p)}
+        `;
+    }
+
     if (typeof cb === 'function') {
         cb(p);
     }
