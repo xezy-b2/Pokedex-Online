@@ -1607,8 +1607,7 @@ async function generateRandomPokemon() {
             isMega: false,
             isCustom: true, // IMPORTANT : pour le script.js
             customSprite: chosen.sprite, // IMPORTANT : nom du fichier
-            iv_hp: 31, iv_attack: 31, iv_defense: 31, 
-            iv_special_attack: 31, iv_special_defense: 31, iv_speed: 31
+            ivs: { hp: 31, attack: 31, defense: 31, spAttack: 31, spDefense: 31, speed: 31 }
         };
     }
 
@@ -1635,12 +1634,14 @@ async function generateRandomPokemon() {
 
     // Statistiques et Shiny
     const level = isMega ? getRandomInt(50, 100) : getRandomInt(1, 100);
-    const iv_hp = getRandomInt(0, 31);
-    const iv_attack = getRandomInt(0, 31);
-    const iv_defense = getRandomInt(0, 31);
-    const iv_special_attack = getRandomInt(0, 31);
-    const iv_special_defense = getRandomInt(0, 31);
-    const iv_speed = getRandomInt(0, 31);
+    const ivs = {
+        hp:        getRandomInt(0, 31),
+        attack:    getRandomInt(0, 31),
+        defense:   getRandomInt(0, 31),
+        spAttack:  getRandomInt(0, 31),
+        spDefense: getRandomInt(0, 31),
+        speed:     getRandomInt(0, 31),
+    };
     const isShiny = getRandomInt(1, 100) === 1; 
 
     let pokemonName = 'Inconnu';
@@ -1669,12 +1670,7 @@ async function generateRandomPokemon() {
         isShiny,
         isMega,
         isCustom: false, // Pas un custom si on arrive ici
-        iv_hp,
-        iv_attack,
-        iv_defense,
-        iv_special_attack,
-        iv_special_defense,
-        iv_speed,
+        ivs,
     };
 }
 
@@ -1807,20 +1803,13 @@ app.get('/api/pokedex/:userId', async (req, res) => {
         const capturedPokemons = user.pokemons || [];
         const capturedPokedexIds = new Set(capturedPokemons.map(p => p.pokedexId));
         const uniquePokedexIds = [...capturedPokedexIds];
-        const statsPromises = uniquePokedexIds.map(id => fetchPokemonBaseStats(id));
-        const allStats = await Promise.all(statsPromises);
-        const statsMap = uniquePokedexIds.reduce((map, id, index) => {
-            map[id] = allStats[index];
-            return map;
-        }, {});
-        
+
+        // Les baseStats sont chargées côté client (lazy) pour éviter les timeouts Render
         const enrichedCapturedPokedex = capturedPokemons.map(pokemon => {
-            const stats = statsMap[pokemon.pokedexId] || [];
             const enrichedPokemon = pokemon.toObject ? pokemon.toObject() : pokemon;
-            
             return {
                 ...enrichedPokemon,
-                baseStats: stats
+                baseStats: [] // Chargé côté client au besoin
             };
         });
         const fullPokedexMap = new Map();
@@ -2847,4 +2836,3 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
