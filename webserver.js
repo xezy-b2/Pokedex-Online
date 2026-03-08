@@ -2832,7 +2832,73 @@ app.post('/api/admin/migrate-battle-stats', async (req, res) => {
     }
 });
 
+// ==========================================
+// 🔧 MIGRATION : Convertir iv_hp/iv_attack/... → ivs.{} (UNE SEULE FOIS)
+// POST /api/admin/migrate-ivs
+// ==========================================
+app.post('/api/admin/migrate-ivs', async (req, res) => {
+    try {
+        const users = await User.find({});
+        let usersUpdated = 0;
+        let pokemonsUpdated = 0;
+
+        for (const user of users) {
+            let userModified = false;
+
+            for (const pokemon of user.pokemons) {
+                // Détecter si ce pokémon utilise encore l'ancien format
+                const hasOldFormat = (
+                    pokemon.iv_hp          != null ||
+                    pokemon.iv_attack      != null ||
+                    pokemon.iv_defense     != null ||
+                    pokemon.iv_special_attack  != null ||
+                    pokemon.iv_special_defense != null ||
+                    pokemon.iv_speed       != null
+                );
+
+                const hasMissingIvs = (
+                    !pokemon.ivs ||
+                    pokemon.ivs.hp        == null ||
+                    pokemon.ivs.attack    == null ||
+                    pokemon.ivs.defense   == null ||
+                    pokemon.ivs.spAttack  == null ||
+                    pokemon.ivs.spDefense == null ||
+                    pokemon.ivs.speed     == null
+                );
+
+                if (hasOldFormat && hasMissingIvs) {
+                    pokemon.ivs = {
+                        hp:        pokemon.iv_hp              ?? 0,
+                        attack:    pokemon.iv_attack          ?? 0,
+                        defense:   pokemon.iv_defense         ?? 0,
+                        spAttack:  pokemon.iv_special_attack  ?? 0,
+                        spDefense: pokemon.iv_special_defense ?? 0,
+                        speed:     pokemon.iv_speed           ?? 0,
+                    };
+                    userModified = true;
+                    pokemonsUpdated++;
+                }
+            }
+
+            if (userModified) {
+                await user.save();
+                usersUpdated++;
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Migration terminée : ${pokemonsUpdated} Pokémon migrés sur ${usersUpdated} dresseurs.`
+        });
+
+    } catch (e) {
+        console.error('Erreur migration IVs:', e);
+        res.status(500).json({ error: 'Erreur lors de la migration des IVs' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
