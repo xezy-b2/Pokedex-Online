@@ -398,32 +398,57 @@ async function loadPokedex() {
 
 
 // ============================================================
+// 📡 CACHE CLIENT POUR LES BASE STATS (PokeAPI, lazy)
+// ============================================================
+const _baseStatsCache = {};
+
+async function fetchBaseStatsClient(pokedexId) {
+    if (_baseStatsCache[pokedexId]) return _baseStatsCache[pokedexId];
+    try {
+        const res  = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokedexId}`);
+        const data = await res.json();
+        const stats = data.stats.map(s => ({ name: s.stat.name, base_stat: s.base_stat }));
+        _baseStatsCache[pokedexId] = stats;
+        return stats;
+    } catch (e) {
+        console.warn(`[baseStats] Échec pour #${pokedexId}:`, e.message);
+        return [];
+    }
+}
+
+// ============================================================
 // 🎮 FORMULES OFFICIELLES POKÉMON (Gen 3+)
 // ============================================================
 
 const STAT_META = [
-    { key: 'hp',        ivKey: 'hp',        label: 'PV',      color: '#4fc44f' },
-    { key: 'attack',    ivKey: 'attack',     label: 'Att',     color: '#f08030' },
-    { key: 'defense',   ivKey: 'defense',    label: 'Déf',     color: '#f8d030' },
-    { key: 'special-attack',  ivKey: 'spAttack',  label: 'Sp.Att', color: '#6890f0' },
-    { key: 'special-defense', ivKey: 'spDefense', label: 'Sp.Déf', color: '#78c850' },
-    { key: 'speed',     ivKey: 'speed',      label: 'Vit',     color: '#f85888' },
+    { key: 'hp',              ivKey: 'hp',        label: 'PV',      color: '#4fc44f' },
+    { key: 'attack',          ivKey: 'attack',     label: 'Att',     color: '#f08030' },
+    { key: 'defense',         ivKey: 'defense',    label: 'Déf',     color: '#f8d030' },
+    { key: 'special-attack',  ivKey: 'spAttack',   label: 'Sp.Att',  color: '#6890f0' },
+    { key: 'special-defense', ivKey: 'spDefense',  label: 'Sp.Déf',  color: '#78c850' },
+    { key: 'speed',           ivKey: 'speed',      label: 'Vit',     color: '#f85888' },
 ];
 
-/** Calcule la stat HP selon la formule officielle Gen 3+ */
-function calcHP(base, iv, level) {
-    return Math.floor(((2 * base + iv) * level) / 100) + level + 10;
+function calcHP(base, iv, level)   { return Math.floor(((2 * base + iv) * level) / 100) + level + 10; }
+function calcStat(base, iv, level) { return Math.floor(((2 * base + iv) * level) / 100) + 5; }
+
+/** Normalise les IVs — supporte ancien format (iv_hp) ET nouveau (ivs.hp) */
+function normalizeIvs(p) {
+    const r = p.ivs || {};
+    return {
+        hp:        r.hp        ?? p.iv_hp              ?? 0,
+        attack:    r.attack    ?? p.iv_attack          ?? 0,
+        defense:   r.defense   ?? p.iv_defense         ?? 0,
+        spAttack:  r.spAttack  ?? p.iv_special_attack  ?? 0,
+        spDefense: r.spDefense ?? p.iv_special_defense ?? 0,
+        speed:     r.speed     ?? p.iv_speed           ?? 0,
+    };
 }
 
-/** Calcule une stat normale (Att, Déf, etc.) selon la formule officielle Gen 3+ */
-function calcStat(base, iv, level) {
-    return Math.floor(((2 * base + iv) * level) / 100) + 5;
-}
-
-/** Génère le HTML des barres de stats pour un Pokémon */
+/** Barres de stats complètes (encyclopédie) */
 function renderStatBars(p) {
-    const level    = p.level || 1;
-    const ivs      = p.ivs  || {};
+    const level     = p.level || 1;
+    const ivs       = normalizeIvs(p);
     const baseStats = p.baseStats || [];
 
     if (baseStats.length === 0) {
@@ -432,24 +457,23 @@ function renderStatBars(p) {
                 </div>`;
     }
 
-    // Map name → base_stat
     const baseMap = {};
     baseStats.forEach(s => { baseMap[s.name || s.stat?.name] = s.base_stat || 0; });
 
-    // Puissance globale
-    const isMega   = p.isMega === true;
-    const isShiny  = p.isShiny === true;
-    const ivs_vals = [ivs.hp||0, ivs.attack||0, ivs.defense||0, ivs.spAttack||0, ivs.spDefense||0, ivs.speed||0];
-    const avgIV    = ivs_vals.reduce((a,b)=>a+b,0) / 6;
-    const avgBase  = baseStats.reduce((a,s)=>a+(s.base_stat||0),0) / baseStats.length;
-    const power    = Math.floor(((level*2) + (avgIV*1.5) + (avgBase*0.5)) * (isShiny?1.1:1) * (isMega?1.3:1));
+    const isMega  = p.isMega  === true;
+    const isShiny = p.isShiny === true;
+    const ivArr   = [ivs.hp, ivs.attack, ivs.defense, ivs.spAttack, ivs.spDefense, ivs.speed];
+    const avgIV   = ivArr.reduce((a, b) => a + b, 0) / 6;
+    const avgBase = baseStats.reduce((a, s) => a + (s.base_stat || 0), 0) / baseStats.length;
+    const power   = Math.floor(((level * 2) + (avgIV * 1.5) + (avgBase * 0.5)) * (isShiny ? 1.1 : 1) * (isMega ? 1.3 : 1));
 
-    let html = `<div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+    let html = `
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
         <span style="color:var(--accent-warm);font-weight:700;font-size:0.85em;">💪 Puissance</span>
         <span style="color:var(--text-primary);font-weight:700;font-size:0.95em;">${power}</span>
-    </div>`;
-
-    html += `<div style="font-size:0.75em;color:var(--text-secondary);margin-bottom:6px;border-top:1px solid rgba(255,154,108,0.15);padding-top:6px;">
+    </div>
+    <div style="font-size:0.72em;color:var(--text-secondary);margin-bottom:6px;
+                border-top:1px solid rgba(255,154,108,0.15);padding-top:6px;">
         Stats calculées — Niv. <strong style="color:var(--accent-warm);">${level}</strong>
     </div>`;
 
@@ -457,8 +481,7 @@ function renderStatBars(p) {
         const base = baseMap[key] || 0;
         const iv   = ivs[ivKey]   || 0;
         const val  = key === 'hp' ? calcHP(base, iv, level) : calcStat(base, iv, level);
-        // Max théorique à niveau 100 avec IV 31
-        const max  = key === 'hp' ? calcHP(255, 31, 100) : calcStat(255, 31, 100);
+        const max  = key === 'hp' ? calcHP(255, 31, 100)    : calcStat(255, 31, 100);
         const pct  = Math.min(100, Math.round((val / max) * 100));
 
         html += `
@@ -474,15 +497,13 @@ function renderStatBars(p) {
         </div>`;
     });
 
-    // IVs résumés en une ligne
-    const ivTotal = ivs_vals.reduce((a,b)=>a+b,0);
-    const ivMax   = 186; // 31*6
-    const ivPct   = Math.round((ivTotal / ivMax) * 100);
+    const ivTotal = ivArr.reduce((a, b) => a + b, 0);
+    const ivPct   = Math.round((ivTotal / 186) * 100);
     html += `
     <div style="margin-top:8px;border-top:1px solid rgba(255,154,108,0.15);padding-top:6px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
             <span style="color:var(--text-secondary);font-size:0.75em;">IVs totaux</span>
-            <span style="color:var(--text-primary);font-size:0.75em;font-weight:600;">${ivTotal} / ${ivMax}</span>
+            <span style="color:var(--text-primary);font-size:0.75em;font-weight:600;">${ivTotal} / 186</span>
         </div>
         <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
             <div style="height:100%;width:${ivPct}%;border-radius:2px;
@@ -494,28 +515,29 @@ function renderStatBars(p) {
     return html;
 }
 
-/** Mini version pour les modals de combat (plus compact) */
+/** Barres de stats compactes (modals de combat) */
 function renderStatBarsMini(p) {
-    const level    = p.level || 1;
-    const ivs      = p.ivs  || {};
+    const level     = p.level || 1;
+    const ivs       = normalizeIvs(p);
     const baseStats = p.baseStats || [];
 
     if (baseStats.length === 0) {
-        return `<div style="color:var(--text-secondary);font-size:0.75em;text-align:center;">Stats non dispo</div>`;
+        return `<div style="color:var(--text-secondary);font-size:0.75em;text-align:center;padding:4px;">Stats non dispo</div>`;
     }
 
     const baseMap = {};
     baseStats.forEach(s => { baseMap[s.name || s.stat?.name] = s.base_stat || 0; });
 
-    const isMega  = p.isMega === true;
+    const isMega  = p.isMega  === true;
     const isShiny = p.isShiny === true;
-    const ivArr   = [ivs.hp||0, ivs.attack||0, ivs.defense||0, ivs.spAttack||0, ivs.spDefense||0, ivs.speed||0];
-    const avgIV   = ivArr.reduce((a,b)=>a+b,0) / 6;
-    const avgBase = baseStats.reduce((a,s)=>a+(s.base_stat||0),0) / baseStats.length;
-    const power   = Math.floor(((level*2) + (avgIV*1.5) + (avgBase*0.5)) * (isShiny?1.1:1) * (isMega?1.3:1));
+    const ivArr   = [ivs.hp, ivs.attack, ivs.defense, ivs.spAttack, ivs.spDefense, ivs.speed];
+    const avgIV   = ivArr.reduce((a, b) => a + b, 0) / 6;
+    const avgBase = baseStats.reduce((a, s) => a + (s.base_stat || 0), 0) / baseStats.length;
+    const power   = Math.floor(((level * 2) + (avgIV * 1.5) + (avgBase * 0.5)) * (isShiny ? 1.1 : 1) * (isMega ? 1.3 : 1));
 
-    let html = `<div style="background:rgba(26,20,16,0.8);border-radius:10px;padding:10px;
-                            border:1px solid rgba(255,154,108,0.2);margin-top:8px;">
+    let html = `
+    <div style="background:rgba(26,20,16,0.8);border-radius:10px;padding:10px;
+                border:1px solid rgba(255,154,108,0.2);margin-top:8px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
             <span style="color:var(--accent-warm);font-weight:700;font-size:0.8em;">💪 ${power}</span>
             <span style="color:var(--text-secondary);font-size:0.72em;">Niv. ${level}</span>
@@ -597,7 +619,7 @@ function createCard(p, mode = 'pokedex') {
             </div>
     `;
 
-    // Stats accordéon (uniquement si capturé en mode pokedex)
+    // Stats accordéon — lazy load des baseStats depuis PokeAPI client
     if (isCaptured && mode === 'pokedex') {
         const uniqueId = p._id || `pokemon-${p.pokedexId}`;
         html += `
@@ -610,9 +632,10 @@ function createCard(p, mode = 'pokedex') {
                 <span id="toggle-icon-${uniqueId}">▼</span> Stats
             </button>
             <div id="stats-${uniqueId}" class="stats-accordion"
+                 data-pokedexid="${p.pokedexId}"
+                 data-pokemonid="${p._id}"
                  style="display:none;margin-top:8px;padding:10px;
                         background:rgba(26,20,16,0.7);border-radius:10px;text-align:left;">
-                ${renderStatBars(p)}
             </div>
         `;
     }
@@ -989,13 +1012,34 @@ function invalidatePokedexCache() {
     loadPokedex();
 }
 
-function toggleStats(pokemonId) {
+async function toggleStats(pokemonId) {
     const statsDiv = document.getElementById(`stats-${pokemonId}`);
-    const icon = document.getElementById(`toggle-icon-${pokemonId}`);
-    
+    const icon     = document.getElementById(`toggle-icon-${pokemonId}`);
+    if (!statsDiv) return;
+
     if (statsDiv.style.display === 'none') {
         statsDiv.style.display = 'block';
         icon.textContent = '▲';
+
+        // Lazy load : fetch PokeAPI seulement la première fois
+        if (statsDiv.dataset.loaded !== 'true') {
+            statsDiv.dataset.loaded = 'true';
+            const pokedexId = parseInt(statsDiv.dataset.pokedexid);
+            const pokemonId = statsDiv.dataset.pokemonid;
+            statsDiv.innerHTML = `<div style="color:var(--text-secondary);font-size:0.8em;text-align:center;padding:6px;">⏳ Chargement…</div>`;
+
+            const baseStats = await fetchBaseStatsClient(pokedexId);
+            // Trouver le pokémon dans le cache global pour avoir ses IVs
+            const pData = (cachedPokedexData?.capturedPokemonsList || []).find(
+                p => p._id === pokemonId || String(p._id) === pokemonId
+            );
+            if (pData) {
+                pData.baseStats = baseStats;
+                statsDiv.innerHTML = renderStatBars(pData);
+            } else {
+                statsDiv.innerHTML = renderStatBars({ baseStats, ivs: {}, level: 1, isMega: false, isShiny: false });
+            }
+        }
     } else {
         statsDiv.style.display = 'none';
         icon.textContent = '▼';
