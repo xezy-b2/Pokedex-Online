@@ -2567,7 +2567,8 @@ app.get('/api/profile', async (req, res) => {
                 level: p.level,
                 isShiny: p.isShiny,
                 isMega: p.isMega,
-                isCustom: p.isCustom
+                isCustom: p.isCustom,
+                customSprite: p.customSprite
             }));
         }
 
@@ -2846,3 +2847,4 @@ app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
+
