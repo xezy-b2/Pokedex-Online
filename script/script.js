@@ -397,6 +397,150 @@ async function loadPokedex() {
 }
 
 
+// ============================================================
+// 🎮 FORMULES OFFICIELLES POKÉMON (Gen 3+)
+// ============================================================
+
+const STAT_META = [
+    { key: 'hp',        ivKey: 'hp',        label: 'PV',      color: '#4fc44f' },
+    { key: 'attack',    ivKey: 'attack',     label: 'Att',     color: '#f08030' },
+    { key: 'defense',   ivKey: 'defense',    label: 'Déf',     color: '#f8d030' },
+    { key: 'special-attack',  ivKey: 'spAttack',  label: 'Sp.Att', color: '#6890f0' },
+    { key: 'special-defense', ivKey: 'spDefense', label: 'Sp.Déf', color: '#78c850' },
+    { key: 'speed',     ivKey: 'speed',      label: 'Vit',     color: '#f85888' },
+];
+
+/** Calcule la stat HP selon la formule officielle Gen 3+ */
+function calcHP(base, iv, level) {
+    return Math.floor(((2 * base + iv) * level) / 100) + level + 10;
+}
+
+/** Calcule une stat normale (Att, Déf, etc.) selon la formule officielle Gen 3+ */
+function calcStat(base, iv, level) {
+    return Math.floor(((2 * base + iv) * level) / 100) + 5;
+}
+
+/** Génère le HTML des barres de stats pour un Pokémon */
+function renderStatBars(p) {
+    const level    = p.level || 1;
+    const ivs      = p.ivs  || {};
+    const baseStats = p.baseStats || [];
+
+    if (baseStats.length === 0) {
+        return `<div style="color:var(--text-secondary);font-size:0.8em;text-align:center;padding:8px;">
+                    Stats de base non disponibles
+                </div>`;
+    }
+
+    // Map name → base_stat
+    const baseMap = {};
+    baseStats.forEach(s => { baseMap[s.name || s.stat?.name] = s.base_stat || 0; });
+
+    // Puissance globale
+    const isMega   = p.isMega === true;
+    const isShiny  = p.isShiny === true;
+    const ivs_vals = [ivs.hp||0, ivs.attack||0, ivs.defense||0, ivs.spAttack||0, ivs.spDefense||0, ivs.speed||0];
+    const avgIV    = ivs_vals.reduce((a,b)=>a+b,0) / 6;
+    const avgBase  = baseStats.reduce((a,s)=>a+(s.base_stat||0),0) / baseStats.length;
+    const power    = Math.floor(((level*2) + (avgIV*1.5) + (avgBase*0.5)) * (isShiny?1.1:1) * (isMega?1.3:1));
+
+    let html = `<div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:var(--accent-warm);font-weight:700;font-size:0.85em;">💪 Puissance</span>
+        <span style="color:var(--text-primary);font-weight:700;font-size:0.95em;">${power}</span>
+    </div>`;
+
+    html += `<div style="font-size:0.75em;color:var(--text-secondary);margin-bottom:6px;border-top:1px solid rgba(255,154,108,0.15);padding-top:6px;">
+        Stats calculées — Niv. <strong style="color:var(--accent-warm);">${level}</strong>
+    </div>`;
+
+    STAT_META.forEach(({ key, ivKey, label, color }) => {
+        const base = baseMap[key] || 0;
+        const iv   = ivs[ivKey]   || 0;
+        const val  = key === 'hp' ? calcHP(base, iv, level) : calcStat(base, iv, level);
+        // Max théorique à niveau 100 avec IV 31
+        const max  = key === 'hp' ? calcHP(255, 31, 100) : calcStat(255, 31, 100);
+        const pct  = Math.min(100, Math.round((val / max) * 100));
+
+        html += `
+        <div style="margin-bottom:5px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span style="color:var(--text-secondary);font-size:0.78em;font-weight:600;min-width:50px;">${label}</span>
+                <span style="color:var(--text-primary);font-weight:700;font-size:0.82em;">${val}</span>
+            </div>
+            <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;
+                            transition:width 0.4s ease;box-shadow:0 0 4px ${color}66;"></div>
+            </div>
+        </div>`;
+    });
+
+    // IVs résumés en une ligne
+    const ivTotal = ivs_vals.reduce((a,b)=>a+b,0);
+    const ivMax   = 186; // 31*6
+    const ivPct   = Math.round((ivTotal / ivMax) * 100);
+    html += `
+    <div style="margin-top:8px;border-top:1px solid rgba(255,154,108,0.15);padding-top:6px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+            <span style="color:var(--text-secondary);font-size:0.75em;">IVs totaux</span>
+            <span style="color:var(--text-primary);font-size:0.75em;font-weight:600;">${ivTotal} / ${ivMax}</span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+            <div style="height:100%;width:${ivPct}%;border-radius:2px;
+                        background:linear-gradient(90deg,#f08030,#f8d030,#4fc44f);
+                        transition:width 0.4s ease;"></div>
+        </div>
+    </div>`;
+
+    return html;
+}
+
+/** Mini version pour les modals de combat (plus compact) */
+function renderStatBarsMini(p) {
+    const level    = p.level || 1;
+    const ivs      = p.ivs  || {};
+    const baseStats = p.baseStats || [];
+
+    if (baseStats.length === 0) {
+        return `<div style="color:var(--text-secondary);font-size:0.75em;text-align:center;">Stats non dispo</div>`;
+    }
+
+    const baseMap = {};
+    baseStats.forEach(s => { baseMap[s.name || s.stat?.name] = s.base_stat || 0; });
+
+    const isMega  = p.isMega === true;
+    const isShiny = p.isShiny === true;
+    const ivArr   = [ivs.hp||0, ivs.attack||0, ivs.defense||0, ivs.spAttack||0, ivs.spDefense||0, ivs.speed||0];
+    const avgIV   = ivArr.reduce((a,b)=>a+b,0) / 6;
+    const avgBase = baseStats.reduce((a,s)=>a+(s.base_stat||0),0) / baseStats.length;
+    const power   = Math.floor(((level*2) + (avgIV*1.5) + (avgBase*0.5)) * (isShiny?1.1:1) * (isMega?1.3:1));
+
+    let html = `<div style="background:rgba(26,20,16,0.8);border-radius:10px;padding:10px;
+                            border:1px solid rgba(255,154,108,0.2);margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="color:var(--accent-warm);font-weight:700;font-size:0.8em;">💪 ${power}</span>
+            <span style="color:var(--text-secondary);font-size:0.72em;">Niv. ${level}</span>
+        </div>`;
+
+    STAT_META.forEach(({ key, ivKey, label, color }) => {
+        const base = baseMap[key] || 0;
+        const iv   = ivs[ivKey]   || 0;
+        const val  = key === 'hp' ? calcHP(base, iv, level) : calcStat(base, iv, level);
+        const max  = key === 'hp' ? calcHP(255, 31, 100)    : calcStat(255, 31, 100);
+        const pct  = Math.min(100, Math.round((val / max) * 100));
+        html += `
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+            <span style="color:var(--text-secondary);font-size:0.68em;min-width:38px;text-align:right;">${label}</span>
+            <div style="flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${color};border-radius:2px;"></div>
+            </div>
+            <span style="color:var(--text-primary);font-size:0.7em;font-weight:600;min-width:22px;">${val}</span>
+        </div>`;
+    });
+
+    html += `</div>`;
+    return html;
+}
+
 // OPTIMISATION: Fonction createCard modifiée pour lazy loading
 function createCard(p, mode = 'pokedex') {
     const isCaptured = p.isCaptured !== false;
@@ -453,48 +597,22 @@ function createCard(p, mode = 'pokedex') {
             </div>
     `;
 
-    // NOUVEAU : Accordion Stats (uniquement si capturé)
+    // Stats accordéon (uniquement si capturé en mode pokedex)
     if (isCaptured && mode === 'pokedex') {
         const uniqueId = p._id || `pokemon-${p.pokedexId}`;
         html += `
-            <button class="stats-toggle-btn" onclick="toggleStats('${uniqueId}')" style="width: 100%; padding: 8px; margin-top: 10px; background: rgba(255, 154, 108, 0.1); border: 1px solid rgba(255, 154, 108, 0.3); border-radius: 8px; color: var(--accent-warm); cursor: pointer; font-weight: 600; transition: all 0.3s ease; font-family: 'Quicksand', sans-serif;">
+            <button class="stats-toggle-btn" onclick="toggleStats('${uniqueId}')"
+                    style="width:100%;padding:7px;margin-top:10px;
+                           background:rgba(255,154,108,0.08);border:1px solid rgba(255,154,108,0.25);
+                           border-radius:8px;color:var(--accent-warm);cursor:pointer;
+                           font-weight:600;font-size:0.85em;transition:all 0.2s;
+                           font-family:'Quicksand',sans-serif;">
                 <span id="toggle-icon-${uniqueId}">▼</span> Stats
             </button>
-            <div id="stats-${uniqueId}" class="stats-accordion" style="display: none; margin-top: 10px; padding: 12px; background: rgba(26, 20, 16, 0.6); border-radius: 10px; text-align: left;">
-                <div style="margin-bottom: 8px;">
-                    <span style="color: var(--accent-warm); font-weight: 700; font-size: 0.9em;">💪 Puissance</span>
-                    <span style="float: right; color: var(--text-primary); font-weight: 700;">${power}</span>
-                </div>
-                ${p.ivs ? `
-                <div style="margin-bottom: 10px; border-top: 1px solid rgba(255, 154, 108, 0.2); padding-top: 8px;">
-                    <div style="color: var(--accent-soft); font-weight: 700; font-size: 0.85em; margin-bottom: 5px;">📊 IVs (0-31)</div>
-                    <div style="font-size: 0.75em; line-height: 1.6;">
-                        <div><span style="color: var(--text-secondary);">HP:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.hp || 0}</span></div>
-                        <div><span style="color: var(--text-secondary);">Att:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.attack || 0}</span></div>
-                        <div><span style="color: var(--text-secondary);">Def:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.defense || 0}</span></div>
-                        <div><span style="color: var(--text-secondary);">Sp.Att:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.spAttack || 0}</span></div>
-                        <div><span style="color: var(--text-secondary);">Sp.Def:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.spDefense || 0}</span></div>
-                        <div><span style="color: var(--text-secondary);">Vit:</span> <span style="color: var(--text-primary); font-weight: 600;">${p.ivs.speed || 0}</span></div>
-                    </div>
-                </div>
-                ` : ''}
-                ${p.baseStats && p.baseStats.length > 0 ? `
-                <div style="border-top: 1px solid rgba(255, 154, 108, 0.2); padding-top: 8px;">
-                    <div style="color: var(--accent-soft); font-weight: 700; font-size: 0.85em; margin-bottom: 5px;">⚡ Stats de Base</div>
-                    <div style="font-size: 0.75em; line-height: 1.6;">
-                        ${p.baseStats.map(stat => {
-                            const statName = stat.stat?.name || stat.name || 'stat';
-                            const statValue = stat.base_stat || stat.value || 0;
-                            return `
-                            <div>
-                                <span style="color: var(--text-secondary);">${statName}:</span> 
-                                <span style="color: var(--text-primary); font-weight: 600;">${statValue}</span>
-                            </div>
-                        `;
-                        }).join('')}
-                    </div>
-                </div>
-                ` : ''}
+            <div id="stats-${uniqueId}" class="stats-accordion"
+                 style="display:none;margin-top:8px;padding:10px;
+                        background:rgba(26,20,16,0.7);border-radius:10px;text-align:left;">
+                ${renderStatBars(p)}
             </div>
         `;
     }
