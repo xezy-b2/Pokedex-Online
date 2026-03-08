@@ -2530,8 +2530,6 @@ app.get('/api/profile', async (req, res) => {
                     level: comp.level,
                     isShiny: comp.isShiny,
                     isMega: comp.isMega,
-                    isCustom: comp.isCustom || false,
-                    customSprite: comp.customSprite || null,
                     customMessage: user.companionMessage || null
                 };
             }
@@ -2546,9 +2544,7 @@ app.get('/api/profile', async (req, res) => {
                 pokedexId: p.pokedexId,
                 level: p.level,
                 isShiny: p.isShiny,
-                isMega: p.isMega,
-                isCustom: p.isCustom || false,
-                customSprite: p.customSprite || null
+                isMega: p.isMega
             }));
 
         // Badges (à calculer selon tes règles)
@@ -2571,8 +2567,7 @@ app.get('/api/profile', async (req, res) => {
                 level: p.level,
                 isShiny: p.isShiny,
                 isMega: p.isMega,
-                isCustom: p.isCustom,
-                customSprite: p.customSprite || null
+                isCustom: p.isCustom
             }));
         }
 
