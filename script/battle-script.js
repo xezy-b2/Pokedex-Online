@@ -343,19 +343,39 @@ async function challengeOpponent(opponentId, opponentUsername) {
 // CHARGER LES DÉFIS REÇUS
 // ==========================================
 async function loadPendingBattles() {
-    if (!battleData) {
-        await loadBattleStats();
-    }
-    
     const grid = document.getElementById('pending-battles-grid');
     if (!grid) return;
-    
-    if (!battleData.pendingChallenges || battleData.pendingChallenges.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">Aucun défi en attente.</p>';
-        return;
+
+    grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">⏳ Chargement...</p>';
+
+    try {
+        // Toujours recharger depuis l'API pour avoir les défis les plus récents
+        const res  = await fetch(`${API_BASE_URL}/api/battle/my-battles/${currentUserId}`);
+        const data = await res.json();
+        battleData = data; // Mettre à jour le cache global
+
+        // Mettre à jour le badge
+        const badge = document.getElementById('badge-pending-battles');
+        if (badge) {
+            if (data.pendingChallenges.length > 0) {
+                badge.textContent = data.pendingChallenges.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (!data.pendingChallenges || data.pendingChallenges.length === 0) {
+            grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">Aucun défi en attente.</p>';
+            return;
+        }
+
+        grid.innerHTML = data.pendingChallenges.map(battle => createPendingBattleCard(battle)).join('');
+
+    } catch (e) {
+        console.error("Erreur chargement défis:", e);
+        grid.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 40px;">Erreur de chargement.</p>';
     }
-    
-    grid.innerHTML = battleData.pendingChallenges.map(battle => createPendingBattleCard(battle)).join('');
 }
 
 // ==========================================
