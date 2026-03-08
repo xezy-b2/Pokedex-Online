@@ -30,19 +30,6 @@ async function selectBotDifficulty(difficulty) {
 
             const imgUrl = `${POKEAPI_URL}${data.bot.pokemon.isShiny ? 'shiny/' : ''}${data.bot.pokemon.pokedexId}.png`;
             document.getElementById('bot-preview-img').src = imgUrl;
-
-            // Stats du bot
-            const botStatsEl = document.getElementById('bot-preview-stats');
-            if (botStatsEl && typeof renderStatBarsMini === 'function') {
-                // Le bot n'a pas de baseStats depuis l'API, on construit un objet minimal
-                botStatsEl.innerHTML = renderStatBarsMini({
-                    level:    data.bot.pokemon.level,
-                    ivs:      data.bot.pokemon.ivs || {},
-                    baseStats: data.bot.pokemon.baseStats || [],
-                    isMega:   data.bot.pokemon.isMega,
-                    isShiny:  data.bot.pokemon.isShiny
-                });
-            }
         }
 
     } catch (e) {
@@ -205,20 +192,17 @@ function setFighterFilter(filter) {
 // ==========================================
 // CONFIRMER LA SÉLECTION D'UN POKÉMON
 // ==========================================
-function selectFighterPokemon(p) {
+async function selectFighterPokemon(p) {
     selectedFighterPokemon = p;
 
-    // Mettre à jour la grille pour montrer la sélection
     if (window._renderFighterGrid) {
         window._renderFighterGrid(window._fighterNameFilter || '', window._fighterTypeFilter || 'all');
     }
 
-    // Fermer le modal après un court délai
-    setTimeout(() => {
+    setTimeout(async () => {
         closeFighterPokemonModal();
 
-        // Mettre à jour l'aperçu du Pokémon choisi
-        const sprite = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : _getFighterSprite(p);
+        const sprite   = (typeof getPokemonSprite === 'function') ? getPokemonSprite(p) : _getFighterSprite(p);
         const isMega   = p.isMega === true || (p.name && p.name.toLowerCase().includes('méga'));
         const isCustom = p.isCustom === true;
         let label = '';
@@ -230,14 +214,15 @@ function selectFighterPokemon(p) {
         const preview = document.getElementById('selected-fighter-preview');
         if (preview) {
             preview.style.display = 'block';
-            const statBarsHtml = (typeof renderStatBarsMini === 'function') ? renderStatBarsMini(p) : '';
+
+            // Afficher d'abord le header sans stats
             preview.innerHTML = `
                 <div style="display:flex;align-items:center;gap:12px;">
                     <img src="${sprite}"
                          onerror="this.onerror=null;this.src='${POKEAPI_URL}${p.isShiny ? 'shiny/' : ''}${p.pokedexId}.png';"
                          style="width:64px;height:64px;object-fit:contain;flex-shrink:0;">
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:700;color:var(--text-primary);font-size:0.95em;">${label}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;color:var(--text-primary);">${label}</div>
                         <div style="color:var(--text-secondary);font-size:0.82em;margin-top:2px;">Niv. ${p.level}</div>
                         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
                             ${p.isShiny ? `<span style="background:#f0c040;color:#1a1a2e;font-size:0.6em;padding:1px 6px;border-radius:8px;font-weight:bold;">✨ SHINY</span>` : ''}
@@ -251,8 +236,21 @@ function selectFighterPokemon(p) {
                         Changer
                     </button>
                 </div>
-                ${statBarsHtml}
+                <div id="fighter-stats-mini" style="margin-top:6px;">
+                    <div style="color:var(--text-secondary);font-size:0.75em;text-align:center;padding:4px;">⏳ Chargement stats…</div>
+                </div>
             `;
+
+            // Fetch baseStats puis afficher les barres
+            if (typeof fetchBaseStatsClient === 'function') {
+                const baseStats = await fetchBaseStatsClient(p.pokedexId);
+                p.baseStats = baseStats;
+                selectedFighterPokemon.baseStats = baseStats;
+                const statsEl = document.getElementById('fighter-stats-mini');
+                if (statsEl && typeof renderStatBarsMini === 'function') {
+                    statsEl.innerHTML = renderStatBarsMini(p);
+                }
+            }
         }
 
         _updateFightBotButton();
