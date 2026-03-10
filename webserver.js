@@ -2889,9 +2889,96 @@ app.post('/api/admin/generate-missing-ivs', async (req, res) => {
     }
 });
 
+// ==========================================
+// 📊 STATS PUBLIQUES (landing page)
+// GET /api/stats
+// ==========================================
+let statsPublicCache = null;
+let statsPublicCacheTime = 0;
+const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+app.get('/api/stats', async (req, res) => {
+    try {
+        // Cache pour éviter de surcharger MongoDB à chaque visite
+        const now = Date.now();
+        if (statsPublicCache && (now - statsPublicCacheTime) < STATS_CACHE_TTL) {
+            return res.json(statsPublicCache);
+        }
+
+        // Nombre de joueurs inscrits
+        const players = await User.countDocuments();
+
+        // Total Pokémon capturés & chromatiques (agrégation sur tous les users)
+        const pokemonAgg = await User.aggregate([
+            {
+                $project: {
+                    total: { $size: { $ifNull: ['$pokemons', []] } },
+                    shinies: {
+                        $size: {
+                            $filter: {
+                                input: { $ifNull: ['$pokemons', []] },
+                                as: 'p',
+                                cond: { $eq: ['$$p.isShiny', true] }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalPokemon: { $sum: '$total' },
+                    totalShinies: { $sum: '$shinies' }
+                }
+            }
+        ]);
+
+        const totalPokemon = pokemonAgg[0]?.totalPokemon ?? 0;
+        const totalShinies = pokemonAgg[0]?.totalShinies ?? 0;
+
+        // Top 3 dresseurs par nombre de Pokémon capturés
+        const topUsersRaw = await User.aggregate([
+            {
+                $project: {
+                    username: 1,
+                    caught: { $size: { $ifNull: ['$pokemons', []] } },
+                    shinies: {
+                        $size: {
+                            $filter: {
+                                input: { $ifNull: ['$pokemons', []] },
+                                as: 'p',
+                                cond: { $eq: ['$$p.isShiny', true] }
+                            }
+                        }
+                    },
+                    victories: { $ifNull: ['$battleStats.victories', 0] }
+                }
+            },
+            { $sort: { caught: -1 } },
+            { $limit: 3 }
+        ]);
+
+        const topPlayers = topUsersRaw.map(u => ({
+            username: u.username,
+            caught: u.caught,
+            shinies: u.shinies,
+            score: u.caught + u.victories * 2
+        }));
+
+        statsPublicCache = { players, totalPokemon, totalShinies, topPlayers };
+        statsPublicCacheTime = now;
+
+        res.json(statsPublicCache);
+
+    } catch (e) {
+        console.error('[/api/stats] Erreur:', e);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+console.log("✅ Route /api/stats chargée");
+
 app.listen(PORT, () => {
     console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
     console.log(`URL Publique: ${RENDER_API_PUBLIC_URL}`);
 });
-
-
