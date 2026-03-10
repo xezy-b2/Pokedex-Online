@@ -96,11 +96,14 @@ function initializeApp() {
         history.pushState(null, '', window.location.pathname);
     }
     if (currentUserId) {
+        hideLandingPage();
         document.getElementById('main-nav').style.display = 'flex';
         document.getElementById('logged-in-user').style.display = 'flex';
         document.getElementById('logged-out-user').style.display = 'none';
         document.getElementById('display-username').textContent = currentUsername;
         loadPokedex();
+    } else {
+        showLandingPage();
     }
 }
 
