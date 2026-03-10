@@ -2750,7 +2750,7 @@ function hideLandingPage() {
 async function fetchLandingStats() {
     try {
         // Remplace l'URL par celle de ton API Render
-        const res = await fetch('/api/stats');
+        const res = await fetch('https://pokedex-online-pxmg.onrender.com/api/stats');
         if (!res.ok) throw new Error();
         const data = await res.json();
 
